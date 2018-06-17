@@ -32,19 +32,24 @@ module OpetopicTypes where
 
   open is-coherent
 
-  -- What should it mean to be *complete*?  The notion I have in mind
-  -- is that the identity structure of the type(s) coincide with the
-  -- groupoid structure of the opetope.
+  filler-of : {I : Type₀} {M : Mnd I} {X : OpType M} {i : I}
+              (n : Niche X i) (is-coh : is-coherent X) → Ob X i
+  filler-of n is-coh = fst (fst (has-level-apply (has-unique-fillers is-coh n)))              
 
-  -- So, in order to make this precise, we will need to define the
-  -- identity on an element in a coherent type
+  pth-to-id-cell : {I : Type₀} {M : Mnd I} (X : OpType M) (is-coh : is-coherent X)
+                   {i : I} (x y : Ob X i) (p : x == y) → 
+                   Ob (Hom X) ((i , x) , (η M i , λ p → transport (Ob X) (ap (τ M) (ηp-η M i p)) y))
+  pth-to-id-cell {M = M} X is-coh {i} x .x idp = filler-of id-niche (hom-is-coherent is-coh)
 
-  module _ {I : Type₀} {M : Mnd I} (X : OpType M) where
+    where id-niche : Niche (Hom X) (((i , x) , (η M i , λ p → transport (Ob X) (ap (τ M) (ηp-η M i p)) x)))
+          id-niche = dot (i , x) , λ { () }
 
-    identity : {i : I} (x : Ob X i) → Ob (Hom X) ((i , x) , (η M i , λ p → transport (Ob X) (ap (τ M) (ηp-unique M i p)) x))
-    identity x = {!!}
+  record is-complete {I : Type₀} {M : Mnd I} (X : OpType M) (is-coh : is-coherent X) : Type₀ where
+    coinductive
+    field
 
-
+      pth-to-id-equiv : {i : I} (x y : Ob X i) → is-equiv (pth-to-id-cell X is-coh x y)
+      hom-is-complete : is-complete (Hom X) (hom-is-coherent is-coh)
 
   ∞Alg : {I : Type₀} (M : Mnd I) → Type₁
   ∞Alg M = Σ (OpType M) is-coherent
@@ -58,7 +63,7 @@ module OpetopicTypes where
     X₀ = Ob (fst X) (unit , unit)
     
     mult : X₀ → X₀ → X₀
-    mult x y = fst (fst (has-level-apply (has-unique-fillers (snd X) mult-niche)))
+    mult x y = filler-of mult-niche (snd X)
     
       where mult-niche : Niche (fst X) (unit , unit)
             mult-niche = (box unit (λ _ → unit) (λ _ → box unit (λ _ → unit) (λ _ → dot unit))) ,
