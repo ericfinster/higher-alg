@@ -178,10 +178,10 @@ module PolyMonads where
                      (ε : (p : ρ M c) → Nst (δ p)) → 
                      ρ-slc n ⊔ Σ (ρ M c) (ρ-slc ∘ ε) → ρ-slc (graft-slc n δ ε)
     graft-slc-ρ-to (dot i) δ ε (inl ())
+    graft-slc-ρ-to (dot i) δ₁ ε₁ (inr (p , q)) = transport! (ρ-slc ∘ ε₁) (ηρ-η M i p) q 
     graft-slc-ρ-to (box c δ ε) δ₁ ε₁ (inl (inl unit)) = inl unit
     graft-slc-ρ-to (box c δ ε) δ₁ ε₁ (inl (inr (p , q))) = inr (p , graft-slc-ρ-to (ε p) (δ₁' p) (ε₁' p) (inl q))
       where open BoxLocal δ ε δ₁ ε₁
-    graft-slc-ρ-to (dot i) δ₁ ε₁ (inr (p , q)) = transport! (ρ-slc ∘ ε₁) (ηρ-η M i p) q 
     graft-slc-ρ-to (box c δ ε) δ₁ ε₁ (inr (p , q)) = inr (p₀ , IH)
       where open BoxLocal δ ε δ₁ ε₁
 
@@ -270,6 +270,125 @@ module PolyMonads where
                     =⟨ graft-slc-ρ-to-from (ε p) (δ₁' p) (ε₁' p) q |in-ctx (λ q₁ → (p , q₁)) ⟩ 
                   (p , q) ∎
 
+    graft-slc-ρ-from-to : {i : I} {c : γ M i} (n : Nst c)
+                          (δ : (p : ρ M c) → (γ M (τ M p)))
+                          (ε : (p : ρ M c) → Nst (δ p))
+                          (q : ρ-slc n ⊔ Σ (ρ M c) (ρ-slc ∘ ε)) → 
+                          graft-slc-ρ-from n δ ε (graft-slc-ρ-to n δ ε q) == q
+    graft-slc-ρ-from-to (dot i) δ ε (inl ())
+    graft-slc-ρ-from-to (dot i) δ ε (inr (p , q)) =
+      ap inr (pair= (ηρ-η M i p) (to-transp-↓ (ρ-slc ∘ ε) (ηρ-η M i p) q))
+    graft-slc-ρ-from-to (box c δ ε) δ₁ ε₁ (inl (inl unit)) = idp
+    graft-slc-ρ-from-to (box c δ ε) δ₁ ε₁ (inl (inr (p , q))) with
+      graft-slc-ρ-from (ε p) (λ q → δ₁ (μρ M δ p q)) (λ q → ε₁ (μρ M δ p q)) 
+        (graft-slc-ρ-to (ε p) (λ q → δ₁ (μρ M δ p q)) (λ q → ε₁ (μρ M δ p q)) (inl q)) |
+        inspect (graft-slc-ρ-from (ε p) (λ q → δ₁ (μρ M δ p q)) (λ q → ε₁ (μρ M δ p q)) ∘
+          graft-slc-ρ-to (ε p) (λ q → δ₁ (μρ M δ p q)) (λ q → ε₁ (μρ M δ p q))) (inl q)
+    graft-slc-ρ-from-to (box c δ ε) δ₁ ε₁ (inl (inr (p , q))) | inl q₀ | ingraph e =
+      ap (λ x → inl (inr (p , x))) (–> (inl=inl-equiv q₀ q) lem)
+    
+      where open BoxLocal δ ε δ₁ ε₁
+      
+            lem = inl q₀ =⟨ ! e ⟩
+                  graft-slc-ρ-from (ε p) (δ₁' p) (ε₁' p) (graft-slc-ρ-to (ε p) (δ₁' p) (ε₁' p) (inl q))
+                    =⟨ graft-slc-ρ-from-to (ε p) (δ₁' p) (ε₁' p) (inl q) ⟩
+                  inl q ∎
+
+    -- This branch is impossible!
+    graft-slc-ρ-from-to (box c δ ε) δ₁ ε₁ (inl (inr (p , q))) | inr (p₀ , q₀) | ingraph e =
+      ⊥-elim (inl≠inr q (p₀ , q₀) claim)
+
+      where open BoxLocal δ ε δ₁ ε₁
+
+            claim = inl q =⟨ ! (graft-slc-ρ-from-to (ε p) (δ₁' p) (ε₁' p) (inl q) ) ⟩
+                    graft-slc-ρ-from (ε p) (δ₁' p) (ε₁' p) (graft-slc-ρ-to (ε p) (δ₁' p) (ε₁' p) (inl q)) =⟨ e ⟩ 
+                    inr (p₀ , q₀) ∎
+
+    graft-slc-ρ-from-to (box c δ ε) δ₁ ε₁ (inr (p , q)) with
+      graft-slc-ρ-from (ε (μρ-fst M δ p))
+        (λ q → δ₁ (μρ M δ (μρ-fst M δ p) q))
+        (λ q → ε₁ (μρ M δ (μρ-fst M δ p) q))
+        (graft-slc-ρ-to (ε (μρ-fst M δ p)) (λ q → δ₁ (μρ M δ (μρ-fst M δ p) q)) (λ q → ε₁ (μρ M δ (μρ-fst M δ p) q))
+          (inr (μρ-snd M δ p , (transport! (ρ-slc ∘ snd) (pair= (μρ-η M δ p) (apd ε₁ (μρ-η M δ p))) q)))) |
+          inspect ((graft-slc-ρ-from (ε (μρ-fst M δ p)) (λ q → δ₁ (μρ M δ (μρ-fst M δ p) q)) (λ q → ε₁ (μρ M δ (μρ-fst M δ p) q))) ∘
+                   (graft-slc-ρ-to (ε (μρ-fst M δ p)) (λ q → δ₁ (μρ M δ (μρ-fst M δ p) q)) (λ q → ε₁ (μρ M δ (μρ-fst M δ p) q))))
+                  (inr (μρ-snd M δ p , (transport! (ρ-slc ∘ snd) (pair= (μρ-η M δ p) (apd ε₁ (μρ-η M δ p))) q)))
+    graft-slc-ρ-from-to (box c δ ε) δ₁ ε₁ (inr (p , q)) | inl q₀ | ingraph e =
+      ⊥-elim (inr≠inl IH-arg q₀ claim)
+
+      where open BoxLocal δ ε δ₁ ε₁
+
+            p₀ = μρ-fst M δ p
+            p₁ = μρ-snd M δ p
+
+            coh = μρ-η M δ p
+            
+            IH-arg = (p₁ , transport! (ρ-slc ∘ snd) (pair= coh (apd ε₁ coh)) q)
+            
+            IH : graft-slc-ρ-from (ε (p₀)) (δ₁' (p₀)) (ε₁' (p₀))
+                  (graft-slc-ρ-to (ε (p₀)) (δ₁' (p₀)) (ε₁' (p₀)) (inr IH-arg))
+                  == inr IH-arg
+            IH =   graft-slc-ρ-from-to (ε (p₀)) (δ₁' (p₀)) (ε₁' (p₀))
+                   (inr (μρ-snd M δ p , (transport! (ρ-slc ∘ snd) (pair= (μρ-η M δ p) (apd ε₁ (μρ-η M δ p))) q))) 
+
+            claim = inr IH-arg =⟨ ! IH ⟩
+                    graft-slc-ρ-from (ε (p₀)) (δ₁' (p₀)) (ε₁' (p₀))
+                      (graft-slc-ρ-to (ε (p₀)) (δ₁' (p₀)) (ε₁' (p₀)) (inr IH-arg)) =⟨ e ⟩ 
+                    inl q₀ ∎
+            
+    graft-slc-ρ-from-to (box c δ ε) δ₁ ε₁ (inr (p , q)) | inr (p₀ , q₀) | ingraph e = ap inr lem
+
+      where open BoxLocal δ ε δ₁ ε₁
+
+            r₀ = μρ-fst M δ p
+            r₁ = μρ-snd M δ p
+
+            coh = μρ-η M δ p
+            
+            α = pair= coh (apd ε₁ coh)
+
+
+            IH-arg = (r₁ , transport! (ρ-slc ∘ snd) (pair= coh (apd ε₁ coh)) q)
+            
+            IH : graft-slc-ρ-from (ε (r₀)) (δ₁' (r₀)) (ε₁' (r₀))
+                  (graft-slc-ρ-to (ε (r₀)) (δ₁' (r₀)) (ε₁' (r₀)) (inr IH-arg))
+                  == inr IH-arg
+            IH =   graft-slc-ρ-from-to (ε (r₀)) (δ₁' (r₀)) (ε₁' (r₀))
+                   (inr (μρ-snd M δ p , (transport! (ρ-slc ∘ snd) (pair= (μρ-η M δ p) (apd ε₁ (μρ-η M δ p))) q)))
+                   
+            lem₀ = inr (p₀ , q₀) =⟨ ! e ⟩
+                   graft-slc-ρ-from (ε (r₀)) (δ₁' (r₀)) (ε₁' (r₀))
+                     (graft-slc-ρ-to (ε (r₀)) (δ₁' (r₀)) (ε₁' (r₀)) (inr IH-arg)) =⟨ IH ⟩
+                   inr IH-arg ∎
+                   
+            -- From this, we should learn that
+
+            claim : p₀ == r₁
+            claim = fst= (fst (inr=inr-equiv (p₀ , q₀) IH-arg) lem₀)
+
+            snd-claim : q₀ == transport! (ρ-slc ∘ snd) α q [ ρ-slc ∘ ε₁ ∘ (μρ M δ r₀) ↓ claim ]
+            snd-claim = snd= (fst (inr=inr-equiv (p₀ , q₀) IH-arg) lem₀)
+
+            step₀ : transport! (ρ-slc ∘ snd) α q == q [ ρ-slc ∘ snd ↓ pair= coh (apd ε₁ coh) ]
+            step₀ = to-transp-↓ (ρ-slc ∘ snd) α q
+
+            step₁ : transport! (ρ-slc ∘ snd) α q == q [ ρ-slc ∘ ε₁ ↓ coh ]
+            step₁ = ↓-apd-lem (λ _ n → ρ-slc n) step₀ 
+      
+            lem = μρ M δ r₀ p₀ , q₀
+                     =⟨ pair= (ap (μρ M δ r₀) claim) (↓-ap-in (ρ-slc ∘ ε₁) (μρ M δ r₀) snd-claim) ⟩
+                  μρ M δ r₀ r₁ , snd IH-arg
+                     =⟨ pair= (μρ-η M δ p) step₁ ⟩ 
+                  p , q ∎
+                  
+    graft-slc-ρ-equiv : {i : I} {c : γ M i} (n : Nst c)
+                        (δ : (p : ρ M c) → (γ M (τ M p)))
+                        (ε : (p : ρ M c) → Nst (δ p)) → 
+                        ρ-slc n ⊔ Σ (ρ M c) (ρ-slc ∘ ε) ≃ ρ-slc (graft-slc n δ ε)
+    graft-slc-ρ-equiv n δ ε =
+      equiv (graft-slc-ρ-to n δ ε) (graft-slc-ρ-from n δ ε)
+            (graft-slc-ρ-to-from n δ ε) (graft-slc-ρ-from-to n δ ε)
+    
     --
     --  Joining, and the equivalence of places
     --

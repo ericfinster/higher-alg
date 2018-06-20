@@ -30,3 +30,5 @@ module Inspect where
     → u == v [ uncurry C ↓ pair= p (apd f p) ]
     → u == v [ (λ a → C a (f a)) ↓ p ]
   ↓-apd-lem C {p = idp} idp = idp
+
+
