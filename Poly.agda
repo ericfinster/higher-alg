@@ -19,6 +19,11 @@ module Poly where
     lf : (i : I) → W P i
     nd : {i : I} → ⟦ P ⟧ (W P) i → W P i
 
+  ZeroPoly : (I : Type₀) → Poly I
+  γₚ (ZeroPoly I) i = ⊥
+  ρₚ (ZeroPoly I) () 
+  τₚ (ZeroPoly I) {c = ()}
+
   module _ {I : Type₀} (P : Poly I) where
   
     γ-fr : I → Type₀
@@ -78,7 +83,4 @@ module Poly where
                   (δ : (p : ρ-fr c) → γ-fr (τ-fr p)) → 
                   Σ (ρ-fr c) (ρ-fr ∘ δ) ≃ ρ-fr (μ-fr c δ)
     μρ-equiv-fr δ = equiv (μρ-to-fr δ) (μρ-from-fr δ) (μρ-to-from-fr δ) (μρ-from-to-fr δ)
-
-
-
 

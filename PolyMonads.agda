@@ -20,6 +20,9 @@ module PolyMonads where
              (δ : (p : ρ M c) → γ M (τ M p)) →
              Σ (ρ M c) (ρ M ∘ δ) ≃ ρ M (μ M c δ)
 
+  ⟪_⟫ : {I : Type₀} (M : Mnd I) → (I → Type₀) → I → Type₀
+  ⟪ M ⟫ X i = Σ (γ M i) (λ c → (p : ρ M c) → X (τ M p))
+
   --
   --  Place helper functions
   --
