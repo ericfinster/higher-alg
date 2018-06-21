@@ -7,19 +7,17 @@ module PolyMonads where
 
   data Mnd : Type₀ → Type₁
 
-  postulate
-  
-    γ : {I : Type₀} (M : Mnd I) → I → Type₀
-    ρ : {I : Type₀} (M : Mnd I) {i : I} → γ M i → Type₀
-    τ : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i} → ρ M c → I
+  γ : {I : Type₀} (M : Mnd I) → I → Type₀
+  ρ : {I : Type₀} (M : Mnd I) {i : I} → γ M i → Type₀
+  τ : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i} → ρ M c → I
 
-    η : {I : Type₀} (M : Mnd I) → (i : I) → γ M i
-    μ : {I : Type₀} (M : Mnd I) {i : I} (c : γ M i) (δ : (p : ρ M c) → γ M (τ M p)) → γ M i
+  η : {I : Type₀} (M : Mnd I) → (i : I) → γ M i
+  μ : {I : Type₀} (M : Mnd I) {i : I} (c : γ M i) (δ : (p : ρ M c) → γ M (τ M p)) → γ M i
 
-    ηρ-contr : {I : Type₀} (M : Mnd I) (i : I) → is-contr (ρ M (η M i))
-    μρ-equiv : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
-               (δ : (p : ρ M c) → γ M (τ M p)) →
-               Σ (ρ M c) (ρ M ∘ δ) ≃ ρ M (μ M c δ)
+  ηρ-contr : {I : Type₀} (M : Mnd I) (i : I) → is-contr (ρ M (η M i))
+  μρ-equiv : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
+             (δ : (p : ρ M c) → γ M (τ M p)) →
+             Σ (ρ M c) (ρ M ∘ δ) ≃ ρ M (μ M c δ)
 
   --
   --  Place helper functions
@@ -105,6 +103,44 @@ module PolyMonads where
 
     {-# REWRITE assoc #-}
 
+  --
+  --  The pullback monad
+  --
+  
+  module _ {I : Type₀} (M : Mnd I) (X : I → Type₀) where
+
+    I-pb : Type₀
+    I-pb = Σ I X
+
+    γ-pb : I-pb → Type₀
+    γ-pb (i , x) = Σ (γ M i) (λ c → (p : ρ M c) → X (τ M p))
+
+    ρ-pb : {i : I-pb} → γ-pb i → Type₀
+    ρ-pb {i , x} (c , δ) = ρ M c
+
+    τ-pb : {i : I-pb} {c : γ-pb i} → ρ-pb {i = i} c → I-pb
+    τ-pb {i , x} {c , δ} p = τ M p , δ p
+
+    η-pb : (i : I-pb) → γ-pb i
+    η-pb (i , x) = η M i , λ p → transport X (ap (τ M) (ηρ-η M i p)) x
+
+    ηρ-contr-pb : (i : I-pb) → is-contr (ρ-pb {i = i} (η-pb i))
+    ηρ-contr-pb (i , x) = ηρ-contr M i
+
+    μ-pb : {i : I-pb} (c : γ-pb i) (ε : (p : ρ-pb {i = i} c) → γ-pb (τ-pb {i = i} {c = c} p)) → γ-pb i
+    μ-pb {i , x} (c , δ) ε = μ M c (fst ∘ ε) , λ p → transport X (coh p) (ε' p)
+
+      where coh : (p : ρ M (μ M c (fst ∘ ε))) → τ M (μρ-snd M (fst ∘ ε) p) == τ M p
+            coh p = ap (τ M) (μρ-η M (fst ∘ ε) p)
+
+            ε' : (p : ρ M (μ M c (fst ∘ ε))) → X (τ M (μρ-snd M (fst ∘ ε) p))
+            ε' p = snd (ε (μρ-fst M (fst ∘ ε) p)) (μρ-snd M (fst ∘ ε) p)
+
+    μρ-equiv-pb : {i : I-pb} {c : γ-pb i}
+                  (ε : (p : ρ-pb {i = i} c) → γ-pb (τ-pb {i = i} {c = c} p)) → 
+                  Σ (ρ-pb {i = i} c) (λ p₀ → ρ-pb {i = τ-pb {i = i} {c = c} p₀} (ε p₀)) ≃ ρ-pb {i = i} (μ-pb {i = i} c ε)
+    μρ-equiv-pb {i , x} {c , δ} ε = μρ-equiv M (fst ∘ ε)
+    
   --
   -- The slice monad
   --
@@ -526,4 +562,38 @@ module PolyMonads where
     id : (I : Type₀) → Mnd I
     slc : {I : Type₀} (M : Mnd I) → Mnd (Σ I (γ M))
     pb : {I : Type₀} (M : Mnd I) (X : I → Type₀) → Mnd (Σ I X)
+
+  --
+  --  Decoding functions
+  --
+  
+  γ (id I) i = ⊤
+  γ (slc M) = γ-slc M
+  γ (pb M X) = γ-pb M X
+
+  ρ (id I) unit = ⊤
+  ρ (slc M) = ρ-slc M
+  ρ (pb M X) {i = i} = ρ-pb M X {i = i}
+
+  τ (id I) {i} unit = i
+  τ (slc M) = τ-slc M
+  τ (pb M X) {i = i} {c = c} = τ-pb M X {i = i} {c = c}
+
+  η (id I) _ = unit
+  η (slc M) =  η-slc M
+  η (pb M X) = η-pb M X
+
+  μ (id I) unit _ = unit
+  μ (slc M) = μ-slc M
+  μ (pb M X) {i = i} = μ-pb M X {i = i}
+
+  ηρ-contr (id I) _ = Unit-level
+  ηρ-contr (slc M) = ηρ-contr-slc M
+  ηρ-contr (pb M X) = ηρ-contr-pb M X
+
+  μρ-equiv (id I) δ = equiv (λ { (unit , unit) → unit }) (λ { unit → unit , unit })
+    (λ { unit → idp }) (λ { (unit , unit) → idp })
+  μρ-equiv (slc M) = μρ-equiv-slc M 
+  μρ-equiv (pb M X) {i = i} {c = c} = μρ-equiv-pb M X {i = i} {c = c}
+
 
