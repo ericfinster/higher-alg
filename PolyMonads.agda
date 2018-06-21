@@ -1,6 +1,7 @@
 {-# OPTIONS --without-K --rewriting #-}
 
 open import HoTT
+open import Poly 
 open import Inspect
 
 module PolyMonads where
@@ -559,7 +560,7 @@ module PolyMonads where
       (μρ-slc-to-from κ) (μρ-slc-from-to κ)
 
   data Mnd where
-    id : (I : Type₀) → Mnd I
+    fr : {I : Type₀} (P : Poly I) → Mnd I
     slc : {I : Type₀} (M : Mnd I) → Mnd (Σ I (γ M))
     pb : {I : Type₀} (M : Mnd I) (X : I → Type₀) → Mnd (Σ I X)
 
@@ -567,32 +568,31 @@ module PolyMonads where
   --  Decoding functions
   --
   
-  γ (id I) i = ⊤
+  γ (fr P) = γ-fr P
   γ (slc M) = γ-slc M
   γ (pb M X) = γ-pb M X
 
-  ρ (id I) unit = ⊤
+  ρ (fr P) = ρ-fr P
   ρ (slc M) = ρ-slc M
   ρ (pb M X) {i = i} = ρ-pb M X {i = i}
 
-  τ (id I) {i} unit = i
+  τ (fr P) = τ-fr P
   τ (slc M) = τ-slc M
   τ (pb M X) {i = i} {c = c} = τ-pb M X {i = i} {c = c}
 
-  η (id I) _ = unit
-  η (slc M) =  η-slc M
+  η (fr P) = η-fr P
+  η (slc M) = η-slc M
   η (pb M X) = η-pb M X
 
-  μ (id I) unit _ = unit
+  μ (fr P) = μ-fr P
   μ (slc M) = μ-slc M
   μ (pb M X) {i = i} = μ-pb M X {i = i}
 
-  ηρ-contr (id I) _ = Unit-level
+  ηρ-contr (fr P) = ηρ-contr-fr P
   ηρ-contr (slc M) = ηρ-contr-slc M
   ηρ-contr (pb M X) = ηρ-contr-pb M X
 
-  μρ-equiv (id I) δ = equiv (λ { (unit , unit) → unit }) (λ { unit → unit , unit })
-    (λ { unit → idp }) (λ { (unit , unit) → idp })
+  μρ-equiv (fr P) = μρ-equiv-fr P
   μρ-equiv (slc M) = μρ-equiv-slc M 
   μρ-equiv (pb M X) {i = i} {c = c} = μρ-equiv-pb M X {i = i} {c = c}
 
