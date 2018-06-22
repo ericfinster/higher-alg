@@ -22,20 +22,20 @@ module InftyCat where
     Hom x y = Ops ((unit , y) , (unit , cst x))
 
     comp : {x y z : Ob} → Hom x y → Hom y z → Hom x z
-    comp {x} {y} {z} f g = filler-of CompNiche is-alg
+    comp {x} {y} {z} f g = filler-of comp-niche is-alg
 
-      where CompNiche : niche carrier ((unit , z) , unit , cst x) 
-            CompNiche = box {i = unit , z} (unit , λ { unit → y }) _ 
-                          (λ { unit → box (unit , λ { unit → x }) _
-                          (λ { unit → dot (unit , x) })}) ,
-                            λ { (inl unit) → g ;
-                                (inr (unit , inl unit)) → f ;
-                                (inr (unit , inr (unit , ()))) }
+      where comp-niche : niche carrier ((unit , z) , unit , cst x) 
+            comp-niche = box {i = unit , z} (unit , λ { unit → y }) _ 
+                           (λ { unit → box (unit , λ { unit → x }) _
+                           (λ { unit → dot (unit , x) })}) ,
+                             λ { (inl unit) → g ;
+                                 (inr (unit , inl unit)) → f ;
+                                 (inr (unit , inr (unit , ()))) }
 
     ident : (x : Ob) → Hom x x
-    ident x = filler-of IdNiche is-alg
+    ident x = filler-of id-niche is-alg
 
-      where IdNiche : niche carrier ((unit , x) , unit , cst x)
-            IdNiche = (dot (unit , x)) , λ { () }
+      where id-niche : niche carrier ((unit , x) , unit , cst x)
+            id-niche = (dot (unit , x)) , λ { () }
             
 

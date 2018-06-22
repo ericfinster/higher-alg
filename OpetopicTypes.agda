@@ -2,6 +2,7 @@
 
 open import HoTT
 open import PolyMonads
+open import PolyMonadUtil
 
 module OpetopicTypes where
 
@@ -80,19 +81,34 @@ module OpetopicTypes where
   is-alg (TermAlg M) = Term-is-algebraic M
   is-cmplt (TermAlg M) = Term-is-complete M
 
-  module _ {I : Type₀} (M : Mnd I) where
+  FreeCarrier : {I : Type₀} (M : Mnd I) → (I → Type₀) → OpType M
+  Ops (FreeCarrier M X) = ⟪ M ⟫ X
+  Rels (FreeCarrier M X) = FreeCarrier (slc (pb M (⟪ M ⟫ X))) P
 
-    FreeCarrier : (I → Type₀) → OpType M
-    Ops (FreeCarrier X) = ⟪ M ⟫ X
-    Rels (FreeCarrier X) = Term (slc (pb M (⟪ M ⟫ X)))
+    where P : Σ (Σ _ (⟪ M ⟫ X)) (γ-pb M (⟪ M ⟫ X)) → Type₀
+          P ((i , (c₀ , δ₀)) , (c , δ)) =
+            let δ' = λ p₀ → fst (δ p₀) in
+              (c₀ , δ₀) == (μ M c δ' , λ p → transport X (μρ-snd-coh M δ' p) (snd (δ (μρ-fst M δ' p)) (μρ-snd M δ' p)))
+                          
+  -- This looks better, right?  And now the idea is that you are
+  -- going to put the identity type.  This will then be algebraic
+  -- because of the contractibility of singleton types!
 
-    -- -- I think this is true if X takes values in sets ...
-    -- FreeAlgebraic : (X : I → Type₀) → is-algebraic (FreeCarrier X)
-    -- fillers-contr (FreeAlgebraic X) (c , δ) = has-level-in (((μ M c (λ p → fst (δ p)) , λ p → {! !}) , unit) , {!!})
+  -- Fucking brilliant.
+  
+  -- module _ {I : Type₀} (M : Mnd I) where
 
-    --   where δ' = snd (δ (μρ-fst M (λ p₀ → fst (δ p₀)) {!!}))
-      
-    -- rels-algebraic (FreeAlgebraic X) = Term-is-algebraic (slc (pb M (⟪ M ⟫ X)))
+  --   -- I think this is true if X takes values in sets ...
+  --   FreeAlgebraic : (X : I → Type₀) → is-algebraic (FreeCarrier X)
+  --   fillers-contr (FreeAlgebraic X) (c , δ) = has-level-in (((μ M c (λ p → fst (δ p)) , λ p → {! !}) , ?) ,
+  --     λ { ((c' , δ') , unit) → pair= {!!} {!!} })
+
+  --     where δ' = snd (δ (μρ-fst M (λ p₀ → fst (δ p₀)) {!!}))
+  --   rels-algebraic (FreeAlgebraic X) = ?
+
+    -- No, there's something wrong here.  You're off by a dimension or
+    -- something ... this can't be the right definition.  Indeed.  The
+    -- filler should constrant the connection between the two...
 
     -- So, why should this be true?
     -- Yeah, I guess it probably isn't in general.
@@ -100,6 +116,8 @@ module OpetopicTypes where
     -- In that case, it's something like that, in order to be even well typed,
     -- we must have that the target is the multiplication of the source tree.
     -- Somehow nothing else can be sufficiently natural ....
+
+    -- Yeah, uh, it should be that 
 
     -- Hmmm ....
 
