@@ -82,6 +82,27 @@ module OpetopicTypes where
 
   module _ {I : Type₀} (M : Mnd I) where
 
+    FreeCarrier : (I → Type₀) → OpType M
+    Ops (FreeCarrier X) = ⟪ M ⟫ X
+    Rels (FreeCarrier X) = Term (slc (pb M (⟪ M ⟫ X)))
+
+    -- -- I think this is true if X takes values in sets ...
+    -- FreeAlgebraic : (X : I → Type₀) → is-algebraic (FreeCarrier X)
+    -- fillers-contr (FreeAlgebraic X) (c , δ) = has-level-in (((μ M c (λ p → fst (δ p)) , λ p → {! !}) , unit) , {!!})
+
+    --   where δ' = snd (δ (μρ-fst M (λ p₀ → fst (δ p₀)) {!!}))
+      
+    -- rels-algebraic (FreeAlgebraic X) = Term-is-algebraic (slc (pb M (⟪ M ⟫ X)))
+
+    -- So, why should this be true?
+    -- Yeah, I guess it probably isn't in general.
+    -- Basically, you should need a bunch of guys to be sets.
+    -- In that case, it's something like that, in order to be even well typed,
+    -- we must have that the target is the multiplication of the source tree.
+    -- Somehow nothing else can be sufficiently natural ....
+
+    -- Hmmm ....
+
     -- FreeAlg : (I → Type₀) → ∞Alg M
     -- FreeAlg X = {!!}
 
