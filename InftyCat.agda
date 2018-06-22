@@ -15,16 +15,16 @@ module InftyCat where
     Ob = fst C
     Mor = snd C
 
-    open OpType (fst Mor)
+    open ∞Alg Mor
+    open OpType carrier
 
-    -- I see, I think you should define Hom the other way ...
     Hom : Ob → Ob → Type₀
     Hom x y = Ops ((unit , y) , (unit , cst x))
 
     comp : {x y z : Ob} → Hom x y → Hom y z → Hom x z
-    comp {x} {y} {z} f g = filler-of CompNiche (snd Mor)
+    comp {x} {y} {z} f g = filler-of CompNiche is-alg
 
-      where CompNiche : Niche (fst Mor) ((unit , z) , unit , cst x) 
+      where CompNiche : niche carrier ((unit , z) , unit , cst x) 
             CompNiche = box {i = unit , z} (unit , λ { unit → y }) _ 
                           (λ { unit → box (unit , λ { unit → x }) _
                           (λ { unit → dot (unit , x) })}) ,
@@ -33,9 +33,9 @@ module InftyCat where
                                 (inr (unit , inr (unit , ()))) }
 
     ident : (x : Ob) → Hom x x
-    ident x = filler-of IdNiche (snd Mor)
+    ident x = filler-of IdNiche is-alg
 
-      where IdNiche : Niche (fst Mor) ((unit , x) , unit , cst x)
+      where IdNiche : niche carrier ((unit , x) , unit , cst x)
             IdNiche = (dot (unit , x)) , λ { () }
             
 
