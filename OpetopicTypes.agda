@@ -54,19 +54,3 @@ module OpetopicTypes where
   ∞Alg : {I : Type₀} (M : Mnd I) → Type₁
   ∞Alg M = Σ (OpType M) is-coherent
 
-  -- A∞-Mnd : Mnd (⊤ × ⊤)
-  -- A∞-Mnd = slc (id ⊤)
-
-  -- module A∞Spaces (X : ∞Alg A∞-Mnd) where
-
-  --   X₀ : Type₀
-  --   X₀ = Ops (fst X) (unit , unit)
-    
-  --   mult : X₀ → X₀ → X₀
-  --   mult x y = filler-of mult-niche (snd X)
-    
-  --     where mult-niche : Niche (fst X) (unit , unit)
-  --           mult-niche = (box unit (λ _ → unit) (λ _ → box unit (λ _ → unit) (λ _ → dot unit))) ,
-  --                        λ { (inl unit) → x ;
-  --                            (inr (unit , inl unit)) → y ;
-  --                            (inr (unit , inr (unit , ()))) }

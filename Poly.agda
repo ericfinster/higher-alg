@@ -1,6 +1,7 @@
 {-# OPTIONS --without-K --rewriting #-}
 
 open import HoTT
+open import Inspect
 
 module Poly where
 
@@ -81,6 +82,6 @@ module Poly where
 
     μρ-equiv-fr : {i : I} {c : γ-fr i}
                   (δ : (p : ρ-fr c) → γ-fr (τ-fr p)) → 
-                  Σ (ρ-fr c) (ρ-fr ∘ δ) ≃ ρ-fr (μ-fr c δ)
-    μρ-equiv-fr δ = equiv (μρ-to-fr δ) (μρ-from-fr δ) (μρ-to-from-fr δ) (μρ-from-to-fr δ)
+                  Σ (ρ-fr c) (ρ-fr ∘ δ) ≃' ρ-fr (μ-fr c δ)
+    μρ-equiv-fr δ = equiv' (μρ-to-fr δ) (μρ-from-fr δ) (μρ-to-from-fr δ) (μρ-from-to-fr δ)
 

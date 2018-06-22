@@ -18,7 +18,7 @@ module PolyMonads where
   ηρ-contr : {I : Type₀} (M : Mnd I) (i : I) → is-contr (ρ M (η M i))
   μρ-equiv : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
              (δ : (p : ρ M c) → γ M (τ M p)) →
-             Σ (ρ M c) (ρ M ∘ δ) ≃ ρ M (μ M c δ)
+             Σ (ρ M c) (ρ M ∘ δ) ≃' ρ M (μ M c δ)
 
   ⟪_⟫ : {I : Type₀} (M : Mnd I) → (I → Type₀) → I → Type₀
   ⟪ M ⟫ X i = Σ (γ M i) (λ c → (p : ρ M c) → X (τ M p))
@@ -40,41 +40,41 @@ module PolyMonads where
 
   μρ-fst : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
            (δ : (p : ρ M c) → γ M (τ M p)) → ρ M (μ M c δ) → ρ M c
-  μρ-fst M δ p = fst (is-equiv.g (snd (μρ-equiv M δ)) p)
+  μρ-fst M δ p = fst (is-equiv'.g (snd (μρ-equiv M δ)) p)
 
   μρ-snd : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
            (δ : (p : ρ M c) → γ M (τ M p)) 
            (pp : ρ M (μ M c δ)) → ρ M (δ (μρ-fst M δ pp))
-  μρ-snd M δ p = snd (is-equiv.g (snd (μρ-equiv M δ)) p)
+  μρ-snd M δ p = snd (is-equiv'.g (snd (μρ-equiv M δ)) p)
   
   μρ-η : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
          (δ : (p : ρ M c) → γ M (τ M p))
          (p : ρ M (μ M c δ)) → μρ M δ (μρ-fst M δ p) (μρ-snd M δ p) == p
-  μρ-η M δ p = is-equiv.f-g (snd (μρ-equiv M δ)) p
+  μρ-η M δ p = is-equiv'.f-g (snd (μρ-equiv M δ)) p
 
   μρ-β : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
              (δ : (p : ρ M c) → γ M (τ M p))
              (p₀ : ρ M c) (p₁ : ρ M (δ p₀)) → 
-             is-equiv.g (snd (μρ-equiv M δ)) (μρ M δ p₀ p₁) == (p₀ , p₁)
-  μρ-β M δ p₀ p₁ = is-equiv.g-f (snd (μρ-equiv M δ)) (p₀ , p₁)
+             is-equiv'.g (snd (μρ-equiv M δ)) (μρ M δ p₀ p₁) == (p₀ , p₁)
+  μρ-β M δ p₀ p₁ = is-equiv'.g-f (snd (μρ-equiv M δ)) (p₀ , p₁)
 
   μρ-fst-β : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
              (δ : (p : ρ M c) → γ M (τ M p))
              (p₀ : ρ M c) (p₁ : ρ M (δ p₀)) → 
              μρ-fst M δ (μρ M δ p₀ p₁) == p₀
-  μρ-fst-β M δ p₀ p₁ = fst= (is-equiv.g-f (snd (μρ-equiv M δ)) (p₀ , p₁))
+  μρ-fst-β M δ p₀ p₁ = fst= (is-equiv'.g-f (snd (μρ-equiv M δ)) (p₀ , p₁))
   
   μρ-snd-β : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
              (δ : (p : ρ M c) → γ M (τ M p))
              (p₀ : ρ M c) (p₁ : ρ M (δ p₀)) → 
              μρ-snd M δ (μρ M δ p₀ p₁) == p₁ [ (λ p → ρ M (δ p)) ↓ μρ-fst-β M δ p₀ p₁ ] 
-  μρ-snd-β M δ p₀ p₁ = snd= (is-equiv.g-f (snd (μρ-equiv M δ)) (p₀ , p₁))
+  μρ-snd-β M δ p₀ p₁ = snd= (is-equiv'.g-f (snd (μρ-equiv M δ)) (p₀ , p₁))
 
   μρ-adj-l : {I : Type₀} (M : Mnd I) {i : I} {c : γ M i}
              (δ : (p : ρ M c) → γ M (τ M p))
              (p₀ : ρ M c) (p₁ : ρ M (δ p₀)) → ap (fst (μρ-equiv M δ))
-      (is-equiv.g-f (snd (μρ-equiv M δ)) (p₀ , p₁)) == μρ-η M δ (μρ M δ p₀ p₁)
-  μρ-adj-l M δ p₀ p₁ = is-equiv.adj (snd (μρ-equiv M δ)) (p₀ , p₁)
+      (is-equiv'.g-f (snd (μρ-equiv M δ)) (p₀ , p₁)) == μρ-η M δ (μρ M δ p₀ p₁)
+  μρ-adj-l M δ p₀ p₁ = is-equiv'.adj (snd (μρ-equiv M δ)) (p₀ , p₁)
   
   postulate
   
@@ -142,7 +142,7 @@ module PolyMonads where
 
     μρ-equiv-pb : {i : I-pb} {c : γ-pb i}
                   (ε : (p : ρ-pb {i = i} c) → γ-pb (τ-pb {i = i} {c = c} p)) → 
-                  Σ (ρ-pb {i = i} c) (λ p₀ → ρ-pb {i = τ-pb {i = i} {c = c} p₀} (ε p₀)) ≃ ρ-pb {i = i} (μ-pb {i = i} c ε)
+                  Σ (ρ-pb {i = i} c) (λ p₀ → ρ-pb {i = τ-pb {i = i} {c = c} p₀} (ε p₀)) ≃' ρ-pb {i = i} (μ-pb {i = i} c ε)
     μρ-equiv-pb {i , x} {c , δ} ε = μρ-equiv M (fst ∘ ε)
     
   --
@@ -287,7 +287,7 @@ module PolyMonads where
             
             coh-adj : ap (fst (μρ-equiv M δ)) β == coh
             coh-adj =  transport (λ x → ap (fst (μρ-equiv M δ)) x == coh)
-                         (pair=-η (is-equiv.g-f (snd (μρ-equiv M δ)) (p , p₀))) 
+                         (pair=-η (is-equiv'.g-f (snd (μρ-equiv M δ)) (p , p₀))) 
                          (μρ-adj-l M δ p p₀)
             
             step₀ : transport! (ρ-slc ∘ snd) α q₀ == q₀ [ ρ-slc ∘ snd ↓ pair= coh (apd ε₁ coh) ]
@@ -325,7 +325,7 @@ module PolyMonads where
         inspect (graft-slc-ρ-from (ε p) (λ q → δ₁ (μρ M δ p q)) (λ q → ε₁ (μρ M δ p q)) ∘
           graft-slc-ρ-to (ε p) (λ q → δ₁ (μρ M δ p q)) (λ q → ε₁ (μρ M δ p q))) (inl q)
     graft-slc-ρ-from-to (box c δ ε) δ₁ ε₁ (inl (inr (p , q))) | inl q₀ | ingraph e =
-      ap (λ x → inl (inr (p , x))) (–> (inl=inl-equiv q₀ q) lem)
+      ap (λ x → inl (inr (p , x))) (fst (inl=inl-equiv q₀ q) lem)
     
       where open BoxLocal δ ε δ₁ ε₁
       
@@ -422,10 +422,10 @@ module PolyMonads where
     graft-slc-ρ-equiv : {i : I} {c : γ M i} (n : Nst c)
                         (δ : (p : ρ M c) → (γ M (τ M p)))
                         (ε : (p : ρ M c) → Nst (δ p)) → 
-                        ρ-slc n ⊔ Σ (ρ M c) (ρ-slc ∘ ε) ≃ ρ-slc (graft-slc n δ ε)
+                        ρ-slc n ⊔ Σ (ρ M c) (ρ-slc ∘ ε) ≃' ρ-slc (graft-slc n δ ε)
     graft-slc-ρ-equiv n δ ε =
-      equiv (graft-slc-ρ-to n δ ε) (graft-slc-ρ-from n δ ε)
-            (graft-slc-ρ-to-from n δ ε) (graft-slc-ρ-from-to n δ ε)
+      equiv' (graft-slc-ρ-to n δ ε) (graft-slc-ρ-from n δ ε)
+             (graft-slc-ρ-to-from n δ ε) (graft-slc-ρ-from-to n δ ε)
     
     --
     --  Joining, and the equivalence of places
@@ -495,7 +495,7 @@ module PolyMonads where
       graft-slc-ρ-from (κ (inl unit)) δ (λ q₀ → μ-slc (ε q₀) (λ q₁ → κ (inr (q₀ , q₁)))) (μρ-slc-to κ q)
         | inspect (graft-slc-ρ-from (κ (inl unit)) δ (λ q₀ → μ-slc (ε q₀) (λ q₁ → κ (inr (q₀ , q₁))))) (μρ-slc-to κ q)
     μρ-slc-from-to {_} {box c δ ε} κ (inl unit , q) | inl q₁ | ingraph e =
-      ap (λ z → inl unit , z) (–> (inl=inl-equiv q₁ q) lem )
+      ap (λ z → inl unit , z) (fst (inl=inl-equiv q₁ q) lem)
 
       where c' = (κ (inl unit))
             ε' = (λ q₀ → μ-slc (ε q₀) (λ q₂ → κ (inr (q₀ , q₂))))
@@ -548,21 +548,22 @@ module PolyMonads where
                    inr (p , μρ-slc-to (λ q₂ → κ (inr (p , q₂))) (q , q₀)) ∎
 
             proj₀ : p₁ == p
-            proj₀ = fst= (–> (inr=inr-equiv (p₁ , q₁) (p , μρ-slc-to (λ q₂ → κ (inr (p , q₂))) (q , q₀))) have)
+            proj₀ = fst= (fst (inr=inr-equiv (p₁ , q₁) (p , μρ-slc-to (λ q₂ → κ (inr (p , q₂))) (q , q₀))) have)
             
             proj₁ : q₁ == μρ-slc-to (λ q₂ → κ (inr (p , q₂))) (q , q₀) [ ρ-slc ∘ ε' ↓ proj₀ ]
-            proj₁ = snd= (–> (inr=inr-equiv (p₁ , q₁) (p , μρ-slc-to (λ q₂ → κ (inr (p , q₂))) (q , q₀))) have)
+            proj₁ = snd= (fst (inr=inr-equiv (p₁ , q₁) (p , μρ-slc-to (λ q₂ → κ (inr (p , q₂))) (q , q₀))) have)
 
             ih-pth : IH₀ == q , q₀ [ (λ p₂ → Σ (ρ-slc (ε p₂)) (ρ-slc ∘ (λ q₂ → κ (inr (p₂ , q₂))))) ↓ proj₀ ]
             ih-pth = (apd↓-cst (λ {p₂} → μρ-slc-from {c = ε p₂} (λ q₂ → κ (inr (p₂ , q₂)))) proj₁) ∙'ᵈ IH
 
     μρ-equiv-slc : {i : I-slc} {c : γ-slc i}
                    (κ : (p : ρ-slc c) → γ-slc (τ-slc p)) → 
-                   Σ (ρ-slc c) (ρ-slc ∘ κ) ≃ ρ-slc (μ-slc c κ)
-    μρ-equiv-slc κ = equiv (μρ-slc-to κ) (μρ-slc-from κ)
+                   Σ (ρ-slc c) (ρ-slc ∘ κ) ≃' ρ-slc (μ-slc c κ)
+    μρ-equiv-slc κ = equiv' (μρ-slc-to κ) (μρ-slc-from κ)
       (μρ-slc-to-from κ) (μρ-slc-from-to κ)
 
   data Mnd where
+    id : (I : Type₀) → Mnd I
     fr : {I : Type₀} (P : Poly I) → Mnd I
     slc : {I : Type₀} (M : Mnd I) → Mnd (Σ I (γ M))
     pb : {I : Type₀} (M : Mnd I) (X : I → Type₀) → Mnd (Σ I X)
@@ -571,32 +572,38 @@ module PolyMonads where
   --  Decoding functions
   --
   
+  γ (id I) i = ⊤
   γ (fr P) = γ-fr P
   γ (slc M) = γ-slc M
   γ (pb M X) = γ-pb M X
 
+  ρ (id I) unit = ⊤
   ρ (fr P) = ρ-fr P
   ρ (slc M) = ρ-slc M
   ρ (pb M X) {i = i} = ρ-pb M X {i = i}
 
+  τ (id I) {i} unit = i
   τ (fr P) = τ-fr P
   τ (slc M) = τ-slc M
   τ (pb M X) {i = i} {c = c} = τ-pb M X {i = i} {c = c}
 
+  η (id I) _ = unit
   η (fr P) = η-fr P
   η (slc M) = η-slc M
   η (pb M X) = η-pb M X
 
+  μ (id I) unit _ = unit
   μ (fr P) = μ-fr P
   μ (slc M) = μ-slc M
   μ (pb M X) {i = i} = μ-pb M X {i = i}
 
+  ηρ-contr (id I) _ = Unit-level
   ηρ-contr (fr P) = ηρ-contr-fr P
   ηρ-contr (slc M) = ηρ-contr-slc M
   ηρ-contr (pb M X) = ηρ-contr-pb M X
 
+  μρ-equiv (id I) δ = equiv' (λ { (unit , unit) → unit }) (λ { unit → unit , unit })
+    (λ { unit → idp }) (λ { (unit , unit) → idp })
   μρ-equiv (fr P) = μρ-equiv-fr P
   μρ-equiv (slc M) = μρ-equiv-slc M 
   μρ-equiv (pb M X) {i = i} {c = c} = μρ-equiv-pb M X {i = i} {c = c}
-
-
