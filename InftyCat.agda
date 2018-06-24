@@ -22,7 +22,7 @@ module InftyCat where
     Hom x y = Ops Mor ((unit , y) , (unit , cst x))
 
     comp-niche : {x y z : Ob} → Hom y z → Hom x y →  niche Mor ((unit , z) , unit , cst x)
-    comp-niche {x} {y} {z} f g = box {i = unit , z} (unit , λ { unit → y }) (λ { unit → unit , λ { unit → x }})
+    comp-niche {x} {y} {z} f g = box (unit , z) (unit , λ { unit → y }) (λ { unit → unit , λ { unit → x }})
                                    (λ { unit → box {i = unit , y} (unit , λ { unit → x }) (λ { unit → unit , λ { unit → x }})
                                    (λ { unit → dot (unit , x) })}) ,
                                      λ { (inl unit) → f ;

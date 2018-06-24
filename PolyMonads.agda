@@ -119,6 +119,12 @@ module PolyMonads where
 
       {-# REWRITE assoc #-}
 
+    μρ-snd-coh : (i : I) (c : γ M i)
+      → (δ : (p : ρ M i c) → γ M (τ M i c p))
+      → (p : ρ M i (μ M i c δ))
+      → τ M (τ M i c (μρ-fst i c δ p)) (δ (μρ-fst i c δ p)) (μρ-snd i c δ p)
+        == τ M i (μ M i c δ) p
+    μρ-snd-coh i c δ p = ap (τ M i (μ M i c δ)) (μρ-η i c δ p) 
 
   --
   --  The pullback monad
