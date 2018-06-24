@@ -25,12 +25,11 @@ module Inspect where
   to-transp-↓ _ idp _ = idp
 
   ↓-apd-lem : ∀ {i j k} {A : Type i} {B : A → Type j} (C : (a : A) → B a → Type k)
-    {f : Π A B} {x y : A} {p : x == y}
+    (f : Π A B) {x y : A} (p : x == y)
     {u : C x (f x)} {v : C y (f y)}
     → u == v [ uncurry C ↓ pair= p (apd f p) ]
     → u == v [ (λ a → C a (f a)) ↓ p ]
-  ↓-apd-lem C {p = idp} idp = idp
-
+  ↓-apd-lem C f idp idp = idp
 
   private
     htpy-natural : ∀ {i j} {A : Type i} {B : Type j} {x y : A} {f g : A → B}

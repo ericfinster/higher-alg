@@ -13,7 +13,7 @@ module OpetopicTypes where
       Ops : I → Type₀
       Rels : OpType (slc (pb M Ops))
 
-  open OpType
+  open OpType public
   
   niche : {I : Type₀} {M : Mnd I} (X : OpType M) → I → Type₀
   niche {M = M} X i = ⟪ M ⟫ (Ops X) i
@@ -28,11 +28,15 @@ module OpetopicTypes where
       fillers-contr : {i : I} (n : niche X i) → is-contr (filler X n)
       rels-algebraic : is-algebraic (Rels X)
 
-  open is-algebraic
+  open is-algebraic 
 
   filler-of : {I : Type₀} {M : Mnd I} {X : OpType M} {i : I}
               (n : niche X i) (is-alg : is-algebraic X) → Ops X i
   filler-of n is-alg = fst (fst (has-level-apply (fillers-contr is-alg n)))              
+
+  witness-of : {I : Type₀} {M : Mnd I} {X : OpType M} {i : I}
+               (n : niche X i) (is-alg : is-algebraic X) → Ops (Rels X) ((i , filler-of n is-alg) , n)
+  witness-of n is-alg = snd (fst (has-level-apply (fillers-contr is-alg n)))              
 
   pth-to-id-cell : {I : Type₀} {M : Mnd I} (X : OpType M) (is-alg : is-algebraic X)
                    {i : I} (x y : Ops X i) (p : x == y) → 
@@ -58,7 +62,11 @@ module OpetopicTypes where
       is-alg : is-algebraic carrier
       is-cmplt : is-complete carrier is-alg
 
-  open ∞Alg
+  open ∞Alg public
+
+  --
+  --  The terminal algebra
+  --
   
   Term : {I : Type₀} (M : Mnd I) → OpType M
   Ops (Term M) = cst ⊤
@@ -81,46 +89,40 @@ module OpetopicTypes where
   is-alg (TermAlg M) = Term-is-algebraic M
   is-cmplt (TermAlg M) = Term-is-complete M
 
+  --
+  --  The free algebra
+  --
+
+  PthFib : {I : Type₀} (M : Mnd I) (X : I → Type₀) → Σ (Σ _ (⟪ M ⟫ X)) (γ-pb M (⟪ M ⟫ X)) → Type₀
+  PthFib M X ((i , (c₀ , δ₀)) , (c , δ)) = let δ' = λ p₀ → fst (δ p₀) in
+    (c₀ , δ₀) == (μ M c δ' , λ p → transport X (μρ-snd-coh M δ' p) (snd (δ (μρ-fst M δ' p)) (μρ-snd M δ' p)))
+
   FreeCarrier : {I : Type₀} (M : Mnd I) → (I → Type₀) → OpType M
   Ops (FreeCarrier M X) = ⟪ M ⟫ X
-  Rels (FreeCarrier M X) = FreeCarrier (slc (pb M (⟪ M ⟫ X))) P
+  Rels (FreeCarrier M X) = FreeCarrier (slc (pb M (⟪ M ⟫ X))) (PthFib M X)
 
-    where P : Σ (Σ _ (⟪ M ⟫ X)) (γ-pb M (⟪ M ⟫ X)) → Type₀
-          P ((i , (c₀ , δ₀)) , (c , δ)) =
-            let δ' = λ p₀ → fst (δ p₀) in
-              (c₀ , δ₀) == (μ M c δ' , λ p → transport X (μρ-snd-coh M δ' p) (snd (δ (μρ-fst M δ' p)) (μρ-snd M δ' p)))
-                          
-  -- This looks better, right?  And now the idea is that you are
-  -- going to put the identity type.  This will then be algebraic
-  -- because of the contractibility of singleton types!
-
-  -- Fucking brilliant.
+  -- Free-is-algebraic : {I : Type₀} (M : Mnd I) (X : I → Type₀) → is-algebraic (FreeCarrier M X)
+  -- fillers-contr (Free-is-algebraic M X) (c , δ) = has-level-in (((c₀ , δ₀) , sc , {!!}) , λ { ((c₀ , δ₀) , y) → {!!} })
   
-  -- module _ {I : Type₀} (M : Mnd I) where
+  --   where δ' = λ p₀ → fst (δ p₀) 
+  --         c₀ = μ M c δ'
+  --         δ₀ = λ p → transport X (μρ-snd-coh M δ' p) (snd (δ (μρ-fst M δ' p)) (μρ-snd M δ' p))
 
-  --   -- I think this is true if X takes values in sets ...
-  --   FreeAlgebraic : (X : I → Type₀) → is-algebraic (FreeCarrier X)
-  --   fillers-contr (FreeAlgebraic X) (c , δ) = has-level-in (((μ M c (λ p → fst (δ p)) , λ p → {! !}) , ?) ,
-  --     λ { ((c' , δ') , unit) → pair= {!!} {!!} })
+  --         sc : γ-slc (pb M (⟪ M ⟫ X)) ((_ , c₀ , δ₀) , c , δ)
+  --         sc = η-slc (pb M (⟪ M ⟫ X)) ((_ , c₀ , δ₀) , c , δ)
 
-  --     where δ' = snd (δ (μρ-fst M (λ p₀ → fst (δ p₀)) {!!}))
-  --   rels-algebraic (FreeAlgebraic X) = ?
+  --         sδ : (p : ρ-slc (pb M (⟪ M ⟫ X)) (η-slc (pb M (⟪ M ⟫ X)) ((_ , c₀ , δ₀) , c , δ))) → PthFib M X (τ-slc (pb M (⟪ M ⟫ X)) {i = _ , (c₀ , δ₀)} {c = c , {!!}} p)
+  --         sδ (inl unit) = {!!} -- Right, and this should be id!
+  --         sδ (inr (_ , ()))
 
-    -- No, there's something wrong here.  You're off by a dimension or
-    -- something ... this can't be the right definition.  Indeed.  The
-    -- filler should constrant the connection between the two...
+  -- rels-algebraic (Free-is-algebraic M X) = {!!}
+ 
+  postulate
 
-    -- So, why should this be true?
-    -- Yeah, I guess it probably isn't in general.
-    -- Basically, you should need a bunch of guys to be sets.
-    -- In that case, it's something like that, in order to be even well typed,
-    -- we must have that the target is the multiplication of the source tree.
-    -- Somehow nothing else can be sufficiently natural ....
+    FreeAlg : {I : Type₀} (M : Mnd I) (X : I → Type₀) → ∞Alg M
 
-    -- Yeah, uh, it should be that 
-
-    -- Hmmm ....
-
-    -- FreeAlg : (I → Type₀) → ∞Alg M
-    -- FreeAlg X = {!!}
-
+  -- Hmmm.  Not quite sure.  But there is something like this...
+  -- It should look like a kind of "opetopic polygraph".
+  record ∞Presentation {I : Type₀} (M : Mnd I) : Type₁ where
+    field
+      X : I → Type₀
