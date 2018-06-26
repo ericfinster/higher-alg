@@ -39,7 +39,7 @@ module PolyMonads where
 
   μρ : {I : Type₀} (M : Mnd I) (i : I) (c : γ M i)
     → (δ : (p : ρ⁻ M i c) → γ M (τ M i c (↑ M i c p))) 
-    → (p₀ : ρ⁺ M i c) (p₁ : ρ⁺ M (τ M i c p₀) (δ (↓ M i c p₀)))
+    → (p₀ : ρ⁺ M i c) (p₁ : ρ⁺ M (τ M i c (↑ M i c (↓ M i c p₀))) (δ (↓ M i c p₀)))
     → ρ⁺ M i (μ M i c δ)
 
   μρ-fst : {I : Type₀} (M : Mnd I) (i : I) (c : γ M i)
@@ -222,16 +222,6 @@ module PolyMonads where
     ↓-slc (i , .(μ M i c δ)) (box .i c δ ε) (inl unit) = inl unit
     ↓-slc (i , .(μ M i c δ)) (box .i c δ ε) (inr (p , q)) = -- inr (↑ M i c p , ↑-slc (τ M i c (↑ M i c p) , δ p) (ε p) q)
       inr (↓ M i c p , (↓-slc (τ M i c p , δ (↓ M i c p)) (ε (↓ M i c p)) q))
-
-    -- This is inelegant, and there may be a way around it.
-    -- But I am really tired right now ....
-    postulate
-
-      ↑↓-slc : (i : I-slc) (n : γ-slc i)
-        → (q : ρ⁺-slc i n)
-        → ↑-slc i n (↓-slc i n q) ↦ q
-
-      {-# REWRITE ↑↓-slc #-}
 
     τ-slc : (i : I-slc) (n : γ-slc i) (p : ρ⁺-slc i n) → I-slc
     τ-slc (i , .(η M i)) (dot .i) ()

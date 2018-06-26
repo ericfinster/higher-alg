@@ -60,29 +60,6 @@ module InftyCat where
              (inr (unit , inr ())) })) ,
         {!!}  
 
-
-
--- g != (λ { (inl unit) → g ; (inr (unit , ())) }) p of type
--- Ops (carrier (snd C))
--- (τ (slc (pb (id ⊤) (λ { unit → fst C })))
---  ((unit , z) , unit , cst y)
---  (η (slc (pb (id ⊤) (λ { unit → fst C })))
---   ((unit , z) , unit , cst y))
---  p)
--- when checking that the expression
--- dot {M = pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor)}
--- (((unit , z) , unit , cst y) , g)
--- has type
--- Nst (pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor))
--- (τ (pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor))
---  (((unit , z) , unit , cst x) , h) (two-seq g f) (inl unit))
--- ((λ { (inl unit) → one-seq g
---     ; (inr (unit , inl unit)) → one-seq f
---     ; (inr (unit , inr ()))
---     })
---  (inl unit))
-
-
     -- The type of witnesses that f ∘ g = h 
   --   is-comp : {x y z : Ob} → Hom y z → Hom x y → Hom x z → Type₀
   --   is-comp {x} {y} {z} f g h = Ops (Rels Mor) ((((unit , z) , unit , cst x) , h) ,
