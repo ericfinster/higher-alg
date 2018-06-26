@@ -39,10 +39,10 @@ module OpetopicTypes where
 
   pth-to-id-cell : {I : Type₀} {M : Mnd I} (X : OpType M) (is-alg : is-algebraic X)
                    {i : I} (x y : Ops X i) (p : x == y) → 
-                   Ops (Rels X) ((i , x) , (η M i , λ p → transport (Ops X) (ap (τ M i (η M i)) (ηρ-η M i p)) y))
+                   Ops (Rels X) ((i , x) , (η M i , cst y)) 
   pth-to-id-cell {M = M} X is-coh {i} x .x idp = filler-of id-niche (rels-algebraic is-coh)
 
-    where id-niche : niche (Rels X) (((i , x) , (η M i , λ p → transport (Ops X) (ap (τ M i (η M i)) (ηρ-η M i p)) x)))
+    where id-niche : niche (Rels X) (((i , x) , (η M i , cst x))) 
           id-niche = dot (i , x) , λ { () }
 
   record is-complete {I : Type₀} {M : Mnd I} (X : OpType M) (is-alg : is-algebraic X) : Type₀ where
@@ -94,26 +94,26 @@ module OpetopicTypes where
 
   PthFib : {I : Type₀} (M : Mnd I) (X : I → Type₀) → Σ (Σ _ (⟪ M ⟫ X)) (γ-pb M (⟪ M ⟫ X)) → Type₀
   PthFib M X ((i , (c₀ , δ₀)) , (c , δ)) = let δ' = λ p₀ → fst (δ p₀) in
-    (c₀ , δ₀) == (μ M i c δ' , λ p → transport X (μρ-snd-coh M i c δ' p) (snd (δ (μρ-fst M i c δ' p)) (μρ-snd M i c δ' p)))
+    (c₀ , δ₀) == (μ M i c δ' , λ p → snd (δ (μρ-fst M i c δ' p)) (μρ-snd M i c δ' p))
 
-  FreeCarrier : {I : Type₀} (M : Mnd I) → (I → Type₀) → OpType M
-  Ops (FreeCarrier M X) = ⟪ M ⟫ X
-  Rels (FreeCarrier M X) = FreeCarrier (slc (pb M (⟪ M ⟫ X))) (PthFib M X)
+  -- FreeCarrier : {I : Type₀} (M : Mnd I) → (I → Type₀) → OpType M
+  -- Ops (FreeCarrier M X) = ⟪ M ⟫ X
+  -- Rels (FreeCarrier M X) = FreeCarrier (slc (pb M (⟪ M ⟫ X))) (PthFib M X)
 
-  -- Free-is-algebraic : {I : Type₀} (M : Mnd I) (X : I → Type₀) → is-algebraic (FreeCarrier M X)
-  -- fillers-contr (Free-is-algebraic M X) {i} (c , δ) = has-level-in (((c₀ , δ₀) , sc , sδ) , {!!})
+  -- -- Free-is-algebraic : {I : Type₀} (M : Mnd I) (X : I → Type₀) → is-algebraic (FreeCarrier M X)
+  -- -- fillers-contr (Free-is-algebraic M X) {i} (c , δ) = has-level-in (((c₀ , δ₀) , sc , sδ) , {!!})
   
-  --   where δ' = λ p₀ → fst (δ p₀) 
-  --         c₀ = μ M i c δ'
-  --         δ₀ = λ p → transport X (μρ-snd-coh M i c δ' p) (snd (δ (μρ-fst M i c δ' p)) (μρ-snd M i c δ' p))
+  -- --   where δ' = λ p₀ → fst (δ p₀) 
+  -- --         c₀ = μ M i c δ'
+  -- --         δ₀ = λ p → transport X (μρ-snd-coh M i c δ' p) (snd (δ (μρ-fst M i c δ' p)) (μρ-snd M i c δ' p))
 
-  --         sc : γ-slc (pb M (⟪ M ⟫ X)) ((_ , c₀ , δ₀) , c , δ)
-  --         sc = η-slc (pb M (⟪ M ⟫ X)) ((_ , c₀ , δ₀) , c , δ)
+  -- --         sc : γ-slc (pb M (⟪ M ⟫ X)) ((_ , c₀ , δ₀) , c , δ)
+  -- --         sc = η-slc (pb M (⟪ M ⟫ X)) ((_ , c₀ , δ₀) , c , δ)
 
-  --         sδ : (p : ⊤ ⊔ Σ (ρ-pb M (⟪ M ⟫ X) (i , c₀ , δ₀) (c , δ)) (λ p₁ → ⊥)) →
-  --                 PthFib M X (τ-slc (pb M (⟪ M ⟫ X)) ((i , c₀ , δ₀) , c , δ) sc p)
-  --         sδ (inl unit) = idp
-  --         sδ (inr (_ , ()))
+  -- --         sδ : (p : ⊤ ⊔ Σ (ρ-pb M (⟪ M ⟫ X) (i , c₀ , δ₀) (c , δ)) (λ p₁ → ⊥)) →
+  -- --                 PthFib M X (τ-slc (pb M (⟪ M ⟫ X)) ((i , c₀ , δ₀) , c , δ) sc p)
+  -- --         sδ (inl unit) = idp
+  -- --         sδ (inr (_ , ()))
           
-  -- rels-algebraic (Free-is-algebraic M X) = {!!}
+  -- -- rels-algebraic (Free-is-algebraic M X) = {!!}
  
