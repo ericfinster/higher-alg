@@ -215,19 +215,18 @@ module PolyMonads where
     
     ↑-slc (i , .(η M i)) (dot .i) ()
     ↑-slc (i , .(μ M i c δ)) (box .i c δ ε) (inl unit) = inl unit
-    ↑-slc (i , .(μ M i c δ)) (box .i c δ ε) (inr (p , q)) = -- inr (↓ M i c p , ↓-slc (τ M i c p , δ (↓ M i c p)) (ε (↓ M i c p)) q)
+    ↑-slc (i , .(μ M i c δ)) (box .i c δ ε) (inr (p , q)) = 
       inr (↑ M i c p , ↑-slc (τ M i c (↑ M i c p) , δ p) (ε p) q)
     
     ↓-slc (i , .(η M i)) (dot .i) ()
     ↓-slc (i , .(μ M i c δ)) (box .i c δ ε) (inl unit) = inl unit
-    ↓-slc (i , .(μ M i c δ)) (box .i c δ ε) (inr (p , q)) = -- inr (↑ M i c p , ↑-slc (τ M i c (↑ M i c p) , δ p) (ε p) q)
+    ↓-slc (i , .(μ M i c δ)) (box .i c δ ε) (inr (p , q)) = 
       inr (↓ M i c p , (↓-slc (τ M i c p , δ (↓ M i c p)) (ε (↓ M i c p)) q))
 
     τ-slc : (i : I-slc) (n : γ-slc i) (p : ρ⁺-slc i n) → I-slc
     τ-slc (i , .(η M i)) (dot .i) ()
     τ-slc (i , .(μ M i c δ)) (box .i c δ ε) (inl unit) = i , c
     τ-slc (i , .(μ M i c δ)) (box .i c δ ε) (inr (p , q)) =
-      -- τ-slc (τ M i c (↑ M i c p) , δ p) (ε p) (↑-slc (τ M i c (↑ M i c p) , δ p) (ε p) q)
       τ-slc (τ M i c p , δ (↓ M i c p)) (ε (↓ M i c p)) q
 
     η-slc : (i : I-slc) → γ-slc i
@@ -239,7 +238,11 @@ module PolyMonads where
     --
     --  Grafting
     --
-    
+
+    -- Hmmm.  Okay.  But maybe, while you have used expansion to clean up
+    -- all the types, you are not using it, for example, here, when you
+    -- graft.  Maybe that's part of the trick?
+
     graft-slc : (i : I) (c : γ M i) (n : Nst i c)
       → (δ₁ : (p : ρ⁻ M i c) → γ M (τ M i c (↑ M i c p)))
       → (ε₁ : (p : ρ⁻ M i c) → Nst (τ M i c (↑ M i c p)) (δ₁ p)) 
@@ -249,7 +252,7 @@ module PolyMonads where
       let  δ₁' p q = δ₁ (↓ M i (μ M i c δ) (μρ M i c δ (↑ M i c p) (↑ M (τ M i c (↑ M i c p)) (δ p) q)))
            ε₁' p q = ε₁ (↓ M i (μ M i c δ) (μρ M i c δ (↑ M i c p) (↑ M (τ M i c (↑ M i c p)) (δ p) q)))
            δ' p = μ M (τ M i c (↑ M i c p)) (δ p) (δ₁' p)
-      in box i c δ' (λ p → graft-slc (τ M i c (↑ M i c p)) (δ p) (ε p) (δ₁' p) (ε₁' p))
+      in box i c δ' (λ p → let p' = ν M i c p in graft-slc (τ M i c (↑ M i c p')) (δ p') (ε p') (δ₁' p') (ε₁' p'))
 
     -- Fucking brilliant!  The trick is to *normalize* p.
     graft-slc-ρ-to : (i : I) (c : γ M i) (n : Nst i c)
@@ -326,7 +329,7 @@ module PolyMonads where
     μ-slc (i , .(η M i)) (dot .i) κ = dot i
     μ-slc (i , .(μ M i c δ)) (box .i c δ ε) κ = 
       let κ' p q = κ (inr (p , q))
-          ε' p = μ-slc (τ M i c (↑ M i c p) , δ p) (ε p) (κ' p)
+          ε' p = let p' = ν M i c p in μ-slc (τ M i c (↑ M i c p') , δ p') (ε p') (κ' p')
       in graft-slc i c (κ (inl unit)) δ ε'
 
     μρ-slc-to : (i : I-slc) (n : γ-slc i)
