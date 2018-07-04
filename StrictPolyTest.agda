@@ -54,16 +54,5 @@ module StrictPolyTest where
       → μ M i (μ M i c δ) ε == μ M i c (λ p → μ M (τ M i c p) (δ p) (λ q → ε (μρ M i c δ p q)))
     assoc i c δ ε = idp
 
-  -- Some tests with opetopic types, etc.
-
-  record OpType {ℓ} (M : Mnd ℓ) : Set (lsucc ℓ) where
-    coinductive
-    field
-
-      Ops : Idx M → Set ℓ
-      Rels : OpType (slc (pb M Ops))
-
-  open OpType public
-
   
 
