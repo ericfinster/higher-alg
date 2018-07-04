@@ -1,11 +1,39 @@
 {-# OPTIONS --without-K --rewriting --strict-poly-monads #-}
 
-open import HoTT
-
 module StrictPoly where
+
+open import Agda.Primitive public using (lzero)
+  renaming (Level to ULevel; lsuc to lsucc; _⊔_ to lmax)
+
+record ⊤ : Set₀ where
+  instance constructor unit
+
+{-# BUILTIN UNIT ⊤ #-}
+
+infixr 60 _,_
+
+record Σ {i j} (A : Set i) (B : A → Set j) : Set (lmax i j) where
+  constructor _,_
+  field
+    fst : A
+    snd : B fst
+open Σ public
+
+{-# BUILTIN SIGMA Σ #-}
 
 data ⊥₀ {ℓ} : Set ℓ where
 {-# BUILTIN EMPTY ⊥₀ #-}
+
+data Coprod {i j} (A : Set i) (B : Set j) : Set (lmax i j) where
+  inl : A → Coprod A B
+  inr : B → Coprod A B
+
+{-# BUILTIN COPROD Coprod #-}
+{-# BUILTIN INL inl #-}
+{-# BUILTIN INR inr #-}
+
+infixr 80 _⊔_
+_⊔_ = Coprod
 
 postulate
 
@@ -17,18 +45,18 @@ postulate
 {-# BUILTIN IDMND id #-}
 {-# BUILTIN SLCMND slc #-}
 
-primitive
+postulate
 
-  primPolyIdx : ∀ {ℓ} → Mnd ℓ → Set ℓ
-  primPolyCons : ∀ {ℓ} (M : Mnd ℓ) → primPolyIdx M → Set ℓ
-  primPolyPlc : ∀ {ℓ} (M : Mnd ℓ) (i : primPolyIdx M) → primPolyCons M i → Set ℓ
-  primPolyTyp : ∀ {ℓ} (M : Mnd ℓ) (i : primPolyIdx M) (c : primPolyCons M i)
-    → primPolyPlc M i c → primPolyIdx M
+  Idx : ∀ {ℓ} → Mnd ℓ → Set ℓ
+  γ : ∀ {ℓ} (M : Mnd ℓ) → Idx M → Set ℓ
+  ρ : ∀ {ℓ} (M : Mnd ℓ) (i : Idx M) → γ M i → Set ℓ
+  τ : ∀ {ℓ} (M : Mnd ℓ) (i : Idx M) (c : γ M i)
+    → ρ M i c → Idx M
 
-Idx = primPolyIdx
-γ = primPolyCons
-ρ = primPolyPlc
-τ = primPolyTyp
+{-# BUILTIN POLYIDX Idx #-}
+{-# BUILTIN POLYCONS γ #-}
+{-# BUILTIN POLYPLC ρ #-}
+{-# BUILTIN POLYTYP τ #-}
 
 postulate
 
@@ -36,43 +64,40 @@ postulate
 
 {-# BUILTIN PBMND pb #-}
 
-primitive
+postulate
 
-  primPolyUnit : ∀ {ℓ} (M : Mnd ℓ) (i : Idx M) → γ M i
-  primPolyMult : ∀ {ℓ} (M : Mnd ℓ)
+  η : ∀ {ℓ} (M : Mnd ℓ) (i : Idx M) → γ M i
+  ηρ : ∀ {ℓ} (M : Mnd ℓ) (i : Idx M) → ρ M i (η M i)
+  
+  μ : ∀ {ℓ} (M : Mnd ℓ)
     → (i : Idx M) (c : γ M i)
     → (δ : (p : ρ M i c) → γ M (τ M i c p))
     → γ M i
 
-η = primPolyUnit
-μ = primPolyMult
-
-primitive
-
-  primPolyUnitPlc : ∀ {ℓ} (M : Mnd ℓ) (i : Idx M) → ρ M i (η M i)
-
-  primPolyMultPlc : ∀ {ℓ} (M : Mnd ℓ)
+  μρ : ∀ {ℓ} (M : Mnd ℓ)
     → (i : Idx M) (c : γ M i)
     → (δ : (p : ρ M i c) → γ M (τ M i c p))
     → (p₀ : ρ M i c) (p₁ : ρ M (τ M i c p₀) (δ p₀))
     → ρ M i (μ M i c δ)
 
-  primPolyMultFst : ∀ {ℓ} (M : Mnd ℓ)
+  μρ-fst : ∀ {ℓ} (M : Mnd ℓ)
     → (i : Idx M) (c : γ M i)
     → (δ : (p : ρ M i c) → γ M (τ M i c p))
     → (p : ρ M i (μ M i c δ))
     → ρ M i c
 
-  primPolyMultSnd : ∀ {ℓ} (M : Mnd ℓ)
+  μρ-snd : ∀ {ℓ} (M : Mnd ℓ)
     → (i : Idx M) (c : γ M i)
     → (δ : (p : ρ M i c) → γ M (τ M i c p))
     → (p : ρ M i (μ M i c δ))
-    → ρ M (τ M i c (primPolyMultFst M i c δ p)) (δ (primPolyMultFst M i c δ p))
+    → ρ M (τ M i c (μρ-fst M i c δ p)) (δ (μρ-fst M i c δ p))
 
-ηρ = primPolyUnitPlc
-μρ = primPolyMultPlc
-μρ-fst = primPolyMultFst
-μρ-snd = primPolyMultSnd
+{-# BUILTIN POLYUNIT η #-}
+{-# BUILTIN POLYUNITPLC ηρ #-}
+{-# BUILTIN POLYMULT μ #-}
+{-# BUILTIN POLYMULTPLC μρ #-}
+{-# BUILTIN POLYMULTFST μρ-fst #-}
+{-# BUILTIN POLYMULTSND μρ-snd #-}
 
 data Nst {ℓ} (M : Mnd ℓ) : (i : Idx M) → (c : γ M i) → Set ℓ where
   dot : (i : Idx M) → Nst M i (η M i)
@@ -85,25 +110,28 @@ data Nst {ℓ} (M : Mnd ℓ) : (i : Idx M) → (c : γ M i) → Set ℓ where
 {-# BUILTIN SLCCONSDOT dot #-}
 {-# BUILTIN SLCCONSBOX box #-}
 
-primitive
+postulate
 
-  primPolyGraft : ∀ {ℓ} (M : Mnd ℓ)
+  graft-slc : ∀ {ℓ} (M : Mnd ℓ)
     → (i : Idx M) (c : γ M i) (n : Nst M i c)
     → (δ₁ : (p : ρ M i c) → γ M (τ M i c p))
     → (ε₁ : (p : ρ M i c) → Nst M (τ M i c p) (δ₁ p)) 
     → Nst M i (μ M i c δ₁)
 
-  primPolyGraftPlcTo : ∀ {ℓ} (M : Mnd ℓ)
+  graft-slc-ρ-to : ∀ {ℓ} (M : Mnd ℓ)
     → (i : Idx M) (c : γ M i) (n : Nst M i c)
     → (δ₁ : (p : ρ M i c) → γ M (τ M i c p))
     → (ε₁ : (p : ρ M i c) → Nst M (τ M i c p) (δ₁ p)) 
     → ρ (slc M) (i , c) n ⊔ Σ (ρ M i c) (λ p → ρ (slc M) (τ M i c p , δ₁ p) (ε₁ p))
-    → ρ (slc M) (i , μ M i c δ₁) (primPolyGraft M i c n δ₁ ε₁)
+    → ρ (slc M) (i , μ M i c δ₁) (graft-slc M i c n δ₁ ε₁)
 
-  primPolyGraftPlcFrom : ∀ {ℓ} (M : Mnd ℓ)
+  graft-slc-ρ-from : ∀ {ℓ} (M : Mnd ℓ)
     → (i : Idx M) (c : γ M i) (n : Nst M i c)
     → (δ₁ : (p : ρ M i c) → γ M (τ M i c p))
     → (ε₁ : (p : ρ M i c) → Nst M (τ M i c p) (δ₁ p)) 
-    → ρ (slc M) (i , μ M i c δ₁) (primPolyGraft M i c n δ₁ ε₁)
+    → ρ (slc M) (i , μ M i c δ₁) (graft-slc M i c n δ₁ ε₁)
     → ρ (slc M) (i , c) n ⊔ Σ (ρ M i c) (λ p → ρ (slc M) (τ M i c p , δ₁ p) (ε₁ p))
 
+{-# BUILTIN POLYGRAFT graft-slc #-}
+{-# BUILTIN POLYGRAFTPLCTO graft-slc-ρ-to #-}
+{-# BUILTIN POLYGRAFTPLCFROM graft-slc-ρ-from #-}
