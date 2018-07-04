@@ -4,4 +4,33 @@ open import StrictPoly
 
 module StrictPolyTest where
 
+  infix 30 _==_
+  data _==_ {i} {A : Set i} (a : A) : A → Set i where
+    idp : a == a
 
+  {-# BUILTIN EQUALITY _==_ #-}
+
+  -- Place reduction tests
+  module _ {ℓ} (M : Mnd ℓ) where
+
+    ηρ-τ : (i : Idx M) (p : ρ M i (η M i))
+      → τ M i (η M i) p == i
+    ηρ-τ i p = idp
+
+    μρ-τ : (i : Idx M) (c : γ M i)
+      → (δ : (p : ρ M i c) → γ M (τ M i c p))
+      → (p : ρ M i (μ M i c δ))
+      → τ M i (μ M i c δ) p == τ M (τ M i c (μρ-fst M i c δ p)) (δ (μρ-fst M i c δ p)) (μρ-snd M i c δ p)
+    μρ-τ i c δ p = idp
+
+    μρ-fst-β : (i : Idx M) (c : γ M i)
+      → (δ : (p : ρ M i c) → γ M (τ M i c p)) 
+      → (p₀ : ρ M i c) (p₁ : ρ M (τ M i c p₀) (δ p₀))
+      → μρ-fst M i c δ (μρ M i c δ p₀ p₁) == p₀
+    μρ-fst-β i c δ p₀ p₁ = idp
+
+    μρ-snd-β : (i : Idx M) (c : γ M i)
+      → (δ : (p : ρ M i c) → γ M (τ M i c p)) 
+      → (p₀ : ρ M i c) (p₁ : ρ M (τ M i c p₀) (δ p₀))
+      → μρ-snd M i c δ (μρ M i c δ p₀ p₁) == p₁
+    μρ-snd-β i c δ p₀ p₁ = idp
