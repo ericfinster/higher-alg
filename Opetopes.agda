@@ -1,19 +1,19 @@
 {-# OPTIONS --without-K --rewriting #-}
 
-open import HoTT
-open import Poly
-open import PolyMonads
-
+-- open import HoTT
+open import StrictPoly
 
 module Opetopes where
 
-  MndSeq : ℕ → Σ Type₀ Mnd
-  MndSeq O = ⊤ , id ⊤
-  MndSeq (S n) = Σ (fst (MndSeq n)) (γ (snd (MndSeq n))) , slc (snd (MndSeq n))
+  cst : ∀ {ℓ} {A X : Set ℓ} → A → X → A
+  cst a x = a
+  
+  MndSeq : ℕ → Mnd lzero
+  MndSeq O = id ⊤ 
+  MndSeq (S n) = slc (MndSeq n) 
 
-  Opetope : ℕ → Type₀
-  Opetope n = fst (MndSeq n)
-
+  Opetope : ℕ → Set₀
+  Opetope n = Idx (MndSeq n)
 
   obj : Opetope 0
   obj = unit

@@ -22,7 +22,14 @@ open Σ public
 {-# BUILTIN SIGMA Σ #-}
 
 data ⊥₀ {ℓ} : Set ℓ where
+
 {-# BUILTIN EMPTY ⊥₀ #-}
+
+data ℕ : Set₀ where
+  O : ℕ
+  S : ℕ → ℕ
+
+{-# BUILTIN NATURAL ℕ #-}
 
 data Coprod {i j} (A : Set i) (B : Set j) : Set (lmax i j) where
   inl : A → Coprod A B
