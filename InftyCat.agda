@@ -1,8 +1,7 @@
 {-# OPTIONS --without-K --rewriting #-}
 
 open import HoTT
-open import Poly
-open import PolyMonads
+open import StrictPoly
 open import OpetopicTypes
 
 module InftyCat where
@@ -45,42 +44,20 @@ module InftyCat where
     comp-tree x y s t = niche (Rels Mor) ((((unit , y) , unit , cst x) , t) , s)
 
     -- Okay, we want to make a simplex.
-    simplex : (x y z : Ob)
-      → (f : Hom x y) (g : Hom y z) (h : Hom x z)
-      → (α : Hom₂ x z (two-seq g f) h)
-      → comp-tree x z (two-seq g f) h
-    simplex x y z f g h α =
-      (box (((unit , z) , unit , cst x) , h)
-        (two-seq g f)
-        (λ { (inl unit) → one-seq g ;
-             (inr (unit , inl unit)) → one-seq f ;
-             (inr (unit , inr ())) })  -- These should be the individual arrows as single sequences ...
-        (λ { (inl unit) → dot {M = (pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor))} (((unit , z) , unit , cst y) , g) ;
-             (inr (unit , inl unit)) → dot {M = (pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor))} (((unit , y) , unit , cst x) , f) ;
-             (inr (unit , inr ())) })) ,
-        {!!}  
-
-
-
--- g != (λ { (inl unit) → g ; (inr (unit , ())) }) p of type
--- Ops (carrier (snd C))
--- (τ (slc (pb (id ⊤) (λ { unit → fst C })))
---  ((unit , z) , unit , cst y)
---  (η (slc (pb (id ⊤) (λ { unit → fst C })))
---   ((unit , z) , unit , cst y))
---  p)
--- when checking that the expression
--- dot {M = pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor)}
--- (((unit , z) , unit , cst y) , g)
--- has type
--- Nst (pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor))
--- (τ (pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor))
---  (((unit , z) , unit , cst x) , h) (two-seq g f) (inl unit))
--- ((λ { (inl unit) → one-seq g
---     ; (inr (unit , inl unit)) → one-seq f
---     ; (inr (unit , inr ()))
---     })
---  (inl unit))
+    -- simplex : (x y z : Ob)
+    --   → (f : Hom x y) (g : Hom y z) (h : Hom x z)
+    --   → (α : Hom₂ x z (two-seq g f) h)
+    --   → comp-tree x z (two-seq g f) h
+    -- simplex x y z f g h α =
+    --   (box (((unit , z) , unit , cst x) , h)
+    --     (two-seq g f)
+    --     (λ { (inl unit) → one-seq g ;
+    --          (inr (unit , inl unit)) → one-seq f ;
+    --          (inr (unit , inr ())) })  -- These should be the individual arrows as single sequences ...
+    --     (λ { (inl unit) → dot {M = (pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor))} (((unit , z) , unit , cst y) , g) ;
+    --          (inr (unit , inl unit)) → dot {M = (pb (slc (pb (id ⊤) (λ { unit → fst C }))) (Ops Mor))} (((unit , y) , unit , cst x) , f) ;
+    --          (inr (unit , inr ())) })) ,
+    --     {!!}  
 
 
     -- The type of witnesses that f ∘ g = h 

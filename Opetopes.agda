@@ -1,12 +1,9 @@
 {-# OPTIONS --without-K --rewriting #-}
 
--- open import HoTT
+open import HoTT
 open import StrictPoly
 
 module Opetopes where
-
-  cst : ∀ {ℓ} {A X : Set ℓ} → A → X → A
-  cst a x = a
   
   MndSeq : ℕ → Mnd lzero
   MndSeq O = id ⊤ 
