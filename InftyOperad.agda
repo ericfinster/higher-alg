@@ -36,11 +36,51 @@ module InftyOperad where
 
   open PSet public
   
-  record is-∞-operad {I : Type₀} {P : Poly I} (X : PSet P) : Type₁ where
+  record is-algebraic {I : Type₀} {P : Poly I} (X : PSet P) : Type₁ where
     coinductive
     field
 
-      has-fillers : (i : I) (w : W P i)
+      has-fillers : {i : I} (w : W P i)
         → is-contr (Σ (γₚ P i) (λ c → Σ (ρ-fr P i w ≃ ρₚ P i c) (λ e → Filler X c (w , e))))
 
-      higher-has-fillers : is-∞-operad (Higher X)
+      higher-has-fillers : is-algebraic (Higher X)
+
+  open is-algebraic public
+  
+  module _ {I : Type₀} {P : Poly I} (O : PSet P) (is-alg : is-algebraic O) where
+
+    μ : {i : I} (w : W P i) → γₚ P i
+    μ w = fst (fst (has-level-apply (has-fillers is-alg w))) 
+
+    μ-plc-eqv : {i : I} (w : W P i) → leaves P w ≃ ρₚ P i (μ w)
+    μ-plc-eqv w = fst (snd (fst (has-level-apply (has-fillers is-alg w)))) 
+
+    μ-witness : {i : I} (w : W P i) → Filler O (μ w) (w , μ-plc-eqv w)
+    μ-witness w = snd (snd (fst (has-level-apply (has-fillers is-alg w)))) 
+
+    η : (i : I) → γₚ P i
+    η i = μ (lf i)
+
+    unary-op : (i : I) → Type₀
+    unary-op i = Σ (γₚ P i) (λ c → is-contr (ρₚ P i c))
+
+    u-domain : {i : I} (u : unary-op i) → I
+    u-domain {i} (c , e) = τₚ P i c (fst (has-level-apply e))
+
+    Arrow : I → I → Type₀
+    Arrow i j = Σ (unary-op j) (λ u → u-domain u == i)
+
+    Comp : (i j k : I) → Arrow i j → Arrow j k → Arrow i k
+    Comp i j k ((f , α) , x) ((g , β) , y) = (c , {!!}) , {!!}
+
+      where c : γₚ P k
+            c = μ (nd k (g , λ p → transport (W P) (! y ∙ ap (τₚ P k g) (snd (has-level-apply β) p))
+                   (nd j (f , (λ q → lf (τₚ P j f q)))))) 
+            
+    l-inv : {i : I} (u : unary-op i) → Type₀
+    l-inv {i} u = Σ (Arrow j i) (λ l → fst (fst (Comp i j i {!u!} l)) == η i)
+
+      where j = u-domain u
+
+            lu : (l : γₚ P j) → γₚ P i
+            lu l = μ (nd {!j!} {!!})
