@@ -11,7 +11,7 @@ module Poly where
       ρₚ : (i : I) (c : γₚ i) → Type₀
       τₚ : (i : I) (c : γₚ i) (p : ρₚ i c) → I
 
-  open Poly
+  open Poly public
   
   ⟦_⟧ : {I : Type₀} (P : Poly I) → (I → Set) → I → Set
   ⟦ P ⟧ X i = Σ (γₚ P i) (λ c → (p : ρₚ P i c) → X (τₚ P i c p))
