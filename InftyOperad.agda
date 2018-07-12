@@ -6,32 +6,20 @@ open import Poly
 module InftyOperad where
 
   module _ {I : Type₀} (P : Poly I) where
-  
-    leaves : {i : I} → W P i → Type₀
-    leaves {i} w = ρ-fr P i w
 
-    nodes : {i : I} → W P i → Type₀
-    nodes (lf i) = ⊥
-    nodes (nd i (c , δ)) = ⊤ ⊔ Σ (ρₚ P i c) (nodes ∘ δ) 
-
-    node-type : {i : I} (w : W P i) (n : nodes w) → Σ I (γₚ P)
-    node-type (lf i) ()
-    node-type (nd i (c , δ)) (inl unit) = i , c
-    node-type (nd i (c , δ)) (inr (p , q)) = node-type (δ p) q
-
-    p-frame : {i : I} (c : γₚ P i) → Type₀
-    p-frame {i} c = Σ (W P i) (λ w → leaves w ≃ ρₚ P i c)
+    p-frame : {i : I} (c : γ P i) → Type₀
+    p-frame {i} c = Σ (W P i) (λ w → leaf P w ≃ ρ P i c)
     
-    FillPoly : (F : {i : I} (c : γₚ P i) → p-frame c → Type₀) → Poly (Σ I (γₚ P))
-    γₚ (FillPoly F) (i , c) = Σ (p-frame c) (F c)
-    ρₚ (FillPoly F) (i , c) ((w , e) , x) = nodes w
-    τₚ (FillPoly F) (i , c) ((w , e) , x) n = node-type w n
+    FillPoly : (F : {i : I} (c : γ P i) → p-frame c → Type₀) → Poly (Σ I (γ P))
+    γ (FillPoly F) (i , c) = Σ (p-frame c) (F c)
+    ρ (FillPoly F) (i , c) ((w , e) , x) = node P w
+    τ (FillPoly F) (i , c) ((w , e) , x) n = node-type P w n
 
   record PSet {I : Type₀} (P : Poly I) : Type₁ where
     coinductive
     field
 
-      Filler : {i : I} (c : γₚ P i) → p-frame P c → Type₀
+      Filler : {i : I} (c : γ P i) → p-frame P c → Type₀
       Higher : PSet (FillPoly P Filler)
 
   open PSet public
@@ -41,7 +29,7 @@ module InftyOperad where
     field
 
       has-fillers : {i : I} (w : W P i)
-        → is-contr (Σ (γₚ P i) (λ c → Σ (ρ-fr P i w ≃ ρₚ P i c) (λ e → Filler X c (w , e))))
+        → is-contr (Σ (γ P i) (λ c → Σ (leaf P w ≃ ρ P i c) (λ e → Filler X c (w , e))))
 
       higher-has-fillers : is-algebraic (Higher X)
 
@@ -49,38 +37,43 @@ module InftyOperad where
   
   module _ {I : Type₀} {P : Poly I} (O : PSet P) (is-alg : is-algebraic O) where
 
-    μ : {i : I} (w : W P i) → γₚ P i
+    μ : {i : I} (w : W P i) → γ P i
     μ w = fst (fst (has-level-apply (has-fillers is-alg w))) 
 
-    μ-plc-eqv : {i : I} (w : W P i) → leaves P w ≃ ρₚ P i (μ w)
+    μ-plc-eqv : {i : I} (w : W P i) → leaf P w ≃ ρ P i (μ w)
     μ-plc-eqv w = fst (snd (fst (has-level-apply (has-fillers is-alg w)))) 
 
     μ-witness : {i : I} (w : W P i) → Filler O (μ w) (w , μ-plc-eqv w)
     μ-witness w = snd (snd (fst (has-level-apply (has-fillers is-alg w)))) 
 
-    η : (i : I) → γₚ P i
+    η : (i : I) → γ P i
     η i = μ (lf i)
 
     unary-op : (i : I) → Type₀
-    unary-op i = Σ (γₚ P i) (λ c → is-contr (ρₚ P i c))
+    unary-op i = Σ (γ P i) (λ c → is-contr (ρ P i c))
 
     u-domain : {i : I} (u : unary-op i) → I
-    u-domain {i} (c , e) = τₚ P i c (fst (has-level-apply e))
+    u-domain {i} (c , e) = τ P i c (fst (has-level-apply e))
 
     Arrow : I → I → Type₀
     Arrow i j = Σ (unary-op j) (λ u → u-domain u == i)
 
     Comp : (i j k : I) → Arrow i j → Arrow j k → Arrow i k
-    Comp i j k ((f , α) , x) ((g , β) , y) = (c , {!!}) , {!!}
+    Comp i j k ((f , α) , x) ((g , β) , idp) = (c , {!!}) , {!!}
 
-      where c : γₚ P k
-            c = μ (nd k (g , λ p → transport (W P) (! y ∙ ap (τₚ P k g) (snd (has-level-apply β) p))
-                   (nd j (f , (λ q → lf (τₚ P j f q)))))) 
-            
+      where c : γ P k
+            c = μ (nd k (g , λ p → transport (W P) (ap (τ P k g) (snd (has-level-apply β) p))
+                   (nd j (f , (λ q → lf (τ P j f q)))))) 
+
     l-inv : {i : I} (u : unary-op i) → Type₀
-    l-inv {i} u = Σ (Arrow j i) (λ l → fst (fst (Comp i j i {!u!} l)) == η i)
+    l-inv {i} u = Σ (Arrow i j) (λ l → fst (fst (Comp j i j (u , idp) l)) == η j)
 
       where j = u-domain u
 
-            lu : (l : γₚ P j) → γₚ P i
-            lu l = μ (nd {!j!} {!!})
+    r-inv : {i : I} (u : unary-op i) → Type₀
+    r-inv {i} u = Σ (Arrow i j) (λ r → fst (fst (Comp i j i r (u , idp))) == η i)
+
+      where j = u-domain u
+
+    is-invertible : ∀ {i} (u : unary-op i) → Type₀
+    is-invertible u = l-inv u × r-inv u
