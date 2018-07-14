@@ -29,6 +29,16 @@ module Poly where
     leaf-type : {i : I} (w : W i) (l : leaf w) → I
     leaf-type (lf i) tt = i
     leaf-type (nd i (c , δ)) (p , l) = leaf-type (δ p) l
+
+    leaf-inv : {i₀ i₁ : I} (w : W i₀) 
+      → (p : i₀ == i₁) 
+      → leaf w ≃ leaf (transport W p w)
+    leaf-inv w idp = ide (leaf w)
+
+    leaf-inv-coh : {i₀ i₁ : I} (w : W i₀) 
+      → (p : i₀ == i₁) (l : leaf w)
+      → leaf-type w l == leaf-type (transport W p w) (–> (leaf-inv w p) l) 
+    leaf-inv-coh w idp l = idp
     
     node : {i : I} → W i → Type₀
     node (lf i) = ⊥
@@ -38,6 +48,81 @@ module Poly where
     node-type (lf i) ()
     node-type (nd i (c , δ)) (inl unit) = i , c
     node-type (nd i (c , δ)) (inr (p , n)) = node-type (δ p) n
+
+    corolla : {i : I} (c : γ P i) → W i
+    corolla {i} c = nd i (c , λ p → lf (τ P i c p))
+
+    corolla-ρ-eqv : {i : I} (c : γ P i)
+      → leaf (corolla c) ≃ ρ P i c
+    corolla-ρ-eqv c = Σ₂-Unit
+
+    unique-node-lem : {i : I} (w : W i)
+      → (is-c : is-contr (node w))
+      → fst (node-type w (contr-center is-c)) == i
+    unique-node-lem (lf i) is-c = ⊥-elim {P = λ _ → fst (node-type (lf i) (contr-center is-c)) == i} (contr-center is-c) 
+    unique-node-lem (nd i (c , δ)) is-c = fst= (ap (λ x → node-type (nd i (c , δ)) x) (contr-path is-c (inl unit)))
+
+    -- -- Right.  It's clear that you can do this.
+    -- -- It's what you've done below.
+    -- reconstruct : {i : I} (w : W i)
+    --   → (is-c : is-contr (node w))
+    --   → w == corolla (snd (node-type w (contr-center is-c))) [ W ↓ ! (unique-node-lem w is-c) ]
+    -- reconstruct w is-c = {!!}
+
+    is-corolla : Σ I W → Type₀
+    is-corolla (i , w) = is-contr (node w)
+    
+    corolla-eqv-to : Σ I (γ P) → Σ (Σ I W) is-corolla
+    corolla-eqv-to (i , c) = (i , corolla c) , {!!}
+
+    corolla-eqv-from : Σ (Σ I W) is-corolla → Σ I (γ P)
+    corolla-eqv-from ((i , w) , is-c) = node-type w (contr-center is-c)
+
+    corolla-eqv : is-equiv corolla-eqv-to
+    corolla-eqv = {!!}
+
+    -- Okay, if we have this, then the I think the type of
+    -- i and w which project to (i , c) is contractible.
+
+    -- Does this solve the problem?
+    
+    -- Annoying.  I seem to blow a bubble.  But I don't think
+    -- it should be there.  Can you get rid of it?
+    corolla-unique : {i : I} (c : γ P i) (w : W i)
+      → (is-c : is-contr (node w))
+      → (pth : node-type w (contr-center is-c) == (i , c))
+      → corolla c == w 
+    corolla-unique c (lf i) is-c pth = ⊥-elim (contr-center is-c)
+    corolla-unique c (nd i (c' , δ)) is-c pth = ap corolla {!!} ∙ and-so
+
+      where lem : (i , c') == (i , c)
+            lem = (! (ap (λ x → node-type (nd i (c' , δ)) x) (contr-path is-c (inl unit)))) ∙ pth
+
+            must-be-leaves : (p : ρ P i c') → δ p == lf (τ P i c' p)
+            must-be-leaves p with δ p | inspect δ p
+            must-be-leaves p | lf .(τ P i c' p) | ingraph e = idp
+            must-be-leaves p | nd .(τ P i c' p) _ | ingraph e = ⊥-elim
+              (inl≠inr unit no-no (contr-has-all-paths ⦃ is-c ⦄ (inl unit) (inr no-no))) 
+
+              where no-no : Σ (ρ P i c') (node ∘ δ)
+                    no-no = p , transport! node e (inl unit)
+
+            and-so : corolla c' == nd i (c' , δ)
+            and-so = ap (λ d → nd i (c' , d)) (λ= (λ p → ! (must-be-leaves p)))
+
+    -- bleep : (i : I) (p : Σ I (γ P)) (w : W i)
+    --   → (is-c : is-contr (node w))
+    --   → (pth : node-type w (contr-center is-c) == p)
+    --   → (q : i == fst p)
+    --   → corolla (snd p) == transport W q w
+    -- bleep i .(node-type (lf i) (fst (has-level-apply is-c))) (lf .i) is-c idp q = {!!}
+    -- bleep i .(node-type (nd i x) (fst (has-level-apply is-c))) (nd .i x) is-c idp q = {!!}
+
+    -- and-then : {i : I} (c : γ P i) (w : W i)
+    --   → (is-c : is-contr (node w))
+    --   → (pth : node-type w (contr-center is-c) == (i , c))
+    --   → corolla c == w
+    -- and-then {i} c w is-c pth = bleep i (i , c) w is-c pth idp
 
   module _ {I : Type₀} (P : Poly I) where
   
@@ -104,6 +189,7 @@ module Poly where
     μρ-equiv-fr i w δ =
       equiv' (μρ-to-fr i w δ) (μρ-from-fr i w δ)
              (μρ-to-from-fr i w δ) (μρ-from-to-fr i w δ)
+
 
   ZeroPoly : (I : Type₀) → Poly I
   γ  (ZeroPoly I) i = ⊥
