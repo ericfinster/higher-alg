@@ -44,19 +44,6 @@ module Poly where
     
     corolla : {i : I} (c : γ P i) → W i
     corolla {i} c = nd (c , λ j p → lf j)
-
-    -- know' : is-contr (Σ (Σ I (γ P)) (Node P corolla' ∘ snd))
-    -- know' = ηρ-contr (Higher O) (higher-has-fillers is-alg) (i , c)
-
-    corolla-unique : {i : I} (c : γ P i) (w : W i) 
-      → is-contr (Σ (Σ I (γ P)) (Node w ∘ snd))
-      → w == corolla c
-    corolla-unique {_} c₀ (lf i) is-c = {!!}
-    corolla-unique {i} c₀ (nd (c , δ)) is-c = {!!}
-
-      where el : Σ (Σ I (γ P)) (Node (nd (c , δ)) ∘ snd)
-            el = (i , c) , here c δ
-
     
   --   -- Annoying.  I seem to blow a bubble.  But I don't think
   --   -- it should be there.  Can you get rid of it?
@@ -96,24 +83,24 @@ module Poly where
   --   --   → corolla c == w
   --   -- and-then {i} c w is-c pth = bleep i (i , c) w is-c pth idp
 
-  -- module _ {I : Type₀} (P : Poly I) where
-  
-  --   γ-fr : I → Type₀
-  --   γ-fr = W P
+  Fr : {I : Type₀} (P : Poly I) → Poly I
+  γ (Fr P) = W P
+  ρ (Fr P) w = Leaf P w
 
-  --   ρ-fr : (i : I) → γ-fr i → Type₀
-  --   ρ-fr i (lf .i) = ⊤
-  --   ρ-fr i (nd .i (c , δ)) = Σ (ρ P i c) (λ p → ρ-fr (τ P i c p) (δ p))
+  module _ {I : Type₀} (P : Poly I) where
 
-  --   τ-fr : (i : I) (c : γ-fr i) → ρ-fr i c → I
-  --   τ-fr i (lf .i) unit = i
-  --   τ-fr i (nd .i (c , δ)) (p₀ , p₁) = τ-fr (τ P i c p₀) (δ p₀) p₁
+    γ-fr : I → Type₀
+    γ-fr = γ (Fr P)
 
-  --   η-fr : (i : I) → γ-fr i
-  --   η-fr = lf
+    ρ-fr : {i : I} (w : W P i) → I → Type₀
+    ρ-fr = ρ (Fr P)
 
-  --   ηρ-contr-fr : (i : I) → is-contr (ρ-fr i (η-fr i))
-  --   ηρ-contr-fr i = Unit-level
+    η-fr : (i : I) → γ-fr i
+    η-fr = lf
+
+    graft : {i : I} → ⟦ Fr P ⟧ (W P) i → W P i
+    graft {i} (lf i , ε) = lf i
+    graft {i} (nd (c , δ) , ε) = nd (c , λ j p → graft (δ j p , λ k l → {!ε k (that c δ p l)!}))
 
   --   μ-fr : (i : I) (c : γ-fr i) (δ : (p : ρ-fr i c) → γ-fr (τ-fr i c p)) → γ-fr i
   --   μ-fr i (lf .i) δ = δ unit
