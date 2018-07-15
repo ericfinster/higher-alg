@@ -8,12 +8,12 @@ module Poly where
   record Poly (I : Type₀) : Type₁ where
     field
       γ : I → Type₀
-      ρ : (i : I) (c : γ i) (j : I) → Type₀
+      ρ : {i : I} (c : γ i) (j : I) → Type₀
 
   open Poly public
 
   ⟦_⟧ : {I : Type₀} (P : Poly I) → (I → Set) → I → Set
-  ⟦ P ⟧ X i = Σ (γ P i) (λ c → ∀ j → (p : ρ P i c j) → X j)
+  ⟦ P ⟧ X i = Σ (γ P i) (λ c → ∀ j → (p : ρ P c j) → X j)
 
   module _ {I : Type₀} (P : Poly I) where
   
@@ -24,84 +24,39 @@ module Poly where
     data Leaf : {i : I} (w : W i) → I → Type₀ where
       this : (i : I) → Leaf (lf i) i
       that : {i : I} (c : γ P i)
-        → (δ : ∀ j → (p : ρ P i c j) → W j)
-        → {j : I} → (p : ρ P i c j)
+        → (δ : ∀ j → (p : ρ P c j) → W j)
+        → {j : I} → (p : ρ P c j)
         → {k : I} → Leaf (δ j p) k
         → Leaf (nd (c , δ)) k
 
     data Node : {i : I} (w : W i) {j : I} (c : γ P j) → Type₀ where
       here : {i : I} (c : γ P i)
-        → (δ : ∀ j → (p : ρ P i c j) → W j)
+        → (δ : ∀ j → (p : ρ P c j) → W j)
         → Node (nd (c , δ)) c
       there : {i : I} (c : γ P i)
-        → (δ : ∀ j → (p : ρ P i c j) → W j)
-        → {j : I} → (p : ρ P i c j)
+        → (δ : ∀ j → (p : ρ P c j) → W j)
+        → {j : I} → (p : ρ P c j)
         → {k : I} → {d : γ P i} → Node (δ j p) d
         → Node (nd (c , δ)) d
-        
-  --   leaf : {i : I} → W i → Type₀
-  --   leaf (lf i) = ⊤
-  --   leaf (nd i (c , δ)) = Σ (ρ P i c) (leaf ∘ δ)
 
-  --   leaf-type : {i : I} (w : W i) (l : leaf w) → I
-  --   leaf-type (lf i) tt = i
-  --   leaf-type (nd i (c , δ)) (p , l) = leaf-type (δ p) l
-
-  --   leaf-inv : {i₀ i₁ : I} (w : W i₀) 
-  --     → (p : i₀ == i₁) 
-  --     → leaf w ≃ leaf (transport W p w)
-  --   leaf-inv w idp = ide (leaf w)
-
-  --   leaf-inv-coh : {i₀ i₁ : I} (w : W i₀) 
-  --     → (p : i₀ == i₁) (l : leaf w)
-  --     → leaf-type w l == leaf-type (transport W p w) (–> (leaf-inv w p) l) 
-  --   leaf-inv-coh w idp l = idp
+    lf-lf-contr : (i : I) → is-contr (Σ I (Leaf (lf i)))
+    lf-lf-contr i = has-level-in ((i , this i) , λ { (_ , this .i) → idp })
     
-  --   node : {i : I} → W i → Type₀
-  --   node (lf i) = ⊥
-  --   node (nd i (c , δ)) = ⊤ ⊔ Σ (ρ P i c) (node ∘ δ) 
+    corolla : {i : I} (c : γ P i) → W i
+    corolla {i} c = nd (c , λ j p → lf j)
 
-  --   node-type : {i : I} (w : W i) (n : node w) → Σ I (γ P)
-  --   node-type (lf i) ()
-  --   node-type (nd i (c , δ)) (inl unit) = i , c
-  --   node-type (nd i (c , δ)) (inr (p , n)) = node-type (δ p) n
+    -- know' : is-contr (Σ (Σ I (γ P)) (Node P corolla' ∘ snd))
+    -- know' = ηρ-contr (Higher O) (higher-has-fillers is-alg) (i , c)
 
-  --   corolla : {i : I} (c : γ P i) → W i
-  --   corolla {i} c = nd i (c , λ p → lf (τ P i c p))
+    corolla-unique : {i : I} (c : γ P i) (w : W i) 
+      → is-contr (Σ (Σ I (γ P)) (Node w ∘ snd))
+      → w == corolla c
+    corolla-unique {_} c₀ (lf i) is-c = {!!}
+    corolla-unique {i} c₀ (nd (c , δ)) is-c = {!!}
 
-  --   corolla-ρ-eqv : {i : I} (c : γ P i)
-  --     → leaf (corolla c) ≃ ρ P i c
-  --   corolla-ρ-eqv c = Σ₂-Unit
+      where el : Σ (Σ I (γ P)) (Node (nd (c , δ)) ∘ snd)
+            el = (i , c) , here c δ
 
-  --   unique-node-lem : {i : I} (w : W i)
-  --     → (is-c : is-contr (node w))
-  --     → fst (node-type w (contr-center is-c)) == i
-  --   unique-node-lem (lf i) is-c = ⊥-elim {P = λ _ → fst (node-type (lf i) (contr-center is-c)) == i} (contr-center is-c) 
-  --   unique-node-lem (nd i (c , δ)) is-c = fst= (ap (λ x → node-type (nd i (c , δ)) x) (contr-path is-c (inl unit)))
-
-  --   -- -- Right.  It's clear that you can do this.
-  --   -- -- It's what you've done below.
-  --   -- reconstruct : {i : I} (w : W i)
-  --   --   → (is-c : is-contr (node w))
-  --   --   → w == corolla (snd (node-type w (contr-center is-c))) [ W ↓ ! (unique-node-lem w is-c) ]
-  --   -- reconstruct w is-c = {!!}
-
-  --   is-corolla : Σ I W → Type₀
-  --   is-corolla (i , w) = is-contr (node w)
-    
-  --   corolla-eqv-to : Σ I (γ P) → Σ (Σ I W) is-corolla
-  --   corolla-eqv-to (i , c) = (i , corolla c) , {!!}
-
-  --   corolla-eqv-from : Σ (Σ I W) is-corolla → Σ I (γ P)
-  --   corolla-eqv-from ((i , w) , is-c) = node-type w (contr-center is-c)
-
-  --   corolla-eqv : is-equiv corolla-eqv-to
-  --   corolla-eqv = {!!}
-
-  --   -- Okay, if we have this, then the I think the type of
-  --   -- i and w which project to (i , c) is contractible.
-
-  --   -- Does this solve the problem?
     
   --   -- Annoying.  I seem to blow a bubble.  But I don't think
   --   -- it should be there.  Can you get rid of it?
