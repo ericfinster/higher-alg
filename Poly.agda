@@ -69,48 +69,26 @@ module Poly where
   --           and-so : corolla c' == nd i (c' , δ)
   --           and-so = ap (λ d → nd i (c' , d)) (λ= (λ p → ! (must-be-leaves p)))
 
-  --   -- bleep : (i : I) (p : Σ I (γ P)) (w : W i)
-  --   --   → (is-c : is-contr (node w))
-  --   --   → (pth : node-type w (contr-center is-c) == p)
-  --   --   → (q : i == fst p)
-  --   --   → corolla (snd p) == transport W q w
-  --   -- bleep i .(node-type (lf i) (fst (has-level-apply is-c))) (lf .i) is-c idp q = {!!}
-  --   -- bleep i .(node-type (nd i x) (fst (has-level-apply is-c))) (nd .i x) is-c idp q = {!!}
-
-  --   -- and-then : {i : I} (c : γ P i) (w : W i)
-  --   --   → (is-c : is-contr (node w))
-  --   --   → (pth : node-type w (contr-center is-c) == (i , c))
-  --   --   → corolla c == w
-  --   -- and-then {i} c w is-c pth = bleep i (i , c) w is-c pth idp
-
-  Fr : {I : Type₀} (P : Poly I) → Poly I
-  γ (Fr P) = W P
-  ρ (Fr P) w = Leaf P w
-
   module _ {I : Type₀} (P : Poly I) where
 
-    γ-fr : I → Type₀
-    γ-fr = γ (Fr P)
-
-    ρ-fr : {i : I} (w : W P i) → I → Type₀
-    ρ-fr = ρ (Fr P)
-
-    η-fr : (i : I) → γ-fr i
-    η-fr = lf
+    Fr : Poly I
+    γ Fr = W P
+    ρ Fr w = Leaf P w
 
     graft : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) → W P i
     graft (lf i) ε = ε i (this i)
     graft (nd (c , δ)) ε = nd (c , λ j p → graft (δ j p) (λ k l → ε k (that c δ p l)))
+
+    -- Now, the next step is to prove the equivalence of the places
+    -- and leafs of the free monad.  From there, the theory goes, we
+    -- should be able to prove that an ∞-operad multiplication is a
+    -- homomorphism.
+
+    graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
+      → (ll : Σ (Σ I (Leaf P w)) (λ { (k , l) → Σ I (Leaf P (ε k l)) }))
+      → Leaf P (graft w ε) (fst (snd ll))
+    graft-leaf-to = {!!}
     
-    -- {-# TERMINATING #-}
-    -- graft : {i : I} → ⟦ Fr P ⟧ (W P) i → W P i
-    -- graft {i} (lf i , ε) = ε i (this i)
-    -- graft {i} (nd (c , δ) , ε) = nd (c , λ j p → graft (δ j p , λ k l → ε k (that c δ p l)))
-
-  --   μ-fr : (i : I) (c : γ-fr i) (δ : (p : ρ-fr i c) → γ-fr (τ-fr i c p)) → γ-fr i
-  --   μ-fr i (lf .i) δ = δ unit
-  --   μ-fr i (nd .i (c , δ₀)) δ = nd i (c , λ p₀ → μ-fr (τ P i c p₀) (δ₀ p₀) (λ p₁ → δ (p₀ , p₁)))
-
   --   μρ-to-fr : (i : I) (w : W P i)
   --     → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
   --     → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p))
@@ -155,7 +133,3 @@ module Poly where
   --            (μρ-to-from-fr i w δ) (μρ-from-to-fr i w δ)
 
 
-  -- ZeroPoly : (I : Type₀) → Poly I
-  -- γ  (ZeroPoly I) i = ⊥
-  -- ρ (ZeroPoly I) i () 
-  -- τ (ZeroPoly I) i () _
