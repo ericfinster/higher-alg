@@ -98,9 +98,10 @@ module Poly where
     η-fr : (i : I) → γ-fr i
     η-fr = lf
 
+    {-# TERMINATING #-}
     graft : {i : I} → ⟦ Fr P ⟧ (W P) i → W P i
-    graft {i} (lf i , ε) = lf i
-    graft {i} (nd (c , δ) , ε) = nd (c , λ j p → graft (δ j p , λ k l → {!ε k (that c δ p l)!}))
+    graft {i} (lf i , ε) = ε i (this i)
+    graft {i} (nd (c , δ) , ε) = nd (c , λ j p → graft (δ j p , λ k l → ε k (that c δ p l)))
 
   --   μ-fr : (i : I) (c : γ-fr i) (δ : (p : ρ-fr i c) → γ-fr (τ-fr i c p)) → γ-fr i
   --   μ-fr i (lf .i) δ = δ unit
