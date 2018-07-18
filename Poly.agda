@@ -90,13 +90,218 @@ module Poly where
 
     graft : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) → W P i
     graft (lf i) ε = ε i (leaf i)
-    graft (nd (c , δ)) ε = nd (c , λ j p → graft (δ j p) (λ k l → ε k (stem c δ p l)))
+    graft (nd (c , δ)) ε =
+      let ε' j p k l = ε k (stem c δ p l)
+          δ' j p = graft (δ j p) (ε' j p)
+      in nd (c , δ')
 
-    -- graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
-    --   → (ll : Σ (Σ I (Leaf P w)) (λ { (k , l) → Σ I (Leaf P (ε k l)) }))
-    --   → Leaf P (graft w ε) (fst (snd ll))
-    -- graft-leaf-to = {!!}
+    graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
+      → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
+      → Leaf P (graft w ε) k
+    graft-leaf-to (lf i) ε k (.i , leaf .i , l) = l
+    graft-leaf-to (nd (c , δ)) ε k (j , stem _ _ p l₀ , l₁) = 
+      let ε' j p k l = ε k (stem c δ p l)
+          δ' j p = graft (δ j p) (ε' j p)
+      in stem c _ p (graft-leaf-to (δ _ p) (ε' _ p) k (j , l₀ , l₁))
+
+    graft-leaf-from : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
+      → Leaf P (graft w ε) k
+      → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
+    graft-leaf-from (lf i) ε k l = i , leaf i , l
+    graft-leaf-from (nd (c , δ)) ε k (stem _ _ {j} p l) = 
+      let (s , t , u) = graft-leaf-from (δ j p) (λ k l → ε k (stem c δ p l)) k l
+      in s , stem _ _ p t , u
+
+    graft-leaf-to-from : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
+      → (k : I) (l : Leaf P (graft w ε) k)
+      → graft-leaf-to w ε k (graft-leaf-from w ε k l) == l
+    graft-leaf-to-from (lf i) ε k l = idp
+    graft-leaf-to-from (nd (c , δ)) ε k (stem _ _ {j} p l) =
+      let ε' j p k l = ε k (stem c δ p l)
+          δ' j p = graft (δ j p) (ε' j p)
+      in ap (λ x → stem c δ' p x) (graft-leaf-to-from (δ j p) (ε' j p) k l) 
+
+    graft-leaf-from-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
+      → (l : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k)))
+      → graft-leaf-from w ε k (graft-leaf-to w ε k l) == l
+    graft-leaf-from-to (lf i) ε k (.i , leaf .i , l₁) = idp
+    graft-leaf-from-to (nd (c , δ)) ε k (j , stem _ _ p l₀ , l₁) =
+      let ε' j p k l = ε k (stem c δ p l)
+          δ' j p = graft (δ j p) (ε' j p)
+          (s , t , u) = graft-leaf-from (δ _ p) (ε' _ p) k
+                          (graft-leaf-to (δ _ p) (ε' _ p) k (j , l₀ , l₁))
+          ih = graft-leaf-from-to (δ _ p) (ε' _ p) k (j , l₀ , l₁)
+      in pair= (fst= ih) (apd↓-cst (λ x → (stem c δ p (fst x) , snd x)) (snd= ih)) 
+
+    graft-leaf-eqv : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
+      → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
+        ≃ Leaf P (graft w ε) k
+    graft-leaf-eqv w ε k =
+      equiv (graft-leaf-to w ε k) (graft-leaf-from w ε k)
+            (graft-leaf-to-from w ε k) (graft-leaf-from-to w ε k)
+
+    --
+    --  Leaves in a graft
+    --
     
+    -- graft-lf-to : (i : I) (w : W P i)
+    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
+    --   → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p) (δ p))
+    --   → ρ-fr i (graft i w δ)
+    -- graft-lf-to i (lf .i) δ (unit , p₁) = p₁
+    -- graft-lf-to i (nd .i (c , δ₀)) δ ((p₀ , p₁) , p₂) =
+    --   p₀ , graft-lf-to (τ P i c p₀) (δ₀ p₀) (λ p₃ → δ (p₀ , p₃)) (p₁ , p₂)
+
+    -- graft-lf-from : (i : I) (w : W P i)
+    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
+    --   → ρ-fr i (graft i w δ)
+    --   → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p) (δ p))
+    -- graft-lf-from i (lf .i) δ p = unit , p
+    -- graft-lf-from i (nd .i (c , δ₀)) δ (p₀ , p₁) =
+    --   let pp = graft-lf-from (τ P i c p₀) (δ₀ p₀) (λ p₂ → δ (p₀ , p₂)) p₁
+    --   in (p₀ , fst pp) , snd pp
+
+    -- graft-lf-to-from : (i : I) (w : W P i)
+    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
+    --   → (p : ρ-fr i (graft i w δ))
+    --   → graft-lf-to i w δ (graft-lf-from i w δ p) == p
+    -- graft-lf-to-from i (lf .i) δ p = idp
+    -- graft-lf-to-from i (nd .i (c , δ₀)) δ (p₀ , p₁) = 
+    --   let ih = graft-lf-to-from (τ P i c p₀) (δ₀ p₀) (λ p₂ → δ (p₀ , p₂)) p₁
+    --   in ap (λ p₂ → p₀ , p₂) ih
+
+    -- graft-lf-from-to : (i : I) (w : W P i)
+    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
+    --   → (p : Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p)))
+    --   → graft-lf-from i w δ (graft-lf-to i w δ p) == p
+    -- graft-lf-from-to i (lf .i) δ (unit , p₁) = idp
+    -- graft-lf-from-to i (nd .i (c , δ₀)) δ ((p₀ , p₁) , p₂) =
+    --   let ih = graft-lf-from-to (τ P i c p₀) (δ₀ p₀) (λ p₃ → δ (p₀ , p₃)) (p₁ , p₂)
+    --       ρ-fr-δ x = ρ-fr (τ-fr (τ P i c (fst x)) (δ₀ (fst x)) (snd x)) (δ x)
+    --   in pair= (pair= idp (fst= ih)) (↓-ap-in ρ-fr-δ (λ x → (p₀ , x)) (snd= ih))
+
+    -- graft-lf-eqv : (i : I) (w : W P i)
+    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
+    --   → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p))
+    --     ≃ ρ-fr i (graft i w δ)
+    -- graft-lf-eqv i w δ =
+    --   equiv (graft-lf-to i w δ) (graft-lf-from i w δ)
+    --         (graft-lf-to-from i w δ) (graft-lf-from-to i w δ)
+
+    -- --
+    -- --  Nodes in a graft
+    -- --
+    
+    -- graft-nd-to : (i : I) (w : W P i)
+    --   → (ε : (l : leaf P w) → W P (leaf-type P w l))
+    --   → node P w ⊔ Σ (leaf P w) (node P ∘ ε) 
+    --   → node P (graft i w ε)
+    -- graft-nd-to i (lf .i) ε (inl ())
+    -- graft-nd-to i (lf .i) ε (inr (unit , n)) = n
+    -- graft-nd-to i (nd .i (c , δ)) ε (inl true) = inl unit
+    -- graft-nd-to i (nd .i (c , δ)) ε (inl (inr (p , n))) =
+    --   inr (p , graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l)) (inl n))
+    -- graft-nd-to i (nd .i (c , δ)) ε (inr ((p , l) , n)) =
+    --   inr (p , (graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l)) (inr (l , n))))
+    
+    -- graft-nd-from : (i : I) (w : W P i)
+    --   → (ε : (l : leaf P w) → W P (leaf-type P w l))
+    --   → node P (graft i w ε)
+    --   → node P w ⊔ Σ (leaf P w) (node P ∘ ε) 
+    -- graft-nd-from i (lf .i) ε n = inr (tt , n)
+    -- graft-nd-from i (nd .i (c , δ)) ε (inl unit) = inl (inl unit)
+    -- graft-nd-from i (nd .i (c , δ)) ε (inr (p , n)) with graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l)) n
+    -- graft-nd-from i (nd .i (c , δ)) ε (inr (p , n)) | inl n' = inl (inr (p , n'))
+    -- graft-nd-from i (nd .i (c , δ)) ε (inr (p , n)) | inr (l , n') = inr ((p , l) , n')
+
+    -- graft-nd-to-from : (i : I) (w : W P i)
+    --   → (ε : (l : leaf P w) → W P (leaf-type P w l))
+    --   → (n : node P (graft i w ε))
+    --   → graft-nd-to i w ε (graft-nd-from i w ε n) == n
+    -- graft-nd-to-from i (lf .i) ε n = idp
+    -- graft-nd-to-from i (nd .i (c , δ)) ε (inl unit) = idp
+    -- graft-nd-to-from i (nd .i (c , δ)) ε (inr (p , n)) with
+    --   (graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l))) n |
+    --   inspect (graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l))) n
+    -- graft-nd-to-from i (nd .i (c , δ)) ε (inr (p , n)) | inl n' | ingraph e =
+    --   ap (λ x → inr (p , x)) lem
+  
+    --   where lem = graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l)) (inl n')
+    --                 =⟨ ! e |in-ctx (λ x → graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l)) x) ⟩
+    --               graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l))
+    --                 (graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l)) n)
+    --                 =⟨ graft-nd-to-from (τ P i c p) (δ p) (λ l → ε (p , l)) n ⟩ 
+    --               n ∎ 
+
+    -- graft-nd-to-from i (nd .i (c , δ)) ε (inr (p , n)) | inr (l , n') | ingraph e = 
+    --   ap (λ x → inr (p , x)) lem
+
+    --   where lem = graft-nd-to (τ P i c p) (δ p) (λ l₁ → ε (p , l₁)) (inr (l , n'))
+    --                 =⟨ ! e |in-ctx (λ x → graft-nd-to (τ P i c p) (δ p) (λ l₁ → ε (p , l₁)) x) ⟩ 
+    --               graft-nd-to (τ P i c p) (δ p) (λ l₁ → ε (p , l₁))
+    --                 (graft-nd-from (τ P i c p) (δ p) (λ l₁ → ε (p , l₁)) n)
+    --                 =⟨ graft-nd-to-from (τ P i c p) (δ p) (λ l → ε (p , l)) n ⟩ 
+    --               n ∎
+
+    -- graft-nd-from-to : (i : I) (w : W P i)
+    --   → (ε : (l : leaf P w) → W P (leaf-type P w l))
+    --   → (n : node P w ⊔ Σ (leaf P w) (node P ∘ ε))
+    --   → graft-nd-from i w ε (graft-nd-to i w ε n) == n
+    -- graft-nd-from-to i (lf .i) ε (inl ())
+    -- graft-nd-from-to i (lf .i) ε (inr (unit , n)) = idp
+    -- graft-nd-from-to i (nd .i (c , δ)) ε (inl (inl unit)) = idp
+    -- graft-nd-from-to i (nd .i (c , δ)) ε (inl (inr (p , n))) with 
+    --   (graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l)) ∘ graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l))) (inl n)
+    --   | inspect (graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l)) ∘ graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l))) (inl n)
+    -- graft-nd-from-to i (nd .i (c , δ)) ε (inl (inr (p , n))) | inl n' | ingraph e =
+    --   ap (λ x → inl (inr (p , x))) (–> (inl=inl-equiv n' n) lem)
+
+    --   where lem = inl n' =⟨ ! e ⟩
+    --               graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l))
+    --                 (graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l)) (inl n))
+    --                 =⟨ graft-nd-from-to (τ P i c p) (δ p) (λ l → ε (p , l)) (inl n) ⟩ 
+    --               inl n ∎
+                  
+    -- graft-nd-from-to i (nd .i (c , δ)) ε (inl (inr (p , n))) | inr (l , n') | ingraph e =
+    --   ⊥-elim ((inr≠inl (l , n') n) lem)
+
+    --   where lem = inr (l , n') =⟨ ! e ⟩ 
+    --               graft-nd-from (τ P i c p) (δ p) (λ l₁ → ε (p , l₁))
+    --                 (graft-nd-to (τ P i c p) (δ p) (λ l₁ → ε (p , l₁)) (inl n))
+    --                 =⟨ graft-nd-from-to (τ P i c p) (δ p) (λ l → ε (p , l)) (inl n) ⟩ 
+    --               inl n ∎
+
+    -- graft-nd-from-to i (nd .i (c , δ)) ε (inr ((p , l) , n)) with
+    --   (graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l)) ∘ graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l))) (inr (l , n))
+    --   | inspect (graft-nd-from (τ P i c p) (δ p) (λ l → ε (p , l)) ∘ graft-nd-to (τ P i c p) (δ p) (λ l → ε (p , l))) (inr (l , n))
+    -- graft-nd-from-to i (nd .i (c , δ)) ε (inr ((p , l) , n)) | inl n' | ingraph e =
+    --   ⊥-elim (inl≠inr n' (l , n) lem)
+
+    --   where lem = inl n' =⟨ ! e ⟩
+    --               graft-nd-from (τ P i c p) (δ p) (λ l₁ → ε (p , l₁))
+    --                 (graft-nd-to (τ P i c p) (δ p) (λ l₁ → ε (p , l₁)) (inr (l , n)))
+    --                 =⟨ graft-nd-from-to (τ P i c p) (δ p) (λ l → ε (p , l)) (inr (l , n)) ⟩ 
+    --               inr (l , n) ∎ 
+
+    -- graft-nd-from-to i (nd .i (c , δ)) ε (inr ((p , l) , n)) | inr (l' , n') | ingraph e =
+    --   ap (λ x → inr ((p , fst x) , snd x)) (–> (inr=inr-equiv (l' , n') (l , n)) lem)
+
+    --   where lem = inr (l' , n') =⟨ ! e ⟩
+    --               graft-nd-from (τ P i c p) (δ p) (λ l₁ → ε (p , l₁))
+    --                 (graft-nd-to (τ P i c p) (δ p) (λ l₁ → ε (p , l₁)) (inr (l , n)))
+    --                 =⟨ graft-nd-from-to (τ P i c p) (δ p) (λ l → ε (p , l)) (inr (l , n)) ⟩ 
+    --               inr (l , n) ∎ 
+
+    
+    -- graft-nd-eqv : (i : I) (w : W P i)
+    --   → (ε : (l : leaf P w) → W P (leaf-type P w l))
+    --   → node P w ⊔ Σ (leaf P w) (node P ∘ ε) 
+    --     ≃ node P (graft i w ε)
+    -- graft-nd-eqv i w ε =
+    --   equiv (graft-nd-to i w ε) (graft-nd-from i w ε)
+    --         (graft-nd-to-from i w ε) (graft-nd-from-to i w ε)
+
+
   --   μρ-to-fr : (i : I) (w : W P i)
   --     → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
   --     → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p))
