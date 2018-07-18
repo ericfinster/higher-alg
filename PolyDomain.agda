@@ -8,42 +8,36 @@ module PolyDomain where
   Frame : {I : Type₀} (P : Poly I) {i : I} (w : W P i) (c : γ P i) → Type₀
   Frame {I} P w c = (j : I) → Leaf P w j ≃ ρ P c j
 
-  _//_ : {I : Type₀} (P : Poly I) (F : {i : I} {w : W P i} {c : γ P i} → Frame P w c → Type₀) → Poly (Σ I (γ P))
+  FillingFamily : {I : Type₀} → Poly I → Type₁
+  FillingFamily {I} P = {i : I} {w : W P i} {c : γ P i} → Frame P w c → Type₀
+
+  _//_ : {I : Type₀} (P : Poly I) (F : FillingFamily P) → Poly (Σ I (γ P))
   γ (P // F) (i , c) = Σ (W P i) (λ w → Σ (Frame P w c) F)
   ρ (P // F) (w , f , x) (j , d) = Node P w d
-
-  record PolyDomain {I : Type₀} (P : Poly I) : Type₁ where
-    coinductive
-    field
-
-      F : {i : I} {w : W P i} {c : γ P i} → Frame P w c → Type₀
-      H : PolyDomain (P // F)
-
-  open PolyDomain public
 
   --
   --  The Baez-Dolan substitution operation
   --
 
-  module Substitution {I : Type₀} {P : Poly I} (D : PolyDomain P) where
+  module Substitution {I : Type₀} {P : Poly I} (F : FillingFamily P) where
 
     {-# TERMINATING #-}
     flatten : {i : I} (c : γ P i)
-      → (tr : W (P // (F D)) (i , c))
+      → (tr : W (P // F) (i , c))
       → W P i
 
     -- The flattened tree has a canonical c-frame
     flatten-frm : {i : I} (c : γ P i)
-      → (tr : W (P // (F D)) (i , c))
+      → (tr : W (P // F) (i , c))
       → (j : I) → Leaf P (flatten c tr) j ≃ ρ P c j
 
     substitute : {i : I} (w : W P i)
-      → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F D) c)
+      → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F) c)
       → W P i
 
     -- A substituted tree has the same leaves
     substitute-lf-eqv : {i : I} (w : W P i)
-      → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F D) c)
+      → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F) c)
       → (j : I) → Leaf P (substitute w κ) j ≃ Leaf P w j
 
     flatten c (lf .(_ , c)) = corolla P c
@@ -70,4 +64,16 @@ module PolyDomain where
                          Σ-emap-r (λ l → substitute-lf-eqv (δ k (p k l)) (κ' k l) j)) ∘e
          graft-leaf-eqv P (flatten c tr) ε j
 
+  --
+  --  Polynomial Domains
+  --
+  
+  record PolyDomain {I : Type₀} (P : Poly I) : Type₁ where
+    coinductive
+    field
+
+      F : {i : I} {w : W P i} {c : γ P i} → Frame P w c → Type₀
+      H : PolyDomain (P // F)
+
+  open PolyDomain public
 
