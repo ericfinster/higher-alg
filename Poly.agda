@@ -41,7 +41,28 @@ module Poly where
 
     lf-lf-contr : (i : I) → is-contr (Σ I (Leaf (lf i)))
     lf-lf-contr i = has-level-in ((i , leaf i) , λ { (_ , leaf .i) → idp })
-    
+
+    -- Used in Baez-Dolan substitution
+    nd-lf-eqv : {i : I} (c : γ P i)
+      → (δ : ∀ j → (p : ρ P c j) → W j) (k : I)
+      → Σ I (λ j → Σ (ρ P c j) (λ p → Leaf (δ j p) k))
+        ≃ Leaf (nd (c , δ)) k
+    nd-lf-eqv c δ k = equiv to from to-from from-to
+
+      where PlcLf = Σ I (λ j → Σ (ρ P c j) (λ p → Leaf (δ j p) k))
+
+            to : PlcLf → Leaf (nd (c , δ)) k
+            to (i , p , l) = stem c δ p l
+
+            from : Leaf (nd (c , δ)) k → PlcLf
+            from (stem c δ p l) = _ , p , l
+
+            to-from : ∀ l → to (from l) == l
+            to-from (stem c δ p l) = idp
+
+            from-to : ∀ pl → from (to pl) == pl
+            from-to (i , p , l) = idp
+
     corolla : {i : I} (c : γ P i) → W i
     corolla {i} c = nd (c , λ j p → lf j)
 
@@ -95,98 +116,54 @@ module Poly where
           δ' j p = graft (δ j p) (ε' j p)
       in nd (c , δ')
 
-    graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
-      → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
-      → Leaf P (graft w ε) k
-    graft-leaf-to (lf i) ε k (.i , leaf .i , l) = l
-    graft-leaf-to (nd (c , δ)) ε k (j , stem _ _ p l₀ , l₁) = 
-      let ε' j p k l = ε k (stem c δ p l)
-          δ' j p = graft (δ j p) (ε' j p)
-      in stem c _ p (graft-leaf-to (δ _ p) (ε' _ p) k (j , l₀ , l₁))
-
-    graft-leaf-from : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
-      → Leaf P (graft w ε) k
-      → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
-    graft-leaf-from (lf i) ε k l = i , leaf i , l
-    graft-leaf-from (nd (c , δ)) ε k (stem _ _ {j} p l) = 
-      let (s , t , u) = graft-leaf-from (δ j p) (λ k l → ε k (stem c δ p l)) k l
-      in s , stem _ _ p t , u
-
-    graft-leaf-to-from : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
-      → (k : I) (l : Leaf P (graft w ε) k)
-      → graft-leaf-to w ε k (graft-leaf-from w ε k l) == l
-    graft-leaf-to-from (lf i) ε k l = idp
-    graft-leaf-to-from (nd (c , δ)) ε k (stem _ _ {j} p l) =
-      let ε' j p k l = ε k (stem c δ p l)
-          δ' j p = graft (δ j p) (ε' j p)
-      in ap (λ x → stem c δ' p x) (graft-leaf-to-from (δ j p) (ε' j p) k l) 
-
-    graft-leaf-from-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
-      → (l : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k)))
-      → graft-leaf-from w ε k (graft-leaf-to w ε k l) == l
-    graft-leaf-from-to (lf i) ε k (.i , leaf .i , l₁) = idp
-    graft-leaf-from-to (nd (c , δ)) ε k (j , stem _ _ p l₀ , l₁) =
-      let ε' j p k l = ε k (stem c δ p l)
-          δ' j p = graft (δ j p) (ε' j p)
-          (s , t , u) = graft-leaf-from (δ _ p) (ε' _ p) k
-                          (graft-leaf-to (δ _ p) (ε' _ p) k (j , l₀ , l₁))
-          ih = graft-leaf-from-to (δ _ p) (ε' _ p) k (j , l₀ , l₁)
-      in pair= (fst= ih) (apd↓-cst (λ x → (stem c δ p (fst x) , snd x)) (snd= ih)) 
-
-    graft-leaf-eqv : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
-      → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
-        ≃ Leaf P (graft w ε) k
-    graft-leaf-eqv w ε k =
-      equiv (graft-leaf-to w ε k) (graft-leaf-from w ε k)
-            (graft-leaf-to-from w ε k) (graft-leaf-from-to w ε k)
-
     --
     --  Leaves in a graft
     --
-    
-    -- graft-lf-to : (i : I) (w : W P i)
-    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-    --   → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p) (δ p))
-    --   → ρ-fr i (graft i w δ)
-    -- graft-lf-to i (lf .i) δ (unit , p₁) = p₁
-    -- graft-lf-to i (nd .i (c , δ₀)) δ ((p₀ , p₁) , p₂) =
-    --   p₀ , graft-lf-to (τ P i c p₀) (δ₀ p₀) (λ p₃ → δ (p₀ , p₃)) (p₁ , p₂)
 
-    -- graft-lf-from : (i : I) (w : W P i)
-    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-    --   → ρ-fr i (graft i w δ)
-    --   → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p) (δ p))
-    -- graft-lf-from i (lf .i) δ p = unit , p
-    -- graft-lf-from i (nd .i (c , δ₀)) δ (p₀ , p₁) =
-    --   let pp = graft-lf-from (τ P i c p₀) (δ₀ p₀) (λ p₂ → δ (p₀ , p₂)) p₁
-    --   in (p₀ , fst pp) , snd pp
+    graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
+      → Leaf P (graft w ε) k
+      → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
+    graft-leaf-to (lf i) ε k l = i , leaf i , l
+    graft-leaf-to (nd (c , δ)) ε k (stem _ _ {j} p l) = 
+      let (s , t , u) = graft-leaf-to (δ j p) (λ k l → ε k (stem c δ p l)) k l
+      in s , stem _ _ p t , u
 
-    -- graft-lf-to-from : (i : I) (w : W P i)
-    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-    --   → (p : ρ-fr i (graft i w δ))
-    --   → graft-lf-to i w δ (graft-lf-from i w δ p) == p
-    -- graft-lf-to-from i (lf .i) δ p = idp
-    -- graft-lf-to-from i (nd .i (c , δ₀)) δ (p₀ , p₁) = 
-    --   let ih = graft-lf-to-from (τ P i c p₀) (δ₀ p₀) (λ p₂ → δ (p₀ , p₂)) p₁
-    --   in ap (λ p₂ → p₀ , p₂) ih
+    graft-leaf-from : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
+      → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
+      → Leaf P (graft w ε) k
+    graft-leaf-from (lf i) ε k (.i , leaf .i , l) = l
+    graft-leaf-from (nd (c , δ)) ε k (j , stem _ _ p l₀ , l₁) = 
+      let ε' j p k l = ε k (stem c δ p l)
+          δ' j p = graft (δ j p) (ε' j p)
+      in stem c _ p (graft-leaf-from (δ _ p) (ε' _ p) k (j , l₀ , l₁))
 
-    -- graft-lf-from-to : (i : I) (w : W P i)
-    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-    --   → (p : Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p)))
-    --   → graft-lf-from i w δ (graft-lf-to i w δ p) == p
-    -- graft-lf-from-to i (lf .i) δ (unit , p₁) = idp
-    -- graft-lf-from-to i (nd .i (c , δ₀)) δ ((p₀ , p₁) , p₂) =
-    --   let ih = graft-lf-from-to (τ P i c p₀) (δ₀ p₀) (λ p₃ → δ (p₀ , p₃)) (p₁ , p₂)
-    --       ρ-fr-δ x = ρ-fr (τ-fr (τ P i c (fst x)) (δ₀ (fst x)) (snd x)) (δ x)
-    --   in pair= (pair= idp (fst= ih)) (↓-ap-in ρ-fr-δ (λ x → (p₀ , x)) (snd= ih))
+    graft-leaf-to-from : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
+      → (l : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k)))
+      → graft-leaf-to w ε k (graft-leaf-from w ε k l) == l
+    graft-leaf-to-from (lf i) ε k (.i , leaf .i , l₁) = idp
+    graft-leaf-to-from (nd (c , δ)) ε k (j , stem _ _ p l₀ , l₁) =
+      let ε' j p k l = ε k (stem c δ p l)
+          δ' j p = graft (δ j p) (ε' j p)
+          (s , t , u) = graft-leaf-to (δ _ p) (ε' _ p) k
+                          (graft-leaf-from (δ _ p) (ε' _ p) k (j , l₀ , l₁))
+          ih = graft-leaf-to-from (δ _ p) (ε' _ p) k (j , l₀ , l₁)
+      in pair= (fst= ih) (apd↓-cst (λ x → (stem c δ p (fst x) , snd x)) (snd= ih)) 
 
-    -- graft-lf-eqv : (i : I) (w : W P i)
-    --   → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-    --   → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p))
-    --     ≃ ρ-fr i (graft i w δ)
-    -- graft-lf-eqv i w δ =
-    --   equiv (graft-lf-to i w δ) (graft-lf-from i w δ)
-    --         (graft-lf-to-from i w δ) (graft-lf-from-to i w δ)
+    graft-leaf-from-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
+      → (k : I) (l : Leaf P (graft w ε) k)
+      → graft-leaf-from w ε k (graft-leaf-to w ε k l) == l
+    graft-leaf-from-to (lf i) ε k l = idp
+    graft-leaf-from-to (nd (c , δ)) ε k (stem _ _ {j} p l) =
+      let ε' j p k l = ε k (stem c δ p l)
+          δ' j p = graft (δ j p) (ε' j p)
+      in ap (λ x → stem c δ' p x) (graft-leaf-from-to (δ j p) (ε' j p) k l) 
+
+    graft-leaf-eqv : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) (k : I)
+      → Leaf P (graft w ε) k
+        ≃ Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε j l) k))
+    graft-leaf-eqv w ε k =
+      equiv (graft-leaf-to w ε k) (graft-leaf-from w ε k)
+            (graft-leaf-to-from w ε k) (graft-leaf-from-to w ε k)
 
     -- --
     -- --  Nodes in a graft
@@ -300,49 +277,5 @@ module Poly where
     -- graft-nd-eqv i w ε =
     --   equiv (graft-nd-to i w ε) (graft-nd-from i w ε)
     --         (graft-nd-to-from i w ε) (graft-nd-from-to i w ε)
-
-
-  --   μρ-to-fr : (i : I) (w : W P i)
-  --     → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-  --     → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p))
-  --     → ρ-fr i (μ-fr i w δ)
-  --   μρ-to-fr i (lf .i) δ (unit , p₁) = p₁
-  --   μρ-to-fr i (nd .i (c , δ₀)) δ ((p₀ , p₁) , p₂) = p₀ , μρ-to-fr (τ P i c p₀) (δ₀ p₀) (λ p₃ → δ (p₀ , p₃)) (p₁ , p₂)
-
-  --   μρ-from-fr : (i : I) (w : W P i)
-  --     → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-  --     → ρ-fr i (μ-fr i w δ)
-  --     → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p) (δ p))
-  --   μρ-from-fr i (lf .i) δ p = unit , p
-  --   μρ-from-fr i (nd .i (c , δ₀)) δ (p₀ , p₁) =
-  --     let pp = μρ-from-fr (τ P i c p₀) (δ₀ p₀) (λ p₂ → δ (p₀ , p₂)) p₁
-  --     in (p₀ , fst pp) , snd pp
-
-  --   μρ-to-from-fr : (i : I) (w : W P i)
-  --     → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-  --     → (p : ρ-fr i (μ-fr i w δ))
-  --     → μρ-to-fr i w δ (μρ-from-fr i w δ p) == p
-  --   μρ-to-from-fr i (lf .i) δ p = idp
-  --   μρ-to-from-fr i (nd .i (c , δ₀)) δ (p₀ , p₁) = 
-  --     let ih = μρ-to-from-fr (τ P i c p₀) (δ₀ p₀) (λ p₂ → δ (p₀ , p₂)) p₁
-  --     in ap (λ p₂ → p₀ , p₂) ih
-
-  --   μρ-from-to-fr : (i : I) (w : W P i)
-  --     → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-  --     → (p : Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p)))
-  --     → μρ-from-fr i w δ (μρ-to-fr i w δ p) == p
-  --   μρ-from-to-fr i (lf .i) δ (unit , p₁) = idp
-  --   μρ-from-to-fr i (nd .i (c , δ₀)) δ ((p₀ , p₁) , p₂) =
-  --     let ih = μρ-from-to-fr (τ P i c p₀) (δ₀ p₀) (λ p₃ → δ (p₀ , p₃)) (p₁ , p₂)
-  --         ρ-fr-δ x = ρ-fr (τ-fr (τ P i c (fst x)) (δ₀ (fst x)) (snd x)) (δ x)
-  --     in pair= (pair= idp (fst= ih)) (↓-ap-in ρ-fr-δ (λ x → (p₀ , x)) (snd= ih))
-
-  --   μρ-equiv-fr : (i : I) (w : W P i)
-  --     → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
-  --     → Σ (ρ-fr i w) (λ p → ρ-fr (τ-fr i w p ) (δ p))
-  --       ≃' ρ-fr i (μ-fr i w δ)
-  --   μρ-equiv-fr i w δ =
-  --     equiv' (μρ-to-fr i w δ) (μρ-from-fr i w δ)
-  --            (μρ-to-from-fr i w δ) (μρ-from-to-fr i w δ)
 
 
