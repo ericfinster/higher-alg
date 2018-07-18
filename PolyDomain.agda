@@ -32,7 +32,8 @@ module PolyDomain where
       → (tr : W (P // (F D)) (i , c))
       → W P i
 
-    flatten-lf-eqv : {i : I} (c : γ P i)
+    -- The flattened tree has a canonical c-frame
+    flatten-frm : {i : I} (c : γ P i)
       → (tr : W (P // (F D)) (i , c))
       → (j : I) → Leaf P (flatten c tr) j ≃ ρ P c j
 
@@ -40,6 +41,7 @@ module PolyDomain where
       → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F D) c)
       → W P i
 
+    -- A substituted tree has the same leaves
     substitute-lf-eqv : {i : I} (w : W P i)
       → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F D) c)
       → (j : I) → Leaf P (substitute w κ) j ≃ Leaf P w j
@@ -47,13 +49,13 @@ module PolyDomain where
     flatten c (lf .(_ , c)) = corolla P c
     flatten c (nd ((w , f , x) , ε)) = substitute w ε
 
-    flatten-lf-eqv c (lf .(_ , c)) j = corolla-lf-eqv P c j
-    flatten-lf-eqv c (nd ((w , f , x) , ε)) j = f j ∘e substitute-lf-eqv w ε j
+    flatten-frm c (lf .(_ , c)) j = corolla-lf-eqv P c j
+    flatten-frm c (nd ((w , f , x) , ε)) j = f j ∘e substitute-lf-eqv w ε j
 
     substitute (lf i) κ = lf i
     substitute (nd {i} (c , δ)) κ =
       let tr = κ (i , c) (this c δ)
-          p j l = –> (flatten-lf-eqv c tr j) l
+          p j l = –> (flatten-frm c tr j) l
       in graft P (flatten c tr) (λ j l → substitute (δ j (p j l)) (λ ic n → κ ic (that c δ (p j l) n)))
 
     substitute-lf-eqv (lf i) κ j = ide (Leaf P (lf i) j)

@@ -22,7 +22,7 @@ module Poly where
       nd : {i : I} → ⟦ P ⟧ W i → W i
 
     data Leaf : {i : I} (w : W i) → I → Type₀ where
-      tip : (i : I) → Leaf (lf i) i
+      leaf : (i : I) → Leaf (lf i) i
       stem : {i : I} (c : γ P i)
         → (δ : ∀ j → (p : ρ P c j) → W j)
         → {j : I} → (p : ρ P c j)
@@ -40,7 +40,7 @@ module Poly where
         → Node (nd (c , δ)) d
 
     lf-lf-contr : (i : I) → is-contr (Σ I (Leaf (lf i)))
-    lf-lf-contr i = has-level-in ((i , tip i) , λ { (_ , tip .i) → idp })
+    lf-lf-contr i = has-level-in ((i , leaf i) , λ { (_ , leaf .i) → idp })
     
     corolla : {i : I} (c : γ P i) → W i
     corolla {i} c = nd (c , λ j p → lf j)
@@ -50,13 +50,13 @@ module Poly where
     corolla-lf-eqv c j = equiv to from (λ _ → idp) from-to
 
       where to : Leaf (corolla c) j → ρ P c j
-            to (stem c _ p (tip i)) = p
+            to (stem c _ p (leaf i)) = p
 
             from : ρ P c j → Leaf (corolla c) j
-            from p = stem c _ p (tip j)
+            from p = stem c _ p (leaf j)
 
             from-to : (l : Leaf (corolla c) j) → from (to l) == l
-            from-to (stem c _ p (tip i)) = idp
+            from-to (stem c _ p (leaf i)) = idp
 
   --   -- Annoying.  I seem to blow a bubble.  But I don't think
   --   -- it should be there.  Can you get rid of it?
@@ -89,7 +89,7 @@ module Poly where
     ρ Fr w = Leaf P w
 
     graft : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) → W P i
-    graft (lf i) ε = ε i (tip i)
+    graft (lf i) ε = ε i (leaf i)
     graft (nd (c , δ)) ε = nd (c , λ j p → graft (δ j p) (λ k l → ε k (stem c δ p l)))
 
     -- graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
