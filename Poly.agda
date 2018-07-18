@@ -22,25 +22,25 @@ module Poly where
       nd : {i : I} → ⟦ P ⟧ W i → W i
 
     data Leaf : {i : I} (w : W i) → I → Type₀ where
-      this : (i : I) → Leaf (lf i) i
-      that : {i : I} (c : γ P i)
+      tip : (i : I) → Leaf (lf i) i
+      stem : {i : I} (c : γ P i)
         → (δ : ∀ j → (p : ρ P c j) → W j)
         → {j : I} → (p : ρ P c j)
         → {k : I} → Leaf (δ j p) k
         → Leaf (nd (c , δ)) k
 
     data Node : {i : I} (w : W i) {j : I} (c : γ P j) → Type₀ where
-      here : {i : I} (c : γ P i)
+      this : {i : I} (c : γ P i)
         → (δ : ∀ j → (p : ρ P c j) → W j)
         → Node (nd (c , δ)) c
-      there : {i : I} (c : γ P i)
+      that : {i : I} (c : γ P i)
         → (δ : ∀ j → (p : ρ P c j) → W j)
         → {j : I} → (p : ρ P c j)
-        → {k : I} → {d : γ P i} → Node (δ j p) d
+        → {k : I} → {d : γ P k} → Node (δ j p) d
         → Node (nd (c , δ)) d
 
     lf-lf-contr : (i : I) → is-contr (Σ I (Leaf (lf i)))
-    lf-lf-contr i = has-level-in ((i , this i) , λ { (_ , this .i) → idp })
+    lf-lf-contr i = has-level-in ((i , tip i) , λ { (_ , tip .i) → idp })
     
     corolla : {i : I} (c : γ P i) → W i
     corolla {i} c = nd (c , λ j p → lf j)
@@ -76,8 +76,8 @@ module Poly where
     ρ Fr w = Leaf P w
 
     graft : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) → W P i
-    graft (lf i) ε = ε i (this i)
-    graft (nd (c , δ)) ε = nd (c , λ j p → graft (δ j p) (λ k l → ε k (that c δ p l)))
+    graft (lf i) ε = ε i (tip i)
+    graft (nd (c , δ)) ε = nd (c , λ j p → graft (δ j p) (λ k l → ε k (stem c δ p l)))
 
     -- graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
     --   → (ll : Σ (Σ I (Leaf P w)) (λ { (k , l) → Σ I (Leaf P (ε k l)) }))
