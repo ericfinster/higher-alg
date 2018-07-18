@@ -79,15 +79,10 @@ module Poly where
     graft (lf i) ε = ε i (this i)
     graft (nd (c , δ)) ε = nd (c , λ j p → graft (δ j p) (λ k l → ε k (that c δ p l)))
 
-    -- Now, the next step is to prove the equivalence of the places
-    -- and leafs of the free monad.  From there, the theory goes, we
-    -- should be able to prove that an ∞-operad multiplication is a
-    -- homomorphism.
-
-    graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
-      → (ll : Σ (Σ I (Leaf P w)) (λ { (k , l) → Σ I (Leaf P (ε k l)) }))
-      → Leaf P (graft w ε) (fst (snd ll))
-    graft-leaf-to = {!!}
+    -- graft-leaf-to : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
+    --   → (ll : Σ (Σ I (Leaf P w)) (λ { (k , l) → Σ I (Leaf P (ε k l)) }))
+    --   → Leaf P (graft w ε) (fst (snd ll))
+    -- graft-leaf-to = {!!}
     
   --   μρ-to-fr : (i : I) (w : W P i)
   --     → (δ : (p : ρ-fr i w) → W P (τ-fr i w p))
