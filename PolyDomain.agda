@@ -47,12 +47,8 @@ module PolyDomain where
     flatten c (lf .(_ , c)) = corolla P c
     flatten c (nd ((w , f , x) , ε)) = substitute w ε
 
-    flatten-lf-eqv c (lf .(_ , c)) j = {!!}
-    flatten-lf-eqv c (nd ((w , f , x) , ε)) j = {!!}
-
-    -- subst-lf-eqv c (lf .(_ , c)) = Σ₂-Unit
-    -- subst-lf-eqv c (nd .(_ , c) ((w , f , x) , κ)) =
-    --   frm-eqv f ∘e subst-lcl-lf-eqv w κ 
+    flatten-lf-eqv c (lf .(_ , c)) j = corolla-lf-eqv P c j
+    flatten-lf-eqv c (nd ((w , f , x) , ε)) j = f j ∘e substitute-lf-eqv w ε j
 
     substitute (lf i) κ = lf i
     substitute (nd {i} (c , δ)) κ =

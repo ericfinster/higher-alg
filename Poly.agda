@@ -44,7 +44,20 @@ module Poly where
     
     corolla : {i : I} (c : γ P i) → W i
     corolla {i} c = nd (c , λ j p → lf j)
-    
+
+    corolla-lf-eqv : {i : I} (c : γ P i)
+      → (j : I) → Leaf (corolla c) j ≃ ρ P c j
+    corolla-lf-eqv c j = equiv to from (λ _ → idp) from-to
+
+      where to : Leaf (corolla c) j → ρ P c j
+            to (stem c _ p (tip i)) = p
+
+            from : ρ P c j → Leaf (corolla c) j
+            from p = stem c _ p (tip j)
+
+            from-to : (l : Leaf (corolla c) j) → from (to l) == l
+            from-to (stem c _ p (tip i)) = idp
+
   --   -- Annoying.  I seem to blow a bubble.  But I don't think
   --   -- it should be there.  Can you get rid of it?
   --   corolla-unique : {i : I} (c : γ P i) (w : W i)
