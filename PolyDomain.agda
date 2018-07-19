@@ -99,23 +99,18 @@ module PolyDomain where
     -- pairs is contractible.  This *enforces by typing* that the composites of coherences
     -- have the correct shape.
 
-  record is-coherent {I : Type₀} {P : Poly I} (D : PolyDomain P) : Type₁ where
-    coinductive
-    field
+    -- Yeah, so this is a real problem.  I don't at all see how to prove the slice is
+    -- again a monad.  So, the idea is that we advance the definition by 1 to make it
+    -- truly coinductive.
 
-      has-coherences : {i : I} (c : γ P i) (tr : W (P // (F D)) (i , c))
-        → is-contr (bd-type D i c tr)
-        
-      hom-has-coherences : is-coherent (H D)
-
-  open is-coherent public
-  
   record is-algebraic {I : Type₀} {P : Poly I} (D : PolyDomain P) : Type₁ where
     coinductive
     field
 
-      has-fillers : {i : I} (w : W P i) → is-contr (Σ (γ P i) (λ c → Σ (Frame P w c) (F D)))
-      fillers-coherent : is-coherent D
+      is-fillable : {i : I} (w : W P i) → is-contr (Σ (γ P i) (λ c → Σ (Frame P w c) (F D)))
+      is-coherent : {i : I} (c : γ P i) (tr : W (P // (F D)) (i , c)) → is-contr (bd-type D i c tr)
+      
+      coh-algebraic : is-algebraic (H D)
 
   open is-algebraic public
 
@@ -127,19 +122,19 @@ module PolyDomain where
   module _ {I : Type₀} {P : Poly I} (D : PolyDomain P) (is-alg : is-algebraic D) where
 
     μ : {i : I} (w : W P i) → γ P i
-    μ w = fst (contr-center (has-fillers is-alg w))
+    μ w = fst (contr-center (is-fillable is-alg w))
 
-    μρ-eqv : {i : I} (w : W P i) (j : I) → Leaf P w j ≃ ρ P (μ w) j
-    μρ-eqv w = fst (snd (contr-center (has-fillers is-alg w)))
+    μ-frm : {i : I} (w : W P i) (j : I) → Leaf P w j ≃ ρ P (μ w) j
+    μ-frm w = fst (snd (contr-center (is-fillable is-alg w)))
     
-    μ-witness : {i : I} (w : W P i) → (F D) (μρ-eqv w)
-    μ-witness w = snd (snd (contr-center (has-fillers is-alg w))) 
+    μ-witness : {i : I} (w : W P i) → (F D) (μ-frm w)
+    μ-witness w = snd (snd (contr-center (is-fillable is-alg w))) 
 
     η : (i : I) → γ P i
     η i = μ (lf i)
 
     ηρ-eqv : (i : I) (j : I) → Leaf P (lf i) j ≃ ρ P (η i) j
-    ηρ-eqv i = μρ-eqv (lf i)
+    ηρ-eqv i = μ-frm (lf i)
     
     ηρ-contr : (i : I) → is-contr (Σ I (ρ P (η i)))
     ηρ-contr i = equiv-preserves-level (Σ-emap-r (ηρ-eqv i)) ⦃ lf-lf-contr P i ⦄
@@ -151,11 +146,47 @@ module PolyDomain where
             ctr = lf (i , c)
 
             el : F D (λ j → corolla-lf-eqv P c j)
-            el = fst (contr-center (has-coherences (fillers-coherent is-alg) c ctr))
+            el = fst (contr-center (is-coherent is-alg c ctr))
 
             hence : Σ (γ P i) (λ c₁ → Σ (Frame P (corolla P c) c₁) (F D))
             hence = c , corolla-lf-eqv P c , el
 
-            coh : contr-center (has-fillers is-alg (corolla P c)) == hence
-            coh = contr-path (has-fillers is-alg (corolla P c)) hence
+            coh : contr-center (is-fillable is-alg (corolla P c)) == hence
+            coh = contr-path (is-fillable is-alg (corolla P c)) hence
+
+    -- Uh, this one was pretty easy
+    unit-l : (i : I) (w : W P i) → μ (graft P (lf i) (λ { j (leaf .j) → w })) == μ w
+    unit-l i w = idp
+
+    -- There's a different formulation which might be more intersting ...
+    -- unit-l : (i : I) (w : W P i)
+    --   → μ (nd (η i , λ j → {!μ-frm (lf i) j!})) == μ w
+    -- unit-l i w = {!!}
+
+    -- open module T = Substitution (F D)
+
+    -- μ-hm : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
+    --   → μ (graft P w ε) == μ (nd (μ w , λ j p → ε j (<– (μ-frm w j) p )))
+    -- μ-hm {i} w ε = {!!}
+
+    --   where w' : W P i
+    --         w' = nd (μ w , λ j p → ε j (<– (μ-frm w j) p ))
+
+    --         dec : (j : Σ I (γ P)) → Node P w' (snd j) → W (P // F D) j
+    --         dec (i , ._) (this ._ ._) = nd ((w , μ-frm w , μ-witness w) , λ ic _ → lf ic)
+    --         dec (i , c) (that ._ ._ p n) = lf (i , c)
             
+    --         ctr : W (P // F D) (i , μ w')
+    --         ctr = nd ((w' , μ-frm w' , μ-witness w') , dec)
+
+    --         el : F D (flatten-frm (μ w') ctr)
+    --         el = fst (contr-center (has-coherences (fillers-coherent is-alg) (μ w') ctr))
+
+    --         -- As I expected, we need to prove an equation here saying that
+    --         -- subsitution of a bunch of leaves gives back a tree
+    --         -- hence : Σ (γ P i) (λ c₁ → Σ (Frame P (graft P w ε) c₁) (F D))
+    --         -- hence = μ w' , flatten-frm (μ w') ctr , el
+
+
+
+
