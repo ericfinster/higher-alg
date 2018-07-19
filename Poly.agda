@@ -21,6 +21,35 @@ module Poly where
       lf : (i : I) → W i
       nd : {i : I} → ⟦ P ⟧ W i → W i
 
+    ↓-nd-in : {i j : I} (c₀ : γ P i) (c₁ : γ P j)
+      → (δ₀ : ∀ k → (p : ρ P c₀ k) → W k) 
+      → (δ₁ : ∀ k → (p : ρ P c₁ k) → W k) 
+      → (q : i == j) (r : c₀ == c₁ [ γ P ↓ q ])
+      → (s : ∀ k l → (s : k == l) (p₀ : ρ P c₀ k) (p₁ : ρ P c₁ l)
+                    → δ₀ k p₀ == δ₁ l p₁ [ W ↓ s ])
+      → nd (c₀ , δ₀) == nd (c₁ , δ₁) [ W ↓ q ]
+    ↓-nd-in c₀ c₁ δ₀ δ₁ idp idp s =
+      ap (λ x → nd (c₀ , x)) (λ= (λ j → λ= (λ p → s j j idp p p)))
+
+    ↓-nd-in' : {i j : I} (c₀ : γ P i) (c₁ : γ P j)
+      → (δ₀ : ∀ k → (p : ρ P c₀ k) → W k) 
+      → (δ₁ : ∀ k → (p : ρ P c₁ k) → W k) 
+      → (q : i == j) (r : c₀ == c₁ [ γ P ↓ q ])
+      → (s : ∀ k → (p₀ : ρ P c₀ k) (p₁ : ρ P c₁ k) → δ₀ k p₀ == δ₁ k p₁)
+      → nd (c₀ , δ₀) == nd (c₁ , δ₁) [ W ↓ q ]
+    ↓-nd-in' c₀ c₁ δ₀ δ₁ idp idp s =
+      ap (λ x → nd (c₀ , x)) (λ= (λ j → λ= (λ p → s j p p)))
+
+    -- ↓-nd-in' : {i j : I} (c₀ : γ P i) (c₁ : γ P j)
+    --   → (δ₀ : ∀ k → (p : ρ P c₀ k) → W k) 
+    --   → (δ₁ : ∀ k → (p : ρ P c₁ k) → W k) 
+    --   → (q : i == j) (r : c₀ == c₁ [ γ P ↓ q ])
+    --   → (s : ∀ k l → (p₀ : ρ P c₀ k) (p₁ : ρ P c₁ l)
+    --                → (k , δ₀ k p₀) == (l , δ₁ l p₁))
+    --   → nd (c₀ , δ₀) == nd (c₁ , δ₁) [ W ↓ q ]
+    -- ↓-nd-in' c₀ c₁ δ₀ δ₁ q r s = {!!}
+      -- ap (λ x → nd (c₀ , x)) (λ= (λ j → λ= (λ p → {!ev j j p p!})))
+
     data Leaf : {i : I} (w : W i) → I → Type₀ where
       leaf : (i : I) → Leaf (lf i) i
       stem : {i : I} (c : γ P i)
@@ -28,6 +57,9 @@ module Poly where
         → {j : I} → (p : ρ P c j)
         → {k : I} → Leaf (δ j p) k
         → Leaf (nd (c , δ)) k
+
+    lf-lf-contr : (i : I) → is-contr (Σ I (Leaf (lf i)))
+    lf-lf-contr i = has-level-in ((i , leaf i) , λ { (_ , leaf .i) → idp })
 
     data Node : {i : I} (w : W i) {j : I} (c : γ P j) → Type₀ where
       this : {i : I} (c : γ P i)
@@ -38,9 +70,6 @@ module Poly where
         → {j : I} → (p : ρ P c j)
         → {k : I} → {d : γ P k} → Node (δ j p) d
         → Node (nd (c , δ)) d
-
-    lf-lf-contr : (i : I) → is-contr (Σ I (Leaf (lf i)))
-    lf-lf-contr i = has-level-in ((i , leaf i) , λ { (_ , leaf .i) → idp })
 
     -- Used in Baez-Dolan substitution
     nd-lf-eqv : {i : I} (c : γ P i)
@@ -79,8 +108,102 @@ module Poly where
             from-to : (l : Leaf (corolla c) j) → from (to l) == l
             from-to (stem c _ p (leaf i)) = idp
 
-  --   -- Annoying.  I seem to blow a bubble.  But I don't think
-  --   -- it should be there.  Can you get rid of it?
+    _≋_ : {i : I} (w₀ w₁ : W i) → Type₀
+    w₀ ≋ w₁ = {i : I} (c : γ P i) → Node w₀ c ≃ Node w₁ c 
+
+    lf-eqv : {i j : I} (w₀ : W i) (w₁ : W j) → Type₀
+    lf-eqv w₀ w₁ = (k : I) → Leaf w₀ k ≃ Leaf w₁ k
+
+    nd-eqv : {i j : I} (w₀ : W i) (w₁ : W j) → Type₀
+    nd-eqv w₀ w₁ = {k : I} (c : γ P k) → Node w₀ c ≃ Node w₁ c
+
+    node-height : {i j : I} {w : W i} {c : γ P j} → Node w c → ℕ
+    node-height {w = lf i} ()
+    node-height {w = nd (c , δ)} (this .c .δ) = O
+    node-height {w = nd (c , δ)} (that .c .δ p n) = S (node-height n)
+
+    is-height-preserving' : {i j : I} {w₀ : W i} {w₁ : W j} → nd-eqv w₀ w₁ → Type₀
+    is-height-preserving' {_} {_} {w₀} {w₁} e =
+      (k : I) (c : γ P k) (n : Node w₀ c)
+      → node-height n == node-height (–> (e c) n)
+
+    is-height-preserving : {i : I} {w₀ w₁ : W i} → w₀ ≋ w₁ → Type₀
+    is-height-preserving {_} {w₀} {w₁} e =
+      (i : I) (c : γ P i) (n : Node w₀ c)
+      → node-height n == node-height (–> (e c) n)
+
+    is-height-preserving-is-prop : {i : I} {w₀ w₁ : W i} (e : w₀ ≋ w₁)
+      → is-prop (is-height-preserving e)
+    is-height-preserving-is-prop e =
+      Π-level (λ i → Π-level (λ c → Π-level (λ n →
+        has-level-apply ℕ-is-set (node-height n) (node-height (–> (e c) n)))))
+
+    lf-nd-elim : ∀ {ℓ} {X : Type ℓ} {i j : I} {c : γ P j} → Node (lf i) c → X
+    lf-nd-elim ()
+
+    -- module Local {i j : I} (c₀ : γ P i) (c₁ : γ P j)
+    --   (δ₀ : ∀ j → ρ P c₀ j → W j)
+    --   (δ₁ : ∀ j → ρ P c₁ j → W j)
+    --   (e : nd-eqv (nd (c₀ , δ₀)) (nd (c₁ , δ₁)))
+    --   (is-hp : is-height-preserving' e) where
+
+    -- base-path' : {i j : I} (c₀ : γ P i) (c₁ : γ P j) (α : i == j)
+    --   → (δ₀ : ∀ j → ρ P c₀ j → W j)
+    --   → (δ₁ : ∀ j → ρ P c₁ j → W j)
+    --   → (e : nd-eqv (nd (c₀ , δ₀)) (nd (c₁ , δ₁)))
+    --   → (is-hp : is-height-preserving' e)
+    --   → (i , c₀) == (j , c₁)
+    -- base-path' c₀ c₁ α δ₀ δ₁ e is-hp with (–> (e c₀) (this c₀ δ₀)) | inspect (–> (e c₀)) (this c₀ δ₀)
+    -- base-path' c₀ .c₀ α δ₀ δ₁ e is-hp | this .c₀ .δ₁ | _ = {!!}
+    -- base-path' c₀ c₁ α δ₀ δ₁ e is-hp | that .c₁ .δ₁ p n | ingraph x =
+    --   ⊥-elim (ℕ-O≠S (node-height n) (is-hp _ c₀ (this c₀ δ₀) ∙ ap node-height x))
+
+    -- base-path : {i j : I} (c₀ : γ P i) (c₁ : γ P j)
+    --   → (δ₀ : ∀ j → ρ P c₀ j → W j)
+    --   → (δ₁ : ∀ j → ρ P c₁ j → W j)
+    --   → (e : nd-eqv (nd (c₀ , δ₀)) (nd (c₁ , δ₁)))
+    --   → (is-hp : is-height-preserving' e)
+    --   → (i , c₀) == (j , c₁)
+    -- base-path c₀ c₁ δ₀ δ₁ e is-hp with (–> (e c₀) (this c₀ δ₀)) | inspect (–> (e c₀)) (this c₀ δ₀)
+    -- base-path c₀ .c₀ δ₀ δ₁ e is-hp | this .c₀ .δ₁ | _ = idp
+    -- base-path c₀ c₁ δ₀ δ₁ e is-hp | that .c₁ .δ₁ p n | ingraph α =
+    --   ⊥-elim (ℕ-O≠S (node-height n) (is-hp _ c₀ (this c₀ δ₀) ∙ ap node-height α))
+
+    -- reconstruct : {i j : I} (w₀ : W i) (w₁ : W j)
+    --   → (α : lf-eqv w₀ w₁)
+    --   → (β : nd-eqv w₀ w₁)
+    --   → (is-hp : is-height-preserving' β)
+    --   → (q : i == j) → w₀ == w₁ [ W ↓ q ]
+    -- reconstruct (lf i) (lf j) α β is-hp q = apd lf q
+    -- reconstruct (lf i) (nd (c₁ , δ₁)) α β is-hp q = lf-nd-elim (<– (β c₁) (this c₁ δ₁))
+    -- reconstruct (nd (c₀ , δ₀)) (lf j) α β is-hp q = lf-nd-elim (–> (β c₀) (this c₀ δ₀))
+    -- reconstruct (nd (c₀ , δ₀)) (nd (c₁ , δ₁)) α β is-hp q =
+    --   ↓-nd-in c₀ c₁ δ₀ δ₁ q {!!}
+    --     (λ k l s p₀ p₁ → reconstruct (δ₀ k p₀) (δ₁ l p₁) {!!} {!!} {!!} s)
+
+    -- reconstruct : {i j : I} (w₀ : W i) (w₁ : W j)
+    --   → (α : lf-eqv w₀ w₁)
+    --   → (β : nd-eqv w₀ w₁)
+    --   → (is-hp : is-height-preserving' β)
+    --   → (i , w₀) == (j , w₁)
+    -- reconstruct (lf i) (lf j) α β is-hp with –> (α i) (leaf i)
+    -- reconstruct (lf .j) (lf j) α β is-hp | leaf .j = idp
+    -- reconstruct (lf i) (nd (c₁ , δ₁)) α β is-hp = lf-nd-elim (<– (β c₁) (this c₁ δ₁))
+    -- reconstruct (nd (c₀ , δ₀)) (lf j) α β is-hp = lf-nd-elim (–> (β c₀) (this c₀ δ₀))
+    -- reconstruct (nd (c₀ , δ₀)) (nd (c₁ , δ₁)) α β is-hp with (–> (β c₀) (this c₀ δ₀)) | inspect (–> (β c₀)) (this c₀ δ₀)
+    -- reconstruct (nd (c₀ , δ₀)) (nd (c₁ , δ₁)) α β is-hp | that .c₁ .δ₁ p n | x = {!!}
+    -- reconstruct (nd {i} (c₀ , δ₀)) (nd (.c₀ , δ₁)) α β is-hp | this .c₀ .δ₁ | ingraph e =
+    --   ap (λ x → (i , nd (c₀ , x))) (λ= (λ j → λ= (λ p → {!reconstruct (δ₀ j p) (δ₁ j p) ? ? ?!})))
+
+      -- let bp = base-path c₀ c₁ δ₀ δ₁ β is-hp
+      --     ih k l p₀ p₁ = reconstruct (δ₀ k p₀) (δ₁ l p₁) {!!} {!!} {!!}
+      -- in pair= (fst= bp) {!!} -- pair= (fst= bp) (↓-nd-in c₀ c₁ δ₀ δ₁ (fst= bp) (snd= bp) {!ih!})
+      
+
+    -- Phhhh.  Okay, getting there.  I have to prove the reconstruction lemma.
+    -- I feel like this is going to be slightly annoying, which is why I am
+    -- hesitating just a bit.
+
   --   corolla-unique : {i : I} (c : γ P i) (w : W i)
   --     → (is-c : is-contr (node w))
   --     → (pth : node-type w (contr-center is-c) == (i , c))
