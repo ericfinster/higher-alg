@@ -2,6 +2,7 @@
 
 open import HoTT
 open import Poly
+open import Util
 
 module PolyDomain where
 
@@ -74,7 +75,26 @@ module PolyDomain where
       → Σ (Σ I (γ P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // F) (κ ke n) jd))
         ≃ Node P (substitute w κ) (snd jd) 
 
-    bd-frame c (lf .(_ , c)) (j , d) = {!!} -- Okay, right, leaves of a leaf are nodes of a corolla ...
+    lf-corolla-eqv : {i j : I} (c : γ P i) (d : γ P j)
+      → Leaf (P // F) (lf (i , c)) (j , d)
+        ≃ Node P (nd (c , λ k p → lf k)) d
+    lf-corolla-eqv {i} {j} c d = equiv to from to-from from-to
+
+      where to : Leaf (P // F) (lf (i , c)) (j , d) → Node P (nd (c , λ k p → lf k)) d
+            to (leaf .(_ , _)) = this
+
+            from : Node P (nd (c , λ k p → lf k)) d → Leaf (P // F) (lf (i , c)) (j , d)
+            from this = leaf (i , c)
+            from (that p ())
+
+            to-from : (n : Node P (nd (c , λ k p → lf k)) d) → to (from n) == n
+            to-from this = idp
+            to-from (that p ())
+            
+            from-to : (l : Leaf (P // F) (lf (i , c)) (j , d)) → from (to l) == l
+            from-to (leaf .(_ , _)) = idp
+            
+    bd-frame c (lf .(_ , c)) (j , d) = lf-corolla-eqv c d 
     bd-frame c (nd ((w , f , x) , ε)) (j , d) =
       substitute-nd-eqv w ε (j , d) ∘e
       (nd-lf-eqv (P // F) (w , f , x) ε (j , d))⁻¹  
@@ -111,15 +131,21 @@ module PolyDomain where
       split-eqv : A ≃ Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B
       split-eqv = equiv split-to split-from split-to-from split-from-to
 
-
-    substitute-nd-eqv (lf i) κ (j , d) = {!!} -- Trivial, both are empty
+    {-# TERMINATING #-}
+    substitute-nd-eqv (lf i) κ (j , d) =
+      equiv (λ { (_ , () , _) }) (λ { () }) (λ { () }) λ { (_ , () , _) }
     substitute-nd-eqv (nd {i} (c , δ)) κ (j , d) = 
       let open SplitLemma δ κ d
           tr = κ (i , c) this 
           p j l = –> (flatten-frm c tr j) l
           κ' j l ic n = κ ic (that (p j l) n)
           ε j l = substitute (δ j (p j l)) (κ' j l) 
-      in graft-node-eqv P (flatten c tr) ε d ∘e {!!} ∘e split-eqv 
+      in graft-node-eqv P (flatten c tr) ε d ∘e
+         ⊔-emap (bd-frame c (κ (i , c) this) (j , d))
+           (Σ-emap-r (λ k → (Σ-emap-r (λ l → substitute-nd-eqv (δ k (p k l)) (κ' k l) (j , d))) ∘e
+            Σ-emap-l (λ p → Σ (Σ I (γ P)) (λ le → Σ (Node P (δ k p) (snd le)) (λ n → Leaf (P // F) (κ le (that p n)) (j , d))))
+              (flatten-frm c (κ (i , c) this) k) ⁻¹)) ∘e 
+         split-eqv 
 
   --
   --  Polynomial Domains

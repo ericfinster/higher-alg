@@ -1,7 +1,7 @@
 {-# OPTIONS --without-K --rewriting #-}
 
 open import HoTT
-open import Inspect
+open import Util
 
 module Poly where
 
