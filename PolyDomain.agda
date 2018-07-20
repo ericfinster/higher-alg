@@ -1,4 +1,4 @@
-{-# OPTIONS --without-K --rewriting #-}
+{-# OPTIONS --without-K --rewriting --type-in-type #-}
 
 open import HoTT
 open import Poly
@@ -89,25 +89,16 @@ module PolyDomain where
     open module S = Substitution (F D)
     
     bd-type : (i : I) (c : γ P i) (tr : W (P // (F D)) (i , c)) → Type₀
-    bd-type i c tr = Σ ((F D) (flatten-frm c tr)) (λ f → F (H D) {w = tr} {c = (flatten c tr , flatten-frm c tr , f)} (λ jd → bd-frame c tr (snd jd))) 
-
-    -- Okay, good.  So the second thing I'm being asked is what I still haven't proved:
-    -- that nodes of the Baez-Dolan substitute are the same as the leaves of the filling
-    -- tree.  And in this case, this is a well defined type.
-    
-    -- Phew.  Okay.  And now the axiom is that, for any pasting diagram, the set of such
-    -- pairs is contractible.  This *enforces by typing* that the composites of coherences
-    -- have the correct shape.
-
-    -- Yeah, so this is a real problem.  I don't at all see how to prove the slice is
-    -- again a monad.  So, the idea is that we advance the definition by 1 to make it
-    -- truly coinductive.
+    bd-type i c tr = Σ ((F D) (flatten-frm c tr)) (λ f →
+      F (H D) {c = (flatten c tr , flatten-frm c tr , f)} (λ jd → bd-frame c tr (snd jd))) 
 
   record is-algebraic {I : Type₀} {P : Poly I} (D : PolyDomain P) : Type₁ where
     coinductive
     field
 
       is-fillable : {i : I} (w : W P i) → is-contr (Σ (γ P i) (λ c → Σ (Frame P w c) (F D)))
+      -- This should be replaced with the assetion that the type is non-empty.
+      -- That it is contractible then follows from the fillability of higher dimensions
       is-coherent : {i : I} (c : γ P i) (tr : W (P // (F D)) (i , c)) → is-contr (bd-type D i c tr)
       
       coh-algebraic : is-algebraic (H D)
@@ -155,15 +146,32 @@ module PolyDomain where
             coh = contr-path (is-fillable is-alg (corolla P c)) hence
 
     -- Uh, this one was pretty easy
-    unit-l : (i : I) (w : W P i) → μ (graft P (lf i) (λ { j (leaf .j) → w })) == μ w
-    unit-l i w = idp
+    -- unit-l : (i : I) (w : W P i) → μ (graft P (lf i) (λ { j (leaf .j) → w })) == μ w
+    -- unit-l i w = idp
+
+    open module T = Substitution (F D)
 
     -- There's a different formulation which might be more intersting ...
-    -- unit-l : (i : I) (w : W P i)
-    --   → μ (nd (η i , λ j → {!μ-frm (lf i) j!})) == μ w
-    -- unit-l i w = {!!}
+    unit-l : (i : I) (w : W P i)
+      → μ (nd (η i , λ j p → lf-elim P (λ j _ → W P j) w j (<– (μ-frm (lf i) j) p))) == μ w
+    unit-l i w = {!!}
 
-    -- open module T = Substitution (F D)
+      where w' : W P i
+            w' = nd (η i , λ j p → lf-elim P (λ j _ → W P j) w j (<– (μ-frm (lf i) j) p))
+
+            dec : (j : Σ I (γ P)) → Node P w' (snd j) → W (P // F D) j
+            dec (i , ._) (this ._ ._) = nd ((lf i , μ-frm (lf i) , μ-witness (lf i)) , λ { _ () })
+            dec (i , c) (that ._ ._ p n) = lf (i , c) 
+
+            ctr : W (P // F D) (i , μ w')
+            ctr = nd ((w' , μ-frm w' , μ-witness w') , dec)
+
+            el : F D (flatten-frm (μ w') ctr)
+            el = fst (contr-center ((is-coherent is-alg) (μ w') ctr))
+
+            -- So close ....
+            -- hence : Σ (γ P i) (λ c₁ → Σ (Frame P {!!} c₁) (F D))
+            -- hence = μ w' , flatten-frm (μ w') ctr , el
 
     -- μ-hm : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
     --   → μ (graft P w ε) == μ (nd (μ w , λ j p → ε j (<– (μ-frm w j) p )))
@@ -187,6 +195,26 @@ module PolyDomain where
     --         -- hence : Σ (γ P i) (λ c₁ → Σ (Frame P (graft P w ε) c₁) (F D))
     --         -- hence = μ w' , flatten-frm (μ w') ctr , el
 
+  -- Yeah, so, uh, the interesting thing would be the universe.  So at this point, you
+  -- need to rework the levels.  Oh, but okay, you can do type in type.
 
+  𝕌 : Poly ⊤
+  γ 𝕌 unit = Type₀
+  ρ 𝕌 X unit = X
 
+  TermDomain : {I : Type₀} (P : Poly I) → PolyDomain P
+  F (TermDomain P) = cst ⊤
+  H (TermDomain P) = TermDomain (P // cst ⊤)
 
+  -- What happens if we try to show the universe is a monad?
+  𝕌-Mnd : is-algebraic (TermDomain 𝕌)
+  is-fillable 𝕌-Mnd w = has-level-in ((Leaf 𝕌 w unit , (λ { unit → ide (Leaf 𝕌 w tt) }) , unit) , λ { (X , e , unit) → {!!} })
+    -- Exactly, and this is finished by univalence
+  is-coherent 𝕌-Mnd = {!!}
+    -- Here, you have to show it's non-empty, but this should be a lemma about
+    -- grafting or whatever.  You construct it by induction.  
+  coh-algebraic 𝕌-Mnd = {!!}
+
+    -- And the final piece, this is a bit more tricky.  The only way I
+    -- can see that would get you out is that for *any* coherent guy, it's
+    -- double terminal guy is coherent.  Something like this.
