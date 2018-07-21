@@ -265,3 +265,147 @@ module Poly where
       equiv (graft-node-to w ε c) (graft-node-from w ε c)
             (graft-node-to-from w ε c) (graft-node-from-to w ε c)
 
+  --
+  --  Frames and FillingFamilies
+  --
+  
+  Frame : {I : Type₀} (P : Poly I) {i : I} (w : W P i) (c : γ P i) → Type₀
+  Frame {I} P w c = (j : I) → Leaf P w j ≃ ρ P c j
+
+  FillingFamily : {I : Type₀} → Poly I → Type₁
+  FillingFamily {I} P = {i : I} {w : W P i} {c : γ P i} → Frame P w c → Type₀
+
+  _//_ : {I : Type₀} (P : Poly I) (F : FillingFamily P) → Poly (Σ I (γ P))
+  γ (P // F) (i , c) = Σ (W P i) (λ w → Σ (Frame P w c) F)
+  ρ (P // F) (w , f , x) (j , d) = Node P w d
+
+  --
+  --  The Baez-Dolan substitution operation
+  --
+
+  module Substitution {I : Type₀} {P : Poly I} (F : FillingFamily P) where
+
+    {-# TERMINATING #-}
+    flatten : {i : I} (c : γ P i)
+      → (tr : W (P // F) (i , c))
+      → W P i
+
+    -- The flattened tree has a canonical c-frame
+    flatten-frm : {i : I} (c : γ P i)
+      → (tr : W (P // F) (i , c))
+      → (j : I) → Leaf P (flatten c tr) j ≃ ρ P c j
+
+    substitute : {i : I} (w : W P i)
+      → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F) c)
+      → W P i
+
+    -- A substituted tree has the same leaves
+    substitute-lf-eqv : {i : I} (w : W P i)
+      → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F) c)
+      → (j : I) → Leaf P (substitute w κ) j ≃ Leaf P w j
+
+    flatten c (lf .(_ , c)) = corolla P c
+    flatten c (nd ((w , f , x) , ε)) = substitute w ε
+
+    flatten-frm c (lf .(_ , c)) j = corolla-lf-eqv P c j
+    flatten-frm c (nd ((w , f , x) , ε)) j = f j ∘e substitute-lf-eqv w ε j
+
+    substitute (lf i) κ = lf i
+    substitute (nd {i} (c , δ)) κ =
+      let tr = κ (i , c) this
+          p j l = –> (flatten-frm c tr j) l
+          ε j l = substitute (δ j (p j l)) (λ ic n → κ ic (that (p j l) n))
+      in graft P (flatten c tr) ε 
+
+    substitute-lf-eqv (lf i) κ j = ide (Leaf P (lf i) j)
+    substitute-lf-eqv (nd {i} (c , δ)) κ j =
+      let tr = κ (i , c) this 
+          p j l = –> (flatten-frm c tr j) l
+          κ' j l ic n = κ ic (that (p j l) n)
+          ε j l = substitute (δ j (p j l)) (κ' j l) 
+      in nd-lf-eqv P c δ j ∘e
+         Σ-emap-r (λ k → Σ-emap-l (λ p → Leaf P (δ k p) j) (flatten-frm c tr k) ∘e
+                         Σ-emap-r (λ l → substitute-lf-eqv (δ k (p k l)) (κ' k l) j)) ∘e
+         graft-leaf-eqv P (flatten c tr) ε j
+
+    bd-frame : {i : I} (c : γ P i)
+      → (tr : W (P // F) (i , c))
+      → (jd : Σ I (γ P)) → Leaf (P // F) tr jd ≃ Node P (flatten c tr) (snd jd)
+
+    substitute-nd-eqv : {i : I} (w : W P i)
+      → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F) c)
+      → (jd : Σ I (γ P))
+      → Σ (Σ I (γ P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // F) (κ ke n) jd))
+        ≃ Node P (substitute w κ) (snd jd) 
+
+    lf-corolla-eqv : {i j : I} (c : γ P i) (d : γ P j)
+      → Leaf (P // F) (lf (i , c)) (j , d)
+        ≃ Node P (nd (c , λ k p → lf k)) d
+    lf-corolla-eqv {i} {j} c d = equiv to from to-from from-to
+
+      where to : Leaf (P // F) (lf (i , c)) (j , d) → Node P (nd (c , λ k p → lf k)) d
+            to (leaf .(_ , _)) = this
+
+            from : Node P (nd (c , λ k p → lf k)) d → Leaf (P // F) (lf (i , c)) (j , d)
+            from this = leaf (i , c)
+            from (that p ())
+
+            to-from : (n : Node P (nd (c , λ k p → lf k)) d) → to (from n) == n
+            to-from this = idp
+            to-from (that p ())
+            
+            from-to : (l : Leaf (P // F) (lf (i , c)) (j , d)) → from (to l) == l
+            from-to (leaf .(_ , _)) = idp
+            
+    bd-frame c (lf .(_ , c)) (j , d) = lf-corolla-eqv c d 
+    bd-frame c (nd ((w , f , x) , ε)) (j , d) =
+      substitute-nd-eqv w ε (j , d) ∘e
+      (nd-lf-eqv (P // F) (w , f , x) ε (j , d))⁻¹  
+
+    -- A trivial, technical lemma we need in the proof below
+    module SplitLemma {i : I} {c : γ P i} (δ : ∀ j → ρ P c j → W P j)
+      (κ : (ic : Σ I (γ P)) → Node P (nd (c , δ)) (snd ic) → W (P // F) ic)
+      {j : I} (d : γ P j) where
+
+      A = Σ (Σ I (γ P)) (λ ke → Σ (Node P (nd (c , δ)) (snd ke)) (λ n → Leaf (P // F) (κ ke n) (j , d)))
+      B = Σ I (λ k → Σ (ρ P c k) (λ p →
+                 Σ (Σ I (γ P)) (λ le →
+                   Σ (Node P (δ k p) (snd le)) (λ n →
+                     Leaf (P // F) (κ le (that p n)) (j , d)))))
+
+      split-to : A → Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B
+      split-to ((k , e) , this , l) = inl l
+      split-to ((k , e) , that p n , l) = inr (_ , p , (k , e) , n , l)
+
+      split-from : Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B → A
+      split-from (inl l) = _ , this , l
+      split-from (inr (_ , p , (k , e) , n , l)) = ((k , e) , that p n , l)
+
+      split-to-from : (l : Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B) →
+        split-to (split-from l) == l
+      split-to-from (inl l) = idp
+      split-to-from (inr (_ , p , (k , e) , n , l)) = idp
+
+      split-from-to : (a : A) → split-from (split-to a) == a
+      split-from-to ((k , e) , this , l) = idp
+      split-from-to ((k , e) , that p n , l) = idp
+
+      split-eqv : A ≃ Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B
+      split-eqv = equiv split-to split-from split-to-from split-from-to
+
+    {-# TERMINATING #-}
+    substitute-nd-eqv (lf i) κ (j , d) =
+      equiv (λ { (_ , () , _) }) (λ { () }) (λ { () }) λ { (_ , () , _) }
+    substitute-nd-eqv (nd {i} (c , δ)) κ (j , d) = 
+      let open SplitLemma δ κ d
+          tr = κ (i , c) this 
+          p j l = –> (flatten-frm c tr j) l
+          κ' j l ic n = κ ic (that (p j l) n)
+          ε j l = substitute (δ j (p j l)) (κ' j l) 
+      in graft-node-eqv P (flatten c tr) ε d ∘e
+         ⊔-emap (bd-frame c (κ (i , c) this) (j , d))
+           (Σ-emap-r (λ k → (Σ-emap-r (λ l → substitute-nd-eqv (δ k (p k l)) (κ' k l) (j , d))) ∘e
+            Σ-emap-l (λ p → Σ (Σ I (γ P)) (λ le → Σ (Node P (δ k p) (snd le)) (λ n → Leaf (P // F) (κ le (that p n)) (j , d))))
+              (flatten-frm c (κ (i , c) this) k) ⁻¹)) ∘e 
+         split-eqv 
+
