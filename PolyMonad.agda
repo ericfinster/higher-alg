@@ -6,6 +6,21 @@ open import Util
 
 module PolyMonad where
 
+  CompositeFor : {I : Type₀} {P : Poly I} (F : FillingFamily P)
+    → {i : I} (w : W P i) → Type₀
+  CompositeFor {P = P} F {i} w = Σ (γ P i) (λ c → Σ (Frame P w c) (F w c))
+
+  CoherenceFor : {I : Type₀} {P : Poly I} {F : FillingFamily P} (FF : FillingFamily (P // F))
+    {i : I} {c : γ P i} (pd : W (P // F) (i , c)) → Type₀
+  CoherenceFor {P = P} {F} FF {c = c} pd = Σ (F (flatten F pd) c (flatten-frm F pd))
+    (λ f → FF pd (flatten F pd , flatten-frm F pd , f) (bd-frame F pd))
+
+  CoherenceToComposite : {I : Type₀} {P : Poly I} {F : FillingFamily P} (FF : FillingFamily (P // F))
+   {i : I} {c : γ P i} (pd : W (P // F) (i , c))
+   → CoherenceFor FF pd → CompositeFor FF pd
+  CoherenceToComposite {P = P} {F} FF pd (f₀ , f₁) =
+    (flatten F pd , flatten-frm F pd , f₀) , bd-frame F pd , f₁
+
   --
   --  Polynomial Domains
   --
@@ -14,75 +29,68 @@ module PolyMonad where
     coinductive
     field
 
-      F : {i : I} {w : W P i} {c : γ P i} → Frame P w c → Type₀
+      F : FillingFamily P 
       H : PolyDomain (P // F)
 
   open PolyDomain public
 
-  -- module _ {I : Type₀} {P : Poly I} (D : PolyDomain P) where
+  record is-algebraic {I : Type₀} {P : Poly I} (D : PolyDomain P) : Type₁ where
+    coinductive
+    field
 
-  --   open module S = Substitution (F D)
-    
-  --   bd-type : (i : I) (c : γ P i) (tr : W (P // (F D)) (i , c)) → Type₀
-  --   bd-type i c tr = Σ ((F D) (flatten-frm c tr)) (λ f →
-  --     F (H D) {c = (flatten c tr , flatten-frm c tr , f)} (λ jd → bd-frame c tr (snd jd))) 
+      is-fillable : {i : I} (w : W P i)
+        → is-contr (CompositeFor (F D) w)
 
-  -- record is-algebraic {I : Type₀} {P : Poly I} (D : PolyDomain P) : Type₁ where
-  --   coinductive
-  --   field
+      is-coherent : {i : I} {c : γ P i} (pd : W (P // (F D)) (i , c))
+        → is-equiv (CoherenceToComposite (F (H D)) pd)
+        
+      coh-algebraic : is-algebraic (H D)
 
-  --     is-fillable : {i : I} (w : W P i) → is-contr (Σ (γ P i) (λ c → Σ (Frame P w c) (F D)))
-  --     -- This should be replaced with the assetion that the type is non-empty.
-  --     -- That it is contractible then follows from the fillability of higher dimensions
-  --     is-coherent : {i : I} (c : γ P i) (tr : W (P // (F D)) (i , c)) → is-contr (bd-type D i c tr)
-      
-  --     coh-algebraic : is-algebraic (H D)
+  open is-algebraic public
 
-  -- open is-algebraic public
+  module _ {I : Type₀} {P : Poly I} (D : PolyDomain P) (is-alg : is-algebraic D) where
 
-  --   -- Right, so it's slightly different in that we ask for the structure and the laws
-  --   -- separately.  But it's a bit strange because it's not obviously the case any more
-  --   -- that the "homs" are in fact monads.  So you would have to check this.  But at
-  --   -- least this seems to avoid the difficulty from before.
+    bd-contr : {i : I} {c : γ P i} (tr : W (P // (F D)) (i , c))
+      → is-contr (CoherenceFor (F (H D)) tr)
+    bd-contr {c = c} pd = equiv-preserves-level ((CoherenceToComposite (F (H D)) pd , is-coherent is-alg pd)⁻¹)
+      ⦃ is-fillable (coh-algebraic is-alg) pd ⦄
 
-  -- module _ {I : Type₀} {P : Poly I} (D : PolyDomain P) (is-alg : is-algebraic D) where
+    μ : {i : I} (w : W P i) → γ P i
+    μ w = fst (contr-center (is-fillable is-alg w))
 
-  --   μ : {i : I} (w : W P i) → γ P i
-  --   μ w = fst (contr-center (is-fillable is-alg w))
+    μ-frm : {i : I} (w : W P i) (j : I) → Leaf P w j ≃ ρ P (μ w) j
+    μ-frm w = fst (snd (contr-center (is-fillable is-alg w)))
 
-  --   μ-frm : {i : I} (w : W P i) (j : I) → Leaf P w j ≃ ρ P (μ w) j
-  --   μ-frm w = fst (snd (contr-center (is-fillable is-alg w)))
-    
-  --   μ-witness : {i : I} (w : W P i) → (F D) (μ-frm w)
-  --   μ-witness w = snd (snd (contr-center (is-fillable is-alg w))) 
+    μ-witness : {i : I} (w : W P i) → (F D) w (μ w) (μ-frm w)
+    μ-witness w = snd (snd (contr-center (is-fillable is-alg w))) 
 
-  --   η : (i : I) → γ P i
-  --   η i = μ (lf i)
+    η : (i : I) → γ P i
+    η i = μ (lf i)
 
-  --   ηρ-eqv : (i : I) (j : I) → Leaf P (lf i) j ≃ ρ P (η i) j
-  --   ηρ-eqv i = μ-frm (lf i)
-    
-  --   ηρ-contr : (i : I) → is-contr (Σ I (ρ P (η i)))
-  --   ηρ-contr i = equiv-preserves-level (Σ-emap-r (ηρ-eqv i)) ⦃ lf-lf-contr P i ⦄
+    ηρ-eqv : (i : I) (j : I) → Leaf P (lf i) j ≃ ρ P (η i) j
+    ηρ-eqv i = μ-frm (lf i)
 
-  --   unit-r : (i : I) (c : γ P i) → μ (corolla P c) == c
-  --   unit-r i c = fst= coh
+    ηρ-contr : (i : I) → is-contr (Σ I (ρ P (η i)))
+    ηρ-contr i = equiv-preserves-level (Σ-emap-r (ηρ-eqv i)) ⦃ lf-lf-contr P i ⦄
 
-  --     where ctr : W (P // F D) (i , c)
-  --           ctr = lf (i , c)
+    unit-r : (i : I) (c : γ P i) → μ (corolla P c) == c
+    unit-r i c = fst= coh
 
-  --           el : F D (λ j → corolla-lf-eqv P c j)
-  --           el = fst (contr-center (is-coherent is-alg c ctr))
+      where ctr : W (P // F D) (i , c)
+            ctr = lf (i , c)
+            
+            el : (F D) (corolla P c) c (corolla-lf-eqv P c)
+            el = fst (contr-center (bd-contr ctr)) 
 
-  --           hence : Σ (γ P i) (λ c₁ → Σ (Frame P (corolla P c) c₁) (F D))
-  --           hence = c , corolla-lf-eqv P c , el
+            hence : Σ (γ P i) (λ c₁ → Σ (Frame P (corolla P c) c₁) ((F D) (corolla P c) c₁))
+            hence = c , corolla-lf-eqv P c , el
 
-  --           coh : contr-center (is-fillable is-alg (corolla P c)) == hence
-  --           coh = contr-path (is-fillable is-alg (corolla P c)) hence
+            coh : contr-center (is-fillable is-alg (corolla P c)) == hence
+            coh = contr-path (is-fillable is-alg (corolla P c)) hence
 
-  --   -- Uh, this one was pretty easy
-  --   -- unit-l : (i : I) (w : W P i) → μ (graft P (lf i) (λ { j (leaf .j) → w })) == μ w
-  --   -- unit-l i w = idp
+      -- Uh, this one was pretty easy
+      -- unit-l : (i : I) (w : W P i) → μ (graft P (lf i) (λ { j (leaf .j) → w })) == μ w
+      -- unit-l i w = idp
 
   --   open module T = Substitution (F D)
 
@@ -130,26 +138,3 @@ module PolyMonad where
   --   --         -- hence : Σ (γ P i) (λ c₁ → Σ (Frame P (graft P w ε) c₁) (F D))
   --   --         -- hence = μ w' , flatten-frm (μ w') ctr , el
 
-  -- -- Yeah, so, uh, the interesting thing would be the universe.  So at this point, you
-  -- -- need to rework the levels.  Oh, but okay, you can do type in type.
-
-  -- 𝕌 : Poly ⊤
-  -- γ 𝕌 unit = Type₀
-  -- ρ 𝕌 X unit = X
-
-  -- TermDomain : {I : Type₀} (P : Poly I) → PolyDomain P
-  -- F (TermDomain P) = cst ⊤
-  -- H (TermDomain P) = TermDomain (P // cst ⊤)
-
-  -- -- What happens if we try to show the universe is a monad?
-  -- 𝕌-Mnd : is-algebraic (TermDomain 𝕌)
-  -- is-fillable 𝕌-Mnd w = has-level-in ((Leaf 𝕌 w unit , (λ { unit → ide (Leaf 𝕌 w tt) }) , unit) , λ { (X , e , unit) → {!!} })
-  --   -- Exactly, and this is finished by univalence
-  -- is-coherent 𝕌-Mnd = {!!}
-  --   -- Here, you have to show it's non-empty, but this should be a lemma about
-  --   -- grafting or whatever.  You construct it by induction.  
-  -- coh-algebraic 𝕌-Mnd = {!!}
-
-  --   -- And the final piece, this is a bit more tricky.  The only way I
-  --   -- can see that would get you out is that for *any* coherent guy, it's
-  --   -- double terminal guy is coherent.  Something like this.

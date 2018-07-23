@@ -273,27 +273,27 @@ module Poly where
   Frame {I} P w c = (j : I) → Leaf P w j ≃ ρ P c j
 
   FillingFamily : {I : Type₀} → Poly I → Type₁
-  FillingFamily {I} P = {i : I} {w : W P i} {c : γ P i} → Frame P w c → Type₀
+  FillingFamily {I} P = {i : I} (w : W P i) (c : γ P i) → Frame P w c → Type₀
 
   _//_ : {I : Type₀} (P : Poly I) (F : FillingFamily P) → Poly (Σ I (γ P))
-  γ (P // F) (i , c) = Σ (W P i) (λ w → Σ (Frame P w c) F)
+  γ (P // F) (i , c) = Σ (W P i) (λ w → Σ (Frame P w c) (F w c))
   ρ (P // F) (w , f , x) (j , d) = Node P w d
 
   --
   --  The Baez-Dolan substitution operation
   --
 
-  module Substitution {I : Type₀} {P : Poly I} (F : FillingFamily P) where
+  module _ {I : Type₀} {P : Poly I} (F : FillingFamily P) where
 
     {-# TERMINATING #-}
-    flatten : {i : I} (c : γ P i)
+    flatten : {i : I} {c : γ P i}
       → (tr : W (P // F) (i , c))
       → W P i
 
     -- The flattened tree has a canonical c-frame
-    flatten-frm : {i : I} (c : γ P i)
+    flatten-frm : {i : I} {c : γ P i}
       → (tr : W (P // F) (i , c))
-      → (j : I) → Leaf P (flatten c tr) j ≃ ρ P c j
+      → (j : I) → Leaf P (flatten tr) j ≃ ρ P c j
 
     substitute : {i : I} (w : W P i)
       → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F) c)
@@ -304,33 +304,33 @@ module Poly where
       → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F) c)
       → (j : I) → Leaf P (substitute w κ) j ≃ Leaf P w j
 
-    flatten c (lf .(_ , c)) = corolla P c
-    flatten c (nd ((w , f , x) , ε)) = substitute w ε
+    flatten (lf (i , c)) = corolla P c
+    flatten (nd ((w , f , x) , ε)) = substitute w ε
 
-    flatten-frm c (lf .(_ , c)) j = corolla-lf-eqv P c j
-    flatten-frm c (nd ((w , f , x) , ε)) j = f j ∘e substitute-lf-eqv w ε j
+    flatten-frm (lf (i , c)) j = corolla-lf-eqv P c j
+    flatten-frm (nd ((w , f , x) , ε)) j = f j ∘e substitute-lf-eqv w ε j
 
     substitute (lf i) κ = lf i
     substitute (nd {i} (c , δ)) κ =
       let tr = κ (i , c) this
-          p j l = –> (flatten-frm c tr j) l
+          p j l = –> (flatten-frm tr j) l
           ε j l = substitute (δ j (p j l)) (λ ic n → κ ic (that (p j l) n))
-      in graft P (flatten c tr) ε 
+      in graft P (flatten tr) ε 
 
     substitute-lf-eqv (lf i) κ j = ide (Leaf P (lf i) j)
     substitute-lf-eqv (nd {i} (c , δ)) κ j =
       let tr = κ (i , c) this 
-          p j l = –> (flatten-frm c tr j) l
+          p j l = –> (flatten-frm tr j) l
           κ' j l ic n = κ ic (that (p j l) n)
           ε j l = substitute (δ j (p j l)) (κ' j l) 
       in nd-lf-eqv P c δ j ∘e
-         Σ-emap-r (λ k → Σ-emap-l (λ p → Leaf P (δ k p) j) (flatten-frm c tr k) ∘e
+         Σ-emap-r (λ k → Σ-emap-l (λ p → Leaf P (δ k p) j) (flatten-frm tr k) ∘e
                          Σ-emap-r (λ l → substitute-lf-eqv (δ k (p k l)) (κ' k l) j)) ∘e
-         graft-leaf-eqv P (flatten c tr) ε j
+         graft-leaf-eqv P (flatten tr) ε j
 
-    bd-frame : {i : I} (c : γ P i)
+    bd-frame : {i : I} {c : γ P i}
       → (tr : W (P // F) (i , c))
-      → (jd : Σ I (γ P)) → Leaf (P // F) tr jd ≃ Node P (flatten c tr) (snd jd)
+      → (jd : Σ I (γ P)) → Leaf (P // F) tr jd ≃ Node P (flatten tr) (snd jd)
 
     substitute-nd-eqv : {i : I} (w : W P i)
       → (κ : (c : Σ I (γ P)) → Node P w (snd c) → W (P // F) c)
@@ -357,8 +357,8 @@ module Poly where
             from-to : (l : Leaf (P // F) (lf (i , c)) (j , d)) → from (to l) == l
             from-to (leaf .(_ , _)) = idp
             
-    bd-frame c (lf .(_ , c)) (j , d) = lf-corolla-eqv c d 
-    bd-frame c (nd ((w , f , x) , ε)) (j , d) =
+    bd-frame (lf (i , c)) (j , d) = lf-corolla-eqv c d 
+    bd-frame (nd ((w , f , x) , ε)) (j , d) =
       substitute-nd-eqv w ε (j , d) ∘e
       (nd-lf-eqv (P // F) (w , f , x) ε (j , d))⁻¹  
 
@@ -399,13 +399,13 @@ module Poly where
     substitute-nd-eqv (nd {i} (c , δ)) κ (j , d) = 
       let open SplitLemma δ κ d
           tr = κ (i , c) this 
-          p j l = –> (flatten-frm c tr j) l
+          p j l = –> (flatten-frm tr j) l
           κ' j l ic n = κ ic (that (p j l) n)
           ε j l = substitute (δ j (p j l)) (κ' j l) 
-      in graft-node-eqv P (flatten c tr) ε d ∘e
-         ⊔-emap (bd-frame c (κ (i , c) this) (j , d))
+      in graft-node-eqv P (flatten tr) ε d ∘e
+         ⊔-emap (bd-frame (κ (i , c) this) (j , d))
            (Σ-emap-r (λ k → (Σ-emap-r (λ l → substitute-nd-eqv (δ k (p k l)) (κ' k l) (j , d))) ∘e
             Σ-emap-l (λ p → Σ (Σ I (γ P)) (λ le → Σ (Node P (δ k p) (snd le)) (λ n → Leaf (P // F) (κ le (that p n)) (j , d))))
-              (flatten-frm c (κ (i , c) this) k) ⁻¹)) ∘e 
+              (flatten-frm (κ (i , c) this) k) ⁻¹)) ∘e 
          split-eqv 
 
