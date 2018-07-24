@@ -283,3 +283,7 @@ module Poly where
   γ (P // F) (i , c) = Σ (W P i) (λ w → Σ (Frame P w c) (F w c))
   ρ (P // F) (w , f , x) (j , d) = Node P w d
 
+  filler-inv : {I : Type₀} {P : Poly I} (F : FillingFamily P)
+    → {i : I} {w₀ w₁ : W P i} (p : w₀ == w₁)
+    → (c : γ P i) → Σ (Frame P w₀ c) (F w₀ c) ≃ Σ (Frame P w₁ c) (F w₁ c)
+  filler-inv F idp c = ide _

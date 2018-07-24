@@ -89,47 +89,26 @@ module PolyMonad where
             coh : contr-center (is-fillable is-alg (corolla P c)) == hence
             coh = contr-path (is-fillable is-alg (corolla P c)) hence
 
-      -- Uh, this one was pretty easy
-      -- unit-l : (i : I) (w : W P i) → μ (graft P (lf i) (λ { j (leaf .j) → w })) == μ w
-      -- unit-l i w = idp
+    -- Substituting a trivial decoration
+    -- gives back the tree
+    subst-lemma : {i : I} (w : W P i)
+      → substitute (F D) w (λ ic n → lf ic) == w
+    subst-lemma (lf i) = idp
+    subst-lemma (nd {i} (c , δ)) =
+      ap (λ x → nd (c , x))
+         (λ= (λ j → λ= (λ p → subst-lemma (δ j p))))
 
-  --   open module T = Substitution (F D)
-
-  --   -- There's a different formulation which might be more intersting ...
-  --   unit-l : (i : I) (w : W P i)
-  --     → μ (nd (η i , λ j p → lf-elim P (λ j _ → W P j) w j (<– (μ-frm (lf i) j) p))) == μ w
-  --   unit-l i w = {!!}
-
-  --     where w' : W P i
-  --           w' = nd (η i , λ j p → lf-elim P (λ j _ → W P j) w j (<– (μ-frm (lf i) j) p))
-
-  --           dec : (j : Σ I (γ P)) → Node P w' (snd j) → W (P // F D) j
-  --           dec (i , ._) (this ._ ._) = nd ((lf i , μ-frm (lf i) , μ-witness (lf i)) , λ { _ () })
-  --           dec (i , c) (that ._ ._ p n) = lf (i , c) 
-
-  --           ctr : W (P // F D) (i , μ w')
-  --           ctr = nd ((w' , μ-frm w' , μ-witness w') , dec)
-
-  --           el : F D (flatten-frm (μ w') ctr)
-  --           el = fst (contr-center ((is-coherent is-alg) (μ w') ctr))
-
-  --           -- So close ....
-  --           -- hence : Σ (γ P i) (λ c₁ → Σ (Frame P {!!} c₁) (F D))
-  --           -- hence = μ w' , flatten-frm (μ w') ctr , el
-
-
-    -- -- Substituting a trivial decoration
-    -- -- gives back the tree
-    -- subst-lemma : {i : I} (w : W P i)
-    --   → substitute (F D) w (λ ic n → lf ic) == w
-    -- subst-lemma (lf i) = idp
-    -- subst-lemma (nd {i} (c , δ)) =
-    --   ap (λ x → nd (c , x))
-    --      (λ= (λ j → λ= (λ p → subst-lemma (δ j p))))
-
+    subst-graft-lemma : {i : I} (w : W P i)
+      → (ε : ∀ j → Leaf P w j → W P j)
+      → graft P (substitute (F D) w (λ ic _ → lf ic))
+              (λ j l → substitute (F D) (ε j (substitute-lf-to (F D) w (λ ic _ → lf ic) j l)) (λ ic _ → lf ic))
+        == graft P w ε
+    subst-graft-lemma (lf i) ε = subst-lemma (ε i (leaf i))
+    subst-graft-lemma (nd (c , δ)) ε = ap (λ d → nd (c , d)) (λ= (λ j → λ= (λ p → subst-graft-lemma (δ j p) (λ k l → ε k (stem p l))))) 
+  
     μ-hm : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
       → μ (graft P w ε) == μ (nd (μ w , λ j p → ε j (<– (μ-frm w j) p )))
-    μ-hm {i} w ε = {!!}
+    μ-hm {i} w ε = fst= coh
 
       where w' : W P i
             w' = nd (μ w , λ j p → ε j (<– (μ-frm w j) p ))
@@ -141,13 +120,20 @@ module PolyMonad where
             ctr : W (P // F D) (i , μ w')
             ctr = nd ((w' , μ-frm w' , μ-witness w') , dec)
 
+            claim : flatten (F D) ctr == graft P w ε
+            claim = ap (λ e → graft P (substitute (F D) w (λ ic _ → lf ic)) e)
+                       (λ= (λ j → λ= (λ l → ap (λ x → substitute (F D) (ε j x) (λ ic _ → lf ic))
+                                               (<–-inv-l (μ-frm w j) (substitute-lf-to (F D) w (λ ic _ → lf ic) j l))))) ∙ subst-graft-lemma w ε
+
             el : (F D) (flatten (F D) ctr) (μ w') (flatten-frm (F D) ctr)
             el = fst (contr-center (bd-contr ctr))
 
-            -- As I expected, we need to prove an equation here saying that
-            -- subsitution of a bunch of leaves gives back a tree
             hence : Σ (γ P i) (λ c₁ → Σ (Frame P (graft P w ε) c₁) (F D (graft P w ε) c₁))
-            hence = μ w' , {!flatten-frm (F D) {c = μ w'} ctr!} , {!!} -- flatten-frm (F D) {c = μ w'} ctr , ?
+            hence = μ w' , –> (filler-inv (F D) claim (μ w')) (flatten-frm (F D) ctr , fst (contr-center (bd-contr ctr)))
+
+            coh : contr-center (is-fillable is-alg (graft P w ε)) == hence
+            coh = contr-path (is-fillable is-alg (graft P w ε)) hence
+
 
     record unary-op (i j : I) : Type₀ where
       constructor uop
