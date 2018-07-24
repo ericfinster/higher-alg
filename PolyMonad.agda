@@ -134,7 +134,12 @@ module PolyMonad where
             coh : contr-center (is-fillable is-alg (graft P w ε)) == hence
             coh = contr-path (is-fillable is-alg (graft P w ε)) hence
 
-
+    -- An immediate consequence of the previous should
+    -- be the left unit law:
+    unit-l : (i : I) (w : W P i)
+      → μ w == μ (nd (η i , λ j p →  lf-elim P (λ k _ → W P k) w j (<– (μ-frm (lf i) j) p)))
+    unit-l i w = μ-hm (lf i) (λ j l → lf-elim P (λ k _ → W P k) w j l)
+    
     record unary-op (i j : I) : Type₀ where
       constructor uop
       field
