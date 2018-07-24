@@ -47,42 +47,42 @@ module Poly where
         → {k : I} → {d : γ P k} → Node (δ j p) d
         → Node (nd (c , δ)) d
 
-    -- Used in Baez-Dolan substitution
-    nd-lf-eqv : {i : I} (c : γ P i)
-      → (δ : ∀ j → (p : ρ P c j) → W j) (k : I)
-      → Σ I (λ j → Σ (ρ P c j) (λ p → Leaf (δ j p) k))
-        ≃ Leaf (nd (c , δ)) k
-    nd-lf-eqv c δ k = equiv to from to-from from-to
+    -- -- Used in Baez-Dolan substitution
+    -- nd-lf-eqv : {i : I} (c : γ P i)
+    --   → (δ : ∀ j → (p : ρ P c j) → W j) (k : I)
+    --   → Σ I (λ j → Σ (ρ P c j) (λ p → Leaf (δ j p) k))
+    --     ≃ Leaf (nd (c , δ)) k
+    -- nd-lf-eqv c δ k = equiv to from to-from from-to
 
-      where PlcLf = Σ I (λ j → Σ (ρ P c j) (λ p → Leaf (δ j p) k))
+    --   where PlcLf = Σ I (λ j → Σ (ρ P c j) (λ p → Leaf (δ j p) k))
 
-            to : PlcLf → Leaf (nd (c , δ)) k
-            to (i , p , l) = stem p l
+    --         to : PlcLf → Leaf (nd (c , δ)) k
+    --         to (i , p , l) = stem p l
 
-            from : Leaf (nd (c , δ)) k → PlcLf
-            from (stem p l) = _ , p , l
+    --         from : Leaf (nd (c , δ)) k → PlcLf
+    --         from (stem p l) = _ , p , l
 
-            to-from : ∀ l → to (from l) == l
-            to-from (stem p l) = idp
+    --         to-from : ∀ l → to (from l) == l
+    --         to-from (stem p l) = idp
 
-            from-to : ∀ pl → from (to pl) == pl
-            from-to (i , p , l) = idp
+    --         from-to : ∀ pl → from (to pl) == pl
+    --         from-to (i , p , l) = idp
 
     corolla : {i : I} (c : γ P i) → W i
     corolla {i} c = nd (c , λ j p → lf j)
 
-    corolla-lf-eqv : {i : I} (c : γ P i)
-      → (j : I) → Leaf (corolla c) j ≃ ρ P c j
-    corolla-lf-eqv c j = equiv to from (λ _ → idp) from-to
+    -- corolla-lf-eqv : {i : I} (c : γ P i)
+    --   → (j : I) → Leaf (corolla c) j ≃ ρ P c j
+    -- corolla-lf-eqv c j = equiv to from (λ _ → idp) from-to
 
-      where to : Leaf (corolla c) j → ρ P c j
-            to (stem p (leaf i)) = p
+    --   where to : Leaf (corolla c) j → ρ P c j
+    --         to (stem p (leaf i)) = p
 
-            from : ρ P c j → Leaf (corolla c) j
-            from p = stem p (leaf j)
+    --         from : ρ P c j → Leaf (corolla c) j
+    --         from p = stem p (leaf j)
 
-            from-to : (l : Leaf (corolla c) j) → from (to l) == l
-            from-to (stem p (leaf i)) = idp
+    --         from-to : (l : Leaf (corolla c) j) → from (to l) == l
+    --         from-to (stem p (leaf i)) = idp
 
   module _ {I : Type₀} (P : Poly I) where
 
