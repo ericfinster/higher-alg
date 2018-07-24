@@ -11,59 +11,49 @@ module Examples where
   γ 𝕌 unit = Type₀
   ρ 𝕌 X unit = X
 
-  PathFillers : {I : Type₀} (P : Poly I) (Fam : FillingFamily P)
-    → FillingFamily (P // Fam)
-  PathFillers P Fam {i , c} pd tgt f =
-    flatten Fam pd == fst tgt
+  Sectioned : {I : Type₀} {P : Poly I} (F : FillingFamily P) → Type₀
+  Sectioned {I} {P} F = {i : I} {c : γ P i} (pd : W (P // F) (i , c)) → F (flatten F pd) c (flatten-frm F pd)
 
-  -- PathFillers' : {I : Type₀} (P : Poly I) (Fam : FillingFamily P)
-  --   → FillingFamily (P // Fam)
-  -- PathFillers' P Fam {i , c} pd tgt f = flatten Fam pd , flatten-frm Fam pd , {!!} == tgt
+  SectionedFillers : {I : Type₀} (P : Poly I) (F : FillingFamily P)
+    → Sectioned F
+    → FillingFamily (P // F)
+  SectionedFillers P F σ {i , c} pd tgt ff =
+    (tgt , ff) == ((flatten F pd , flatten-frm F pd , σ pd) , bd-frame F pd)
 
-  PathDomain : {I : Type₀} (P : Poly I) (Fam : FillingFamily P)
-    → PolyDomain (P // Fam)
-  F (PathDomain P Fam) = PathFillers P Fam 
-  H (PathDomain P Fam) = PathDomain (P // Fam) (PathFillers P Fam)
+  -- Right, so this is pretty huge.  What does it get you?
+  sectioned-lemma : {I : Type₀} (P : Poly I) (F : FillingFamily P)
+    → (σ : Sectioned F)
+    → {i : I} {c : γ P i} (pd : W (P // F) (i , c)) → is-contr (CompositeFor (SectionedFillers P F σ) pd)
+  sectioned-lemma P F σ {i} {c} pd = has-level-in (ctr , pth)
 
-  𝕌-Domain : PolyDomain 𝕌
-  F 𝕌-Domain = λ w c f → ⊤
-  H 𝕌-Domain = PathDomain 𝕌 (λ w c f → ⊤)
+    where ctr : CompositeFor (SectionedFillers P F σ) pd
+          ctr = (flatten F pd , flatten-frm F pd , σ pd) , bd-frame F pd , idp
 
-  -- What happens if we try to show the universe is a monad?
-  𝕌-Mnd : is-algebraic 𝕌-Domain
-  is-fillable 𝕌-Mnd w = has-level-in ((Leaf 𝕌 w unit , (λ { unit → ide (Leaf 𝕌 w unit) }) , tt) , λ { (X , e , unit) → {!!} })
-  is-coherent 𝕌-Mnd X = inhab-conn (tt , idp)
-  coh-algebraic 𝕌-Mnd = {!!}
+          pth : (x : CompositeFor (SectionedFillers P F σ) pd) → ctr == x
+          pth ((._ , ._ , ._) , ._ , idp) = idp
 
-  -- Yup, and there you have it.  Only thing left to understand is this
-  -- coinductive process for the path fillers.  The claim you want to
-  -- make is that, if you know a family is uniquely fillable, and that
-  -- its path domain extension has a filling pair, then you can unfold
-  -- once and this remains true.
+  -- So like, I guess the lemma needs to be that if a family is sectioned, so is
+  -- the family of sectioned fillers.  And for this, I guess you will have to
+  -- argue by induction on the pasting diagram.  Could get messy, but I think
+  -- somewhere a calculation like this must appear.
 
-  -- I believe a proof of this would give you both the universe and
-  -- free monads.  But obviously there is still something to understand...
-  
-  pths-has-fillers : {I : Type₀} (P : Poly I) (F : FillingFamily P)
-    → (is-f : {i : I} (w : W P i) → is-contr (CompositeFor P F w))
-    → (is-h : {i : I} {c : γ P i} (tr : W (P // F) (i , c)) → is-connected -1 (bd-type P F (PathFillers P F) tr))
-    → {ic : Σ I (γ P)} → (pd : W (P // F) ic) → is-contr (CompositeFor (P // F) (PathFillers P F) pd) 
-  pths-has-fillers P F is-f is-h pd = Trunc-rec {n = S ⟨-2⟩} {A = bd-type P F (PathFillers P F) pd}
-                                        {B = is-contr (CompositeFor (P // F) (PathFillers P F) pd)} lem mere-bd-filler
+  conj : {I : Type₀} (P : Poly I) (F : FillingFamily P)
+    → (σ : Sectioned F)
+    → Sectioned (SectionedFillers P F σ)
+  conj P F σ {i , c₀} {lf .i , f , x} (lf ._) = {!!}
+  conj P F σ {i , c₀} {nd (c , δ) , f , x} (lf ._) = {!!}
+  conj P F σ {i , c₀} {lf .i , f , x} (nd ((s , t , u) , ε)) = {!!}
+  conj P F σ {i , c₀} {nd (c , δ) , f , x} (nd (α , ε)) = {!!}
 
-    where mere-bd-filler : Trunc (S ⟨-2⟩) (bd-type P F (PathFillers P F) pd)
-          mere-bd-filler = fst (has-level-apply (is-h pd))
+  SectionedDomain : {I : Type₀} (P : Poly I) (F : FillingFamily P)
+    → (σ : Sectioned F)
+    → PolyDomain (P // F)
+  F (SectionedDomain P F σ) = SectionedFillers P F σ
+  H (SectionedDomain P F σ) = SectionedDomain (P // F) (SectionedFillers P F σ) (conj P F σ)
 
-          ctr : bd-type P F (PathFillers P F) pd → CompositeFor (P // F) (PathFillers P F) pd
-          ctr (f₀ , f₁) = (flatten F pd , flatten-frm F pd , f₀) , bd-frame F pd , f₁
-
-          pth : (ff : bd-type P F (PathFillers P F) pd) (cmp : CompositeFor (P // F) (PathFillers P F) pd)
-            → ctr ff == cmp
-          pth (f₀ , f₁) ((._ , y , z) , a , idp) = pair= (pair= f₁ {!!}) {!!}
-
-          lem : bd-type P F (PathFillers P F) pd → is-contr (CompositeFor (P // F) (PathFillers P F) pd)
-          lem ff = has-level-in (ctr ff , pth ff)
-
-  -- Umm.  It looks like I could strengthen the equality to be an equality among full frames, which
-  -- would solve the first part.  But what about the second, where I have to show that every possible
-  -- composite (is?) lives in the bd-frame.  Yeah, still something to understand here....
+  SectionedMonad : {I : Type₀} (P : Poly I) (F : FillingFamily P)
+    → (σ : Sectioned F)
+    → is-algebraic (SectionedDomain P F σ)
+  is-fillable (SectionedMonad P F σ) = sectioned-lemma P F σ 
+  is-coherent (SectionedMonad P F σ) = {!!}
+  coh-algebraic (SectionedMonad P F σ) = SectionedMonad (P // F) (SectionedFillers P F σ) (conj P F σ)

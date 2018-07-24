@@ -1,4 +1,4 @@
-{-# OPTIONS --without-K --rewriting --type-in-type #-}
+{-# OPTIONS --without-K --rewriting #-}
 
 open import HoTT
 open import Poly
@@ -116,25 +116,59 @@ module PolyMonad where
   --           -- hence : Σ (γ P i) (λ c₁ → Σ (Frame P {!!} c₁) (F D))
   --           -- hence = μ w' , flatten-frm (μ w') ctr , el
 
-  --   -- μ-hm : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
-  --   --   → μ (graft P w ε) == μ (nd (μ w , λ j p → ε j (<– (μ-frm w j) p )))
-  --   -- μ-hm {i} w ε = {!!}
 
-  --   --   where w' : W P i
-  --   --         w' = nd (μ w , λ j p → ε j (<– (μ-frm w j) p ))
+    -- -- Substituting a trivial decoration
+    -- -- gives back the tree
+    -- subst-lemma : {i : I} (w : W P i)
+    --   → substitute (F D) w (λ ic n → lf ic) == w
+    -- subst-lemma (lf i) = idp
+    -- subst-lemma (nd {i} (c , δ)) =
+    --   ap (λ x → nd (c , x))
+    --      (λ= (λ j → λ= (λ p → subst-lemma (δ j p))))
 
-  --   --         dec : (j : Σ I (γ P)) → Node P w' (snd j) → W (P // F D) j
-  --   --         dec (i , ._) (this ._ ._) = nd ((w , μ-frm w , μ-witness w) , λ ic _ → lf ic)
-  --   --         dec (i , c) (that ._ ._ p n) = lf (i , c)
+    -- μ-hm : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
+    --   → μ (graft P w ε) == μ (nd (μ w , λ j p → ε j (<– (μ-frm w j) p )))
+    -- μ-hm {i} w ε = {!!}
+
+    --   where w' : W P i
+    --         w' = nd (μ w , λ j p → ε j (<– (μ-frm w j) p ))
+
+    --         dec : (j : Σ I (γ P)) → Node P w' (snd j) → W (P // F D) j
+    --         dec (i , ._) this = nd ((w , μ-frm w , μ-witness w) , λ ic _ → lf ic)
+    --         dec (i , c) (that p n) = lf (i , c)
             
-  --   --         ctr : W (P // F D) (i , μ w')
-  --   --         ctr = nd ((w' , μ-frm w' , μ-witness w') , dec)
+    --         ctr : W (P // F D) (i , μ w')
+    --         ctr = nd ((w' , μ-frm w' , μ-witness w') , dec)
 
-  --   --         el : F D (flatten-frm (μ w') ctr)
-  --   --         el = fst (contr-center (has-coherences (fillers-coherent is-alg) (μ w') ctr))
+    --         el : (F D) (flatten (F D) ctr) (μ w') (flatten-frm (F D) ctr)
+    --         el = {!contr-center (bd-contr ctr) !} -- fst (contr-center (bd-contr ctr)) 
 
-  --   --         -- As I expected, we need to prove an equation here saying that
-  --   --         -- subsitution of a bunch of leaves gives back a tree
-  --   --         -- hence : Σ (γ P i) (λ c₁ → Σ (Frame P (graft P w ε) c₁) (F D))
-  --   --         -- hence = μ w' , flatten-frm (μ w') ctr , el
+    --         -- As I expected, we need to prove an equation here saying that
+    --         -- subsitution of a bunch of leaves gives back a tree
+    --         hence : Σ (γ P i) (λ c₁ → Σ (Frame P (graft P w ε) c₁) (F D (graft P w ε) c₁))
+    --         hence = μ w' , {!flatten-frm (F D) {c = μ w'} ctr!} , {!!} -- flatten-frm (F D) {c = μ w'} ctr , ?
 
+    record unary-op (i j : I) : Type₀ where
+      constructor uop
+      field
+        op : γ P j
+        is-unary : is-contr (Σ I (ρ P op))
+        dom : fst (contr-center is-unary) == i
+
+    open unary-op
+
+    comp-tr : ∀ {i j k} (u : unary-op i j) (v : unary-op j k) → W P k
+    comp-tr (uop c is-u idp) (uop c' is-u' idp) =
+      nd (c' , λ j p → corolla P (transport (γ P) (fst= (contr-path is-u' (j , p))) c)) 
+
+    comp-tr-frm : ∀ {i j} (u : unary-op i j) (v : unary-op j i)
+      → Frame P (comp-tr u v) (η i)
+    comp-tr-frm u v = {!!}
+
+    left-inverse : {i j : I} (u : unary-op i j) → Type₀
+    left-inverse {i} {j} u = Σ (unary-op j i) (λ v → (F D) (comp-tr v u) (η j) (comp-tr-frm v u))
+
+    right-inverse : {i j : I} (u : unary-op i j) → Type₀
+    right-inverse {i} {j} u = Σ (unary-op j i) (λ v → (F D) (comp-tr u v) (η i) (comp-tr-frm u v))
+
+    
