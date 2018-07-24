@@ -203,53 +203,6 @@ module Substitution {I : Type₀} {P : Poly I} (F : FillingFamily P) where
     equiv (bd-frame-to pd jd) (bd-frame-from pd jd)
           (bd-frame-to-from pd jd) (bd-frame-from-to pd jd)
 
-
-  -- -- A trivial, technical lemma we need in the proof below
-  -- module SplitLemma {i : I} {c : γ P i} (δ : ∀ j → ρ P c j → W P j)
-  --   (κ : (ic : Σ I (γ P)) → Node P (nd (c , δ)) (snd ic) → W (P // F) ic)
-  --   {j : I} (d : γ P j) where
-
-  --   A = Σ (Σ I (γ P)) (λ ke → Σ (Node P (nd (c , δ)) (snd ke)) (λ n → Leaf (P // F) (κ ke n) (j , d)))
-  --   B = Σ I (λ k → Σ (ρ P c k) (λ p →
-  --              Σ (Σ I (γ P)) (λ le →
-  --                Σ (Node P (δ k p) (snd le)) (λ n →
-  --                  Leaf (P // F) (κ le (that p n)) (j , d)))))
-
-  --   split-to : A → Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B
-  --   split-to ((k , e) , this , l) = inl l
-  --   split-to ((k , e) , that p n , l) = inr (_ , p , (k , e) , n , l)
-
-  --   split-from : Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B → A
-  --   split-from (inl l) = _ , this , l
-  --   split-from (inr (_ , p , (k , e) , n , l)) = ((k , e) , that p n , l)
-
-  --   split-to-from : (l : Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B) →
-  --     split-to (split-from l) == l
-  --   split-to-from (inl l) = idp
-  --   split-to-from (inr (_ , p , (k , e) , n , l)) = idp
-
-  --   split-from-to : (a : A) → split-from (split-to a) == a
-  --   split-from-to ((k , e) , this , l) = idp
-  --   split-from-to ((k , e) , that p n , l) = idp
-
-  --   split-eqv : A ≃ Leaf (P // F) (κ (i , c) this) (j , d) ⊔ B
-  --   split-eqv = equiv split-to split-from split-to-from split-from-to
-
-  -- substitute-nd-eqv (lf i) κ (j , d) =
-  --   equiv (λ { (_ , () , _) }) (λ { () }) (λ { () }) λ { (_ , () , _) }
-  -- substitute-nd-eqv (nd {i} (c , δ)) κ (j , d) = 
-  --   let open SplitLemma δ κ d
-  --       pd = κ (i , c) this 
-  --       p j l = –> (flatten-frm pd j) l
-  --       κ' j l ic n = κ ic (that (p j l) n)
-  --       ε j l = substitute (δ j (p j l)) (κ' j l) 
-  --   in graft-node-eqv P (flatten pd) ε d ∘e
-  --      ⊔-emap (bd-frame (κ (i , c) this) (j , d))
-  --        (Σ-emap-r (λ k → (Σ-emap-r (λ l → substitute-nd-eqv (δ k (p k l)) (κ' k l) (j , d))) ∘e
-  --         Σ-emap-l (λ p → Σ (Σ I (γ P)) (λ le → Σ (Node P (δ k p) (snd le)) (λ n → Leaf (P // F) (κ le (that p n)) (j , d))))
-  --           (flatten-frm (κ (i , c) this) k) ⁻¹)) ∘e 
-  --      split-eqv 
-
   substitute-nd-to (lf i) κ (j , d) ((k , e) , () , l)
   substitute-nd-to (nd (c , δ)) κ (j , d) ((k , .c) , this , l) = 
     let pd = κ (k , c) this 
@@ -269,8 +222,18 @@ module Substitution {I : Type₀} {P : Poly I} (F : FillingFamily P) where
     in graft-node-to P (flatten pd) ε d (inr (a , l' , transport! Q (flatten-frm-to-from pd a p') n' ))
     
   substitute-nd-from (lf i) κ (j , d) ()
-  substitute-nd-from (nd {i} (c , δ)) κ (j , d) n = {!!}
-  
+  substitute-nd-from (nd {i} (c , δ)) κ (j , d) n with graft-node-from P (flatten (κ (i , c) this)) _ d n
+  substitute-nd-from (nd {i} (c , δ)) κ (j , d) n | inl n' =
+    (i , c) , this , (bd-frame-from (κ (i , c) this) (j , d) n')
+  substitute-nd-from (nd {i} (c , δ)) κ (j , d) n | inr (k , l' , n') = 
+    let pd = κ (i , c) this 
+        p j l = flatten-frm-to pd j l
+        κ' j l ic n = κ ic (that (p j l) n)
+        ε j l = substitute (δ j (p j l)) (κ' j l)
+        p' = flatten-frm-to pd k l'
+        (ke , n'' , l'') = substitute-nd-from (δ k p') (λ ic n₀ → κ ic (that p' n₀)) (j , d) n'
+    in ke , that p' n'' , l''
+    
   substitute-nd-eqv w κ jd =
     equiv (substitute-nd-to w κ jd) (substitute-nd-from w κ jd)
           (substitute-nd-to-from w κ jd) (substitute-nd-from-to w κ jd)
