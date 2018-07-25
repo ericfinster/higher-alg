@@ -98,6 +98,7 @@ module PolyMonad where
       ap (λ x → nd (c , x))
          (λ= (λ j → λ= (λ p → subst-lemma (δ j p))))
 
+    -- The previous lemma is compatible with grafting ...
     subst-graft-lemma : {i : I} (w : W P i)
       → (ε : ∀ j → Leaf P w j → W P j)
       → graft P (substitute (F D) w (λ ic _ → lf ic))
@@ -149,13 +150,52 @@ module PolyMonad where
 
     open unary-op
 
-    comp-tr : ∀ {i j k} (u : unary-op i j) (v : unary-op j k) → W P k
-    comp-tr (uop c is-u idp) (uop c' is-u' idp) =
-      nd (c' , λ j p → corolla P (transport (γ P) (fst= (contr-path is-u' (j , p))) c)) 
+    unary-dec : (X : I → Type₀)
+      → {i j : I} (u : unary-op i j)
+      → X i → ∀ k → ρ P (op u) k → X k
+    unary-dec X (uop c is-u idp) x k p = transport X (fst= (contr-path is-u (k , p))) x
 
+    extend : ∀ {i j} (u : unary-op i j) → W P i → W P j
+    extend u w = nd (op u , unary-dec (W P) u w)
+            
+    extend-lf-to : ∀ {i j} (u : unary-op i j) (w : W P i)
+      → ∀ k → Leaf P (extend u w) k → Leaf P w k
+    extend-lf-to (uop c is-u idp) w k (stem {j = j} p l) =
+      <– (lf-inv P (fst= (contr-path is-u (j , p))) w k) l
+
+    extend-lf-from : ∀ {i j} (u : unary-op i j) (w : W P i)
+      → ∀ k → Leaf P w k → Leaf P (extend u w) k
+    extend-lf-from (uop c is-u idp) w k l =
+      let p = snd (contr-center is-u)
+          pth = fst= (contr-path is-u (contr-center is-u))
+      in stem p (–> (lf-inv P pth w k) l)
+
+    postulate
+    
+      extend-lf-to-from : ∀ {i j} (u : unary-op i j) (w : W P i)
+        → ∀ k → (l : Leaf P w k)
+        → extend-lf-to u w k (extend-lf-from u w k l) == l
+
+      extend-lf-from-to : ∀ {i j} (u : unary-op i j) (w : W P i)
+        → ∀ k → (l : Leaf P (extend u w) k)
+        → extend-lf-from u w k (extend-lf-to u w k l) == l
+
+    extend-lf-eqv : ∀ {i j} (u : unary-op i j) (w : W P i)
+      → ∀ k → Leaf P (extend u w) k ≃ Leaf P w k
+    extend-lf-eqv u w k = equiv (extend-lf-to u w k) (extend-lf-from u w k)
+      (extend-lf-to-from u w k) (extend-lf-from-to u w k)
+
+    comp-tr : ∀ {i j k} (u : unary-op i j) (v : unary-op j k) → W P k
+    comp-tr u v = extend v (corolla P (op u)) 
+
+    -- Yikes.  What a nightmare.  You'll have to simplify this.
     comp-tr-frm : ∀ {i j} (u : unary-op i j) (v : unary-op j i)
       → Frame P (comp-tr u v) (η i)
-    comp-tr-frm u v = {!!}
+    comp-tr-frm {i} u v k =
+      μ-frm (lf i) k ∘e
+      {!!} ∘e
+      corolla-lf-eqv P (op u) k ∘e
+      extend-lf-eqv v (corolla P (op u)) k
 
     left-inverse : {i j : I} (u : unary-op i j) → Type₀
     left-inverse {i} {j} u = Σ (unary-op j i) (λ v → (F D) (comp-tr v u) (η j) (comp-tr-frm v u))

@@ -31,6 +31,25 @@ module Util where
     → u == v [ (λ a → C a (f a)) ↓ p ]
   ↓-apd-lem C f idp idp = idp
 
+  contr-contr-eqv : ∀ {i j} {A : Type i} {B : Type j}
+    → (a-ct : is-contr A)
+    → (b-ct : is-contr B)
+    → A ≃ B
+  contr-contr-eqv {A = A} {B = B} a-ct b-ct =
+    equiv to from to-from from-to
+
+    where to : A → B
+          to a = contr-center b-ct
+
+          from : B → A
+          from b = contr-center a-ct
+
+          to-from : (b : B) → to (from b) == b
+          to-from b = contr-has-all-paths ⦃ b-ct ⦄ (to (from b)) b
+
+          from-to : (a : A) → from (to a) == a
+          from-to a = contr-has-all-paths ⦃ a-ct ⦄ (from (to a)) a
+
   ⊔-emap : ∀ {i i' j j'} {A : Type i} {A' : Type i'}
     → {B : Type j} {B' : Type j'}
     → A ≃ B → A' ≃ B' → A ⊔ A' ≃ B ⊔ B'
