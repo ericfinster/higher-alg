@@ -2,7 +2,7 @@
 
 open import HoTT
 open import Util
-open import Poly
+open import Polynomial
 open import PolyMonad
 
 module Examples where

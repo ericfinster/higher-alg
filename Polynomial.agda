@@ -3,7 +3,7 @@
 open import HoTT
 open import Util
 
-module Poly where
+module Polynomial where
 
   record Poly (I : Type₀) : Type₁ where
     field
