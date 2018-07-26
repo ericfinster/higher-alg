@@ -188,19 +188,19 @@ module PolyMonad where
     comp-tr : ∀ {i j k} (u : unary-op i j) (v : unary-op j k) → W P k
     comp-tr u v = extend v (corolla P (op u)) 
 
-    -- Yikes.  What a nightmare.  You'll have to simplify this.
-    comp-tr-frm : ∀ {i j} (u : unary-op i j) (v : unary-op j i)
-      → Frame P (comp-tr u v) (η i)
-    comp-tr-frm {i} u v k =
-      μ-frm (lf i) k ∘e
-      {!!} ∘e
-      corolla-lf-eqv P (op u) k ∘e
-      extend-lf-eqv v (corolla P (op u)) k
+    -- -- Yikes.  What a nightmare.  You'll have to simplify this.
+    -- comp-tr-frm : ∀ {i j} (u : unary-op i j) (v : unary-op j i)
+    --   → Frame P (comp-tr u v) (η i)
+    -- comp-tr-frm {i} u v k =
+    --   μ-frm (lf i) k ∘e
+    --   {!!} ∘e
+    --   corolla-lf-eqv P (op u) k ∘e
+    --   extend-lf-eqv v (corolla P (op u)) k
 
-    left-inverse : {i j : I} (u : unary-op i j) → Type₀
-    left-inverse {i} {j} u = Σ (unary-op j i) (λ v → (F D) (comp-tr v u) (η j) (comp-tr-frm v u))
+    -- left-inverse : {i j : I} (u : unary-op i j) → Type₀
+    -- left-inverse {i} {j} u = Σ (unary-op j i) (λ v → (F D) (comp-tr v u) (η j) (comp-tr-frm v u))
 
-    right-inverse : {i j : I} (u : unary-op i j) → Type₀
-    right-inverse {i} {j} u = Σ (unary-op j i) (λ v → (F D) (comp-tr u v) (η i) (comp-tr-frm u v))
+    -- right-inverse : {i j : I} (u : unary-op i j) → Type₀
+    -- right-inverse {i} {j} u = Σ (unary-op j i) (λ v → (F D) (comp-tr u v) (η i) (comp-tr-frm u v))
 
     
