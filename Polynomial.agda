@@ -15,6 +15,33 @@ module Polynomial where
   ⟦_⟧ : {I : Type₀} (P : Poly I) → (I → Set) → I → Set
   ⟦ P ⟧ X i = Σ (γ P i) (λ c → ∀ j → (p : ρ P c j) → X j)
 
+  -- Here is the morphism version.
+  record PolyMorph {I J : Type₀} (P : Poly I) (Q : Poly J) : Type₀ where
+    field
+      α : I → J
+      β : {i : I} → γ P i → γ Q (α i)
+      θ : {i : I} (c : γ P i) {j : J}
+        →  ρ Q (β c) j ≃ Σ (hfiber α j) (λ x → ρ P c (fst x))
+
+  record PolyOver {I : Type₀} (P : Poly I) : Type₁ where
+    field
+      Idx : I → Type₀
+      Cns : {i : I} (q : Idx i) (c : γ P i) → Type₀
+      Plc : {i : I} (q : Idx i) {c : γ P i}
+            {j : I} (p : ρ P c j) (r : Idx j) → Type₀
+
+      -- Right, so every place admits a *unique* refinement.
+      ax :  {i : I} (q : Idx i) {c : γ P i}
+            {j : I} (p : ρ P c j) → is-contr (Σ (Idx j) (λ r → Plc q p r))
+
+  open PolyOver public
+
+  -- Hmmm.  This does not seem general enough, since you
+  -- do not allow places to have refined typing.
+  ΣPoly : {I : Type₀} {P : Poly I} (Q : PolyOver P) → Poly (Σ I (Idx Q))
+  γ (ΣPoly {P = P} Q) (i , q) = Σ (γ P i) (λ c → Cns Q q c)
+  ρ (ΣPoly {P = P} Q) {i , q} (c , d) (j , r) = Σ (ρ P c j) (λ p → Plc Q q p r )
+
   module _ {I : Type₀} (P : Poly I) where
   
     data W : I → Type₀ where
@@ -252,21 +279,3 @@ module Polynomial where
       equiv (graft-node-to w ε c) (graft-node-from w ε c)
             (graft-node-to-from w ε c) (graft-node-from-to w ε c)
 
-  --
-  --  Frames and FillingFamilies
-  --
-  
-  Frame : {I : Type₀} (P : Poly I) {i : I} (w : W P i) (c : γ P i) → Type₀
-  Frame {I} P w c = (j : I) → Leaf P w j ≃ ρ P c j
-
-  FillingFamily : {I : Type₀} → Poly I → Type₁
-  FillingFamily {I} P = {i : I} (w : W P i) (c : γ P i) → Frame P w c → Type₀
-
-  _//_ : {I : Type₀} (P : Poly I) (F : FillingFamily P) → Poly (Σ I (γ P))
-  γ (P // F) (i , c) = Σ (W P i) (λ w → Σ (Frame P w c) (F w c))
-  ρ (P // F) (w , f , x) (j , d) = Node P w d
-
-  filler-inv : {I : Type₀} {P : Poly I} (F : FillingFamily P)
-    → {i : I} {w₀ w₁ : W P i} (p : w₀ == w₁)
-    → (c : γ P i) → Σ (Frame P w₀ c) (F w₀ c) ≃ Σ (Frame P w₁ c) (F w₁ c)
-  filler-inv F idp c = ide _

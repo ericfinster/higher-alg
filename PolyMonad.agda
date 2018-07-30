@@ -22,19 +22,6 @@ module PolyMonad where
   CoherenceToComposite {P = P} {F} FF pd (f₀ , f₁) =
     (flatten F pd , flatten-frm F pd , f₀) , bd-frame F pd , f₁
 
-  --
-  --  Polynomial Domains
-  --
-  
-  record PolyDomain {I : Type₀} (P : Poly I) : Type₁ where
-    coinductive
-    field
-
-      F : FillingFamily P 
-      H : PolyDomain (P // F)
-
-  open PolyDomain public
-
   record is-algebraic {I : Type₀} {P : Poly I} (D : PolyDomain P) : Type₁ where
     coinductive
     field

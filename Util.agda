@@ -40,7 +40,29 @@ module Util where
     is-eq f (λ _ → contr-center a-ct)
       (λ b → contr-has-all-paths ⦃ b-ct ⦄ (f (contr-center a-ct)) b)
       (λ a → contr-path a-ct a)
-  
+
+  prop-transp : ∀ {i j} {A : Type i} {B : A → Type j}
+    → {a₀ a₁ : A} (p : a₀ == a₁)
+    → (isp : (a : A) → is-prop (B a))
+    → (b₀ : B a₀) (b₁ : B a₁)
+    → b₀ == b₁ [ B ↓ p ]
+  prop-transp idp isp b₀ b₁ = prop-has-all-paths ⦃ isp _ ⦄ b₀ b₁
+
+  equiv-== : ∀ {i j} {A : Type i} {B : Type j}
+    → {f g : A ≃ B} (e : (a : A) → fst f a == fst g a) → f == g
+  equiv-== {f = f , f-eq} {g = g , g-eq} e =
+    pair= (λ= e) (prop-transp (λ= e)
+          (λ ϕ → is-equiv-is-prop {f = ϕ}) f-eq g-eq)
+
+  ↓-equiv-in : ∀ {i j k} {A : Type i}
+    → {B : (a : A) → Type j} {C : (a : A) → Type k}
+    → {a₀ a₁ : A} {p : a₀ == a₁}
+    → {e : B a₀ ≃ C a₀} {f : B a₁ ≃ C a₁}
+    → (r : (b₀ : B a₀) (b₁ : B a₁) (s : b₀ == b₁ [ B ↓ p ])
+           → fst e b₀ == fst f b₁ [ C ↓ p ])
+    → e == f [ (λ a → B a ≃ C a) ↓ p ]
+  ↓-equiv-in {p = idp} r = equiv-== (λ b → r b b idp)
+
   contr-contr-eqv : ∀ {i j} {A : Type i} {B : Type j}
     → (a-ct : is-contr A)
     → (b-ct : is-contr B)
