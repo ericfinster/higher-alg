@@ -3,6 +3,7 @@
 open import HoTT
 open import Util
 open import Polynomial
+open import PolyDomain
 open import Substitution
 
 module SubstCoh {I : Type₀} {P : Poly I} (F : FillingFamily P) where
