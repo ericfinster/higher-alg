@@ -51,33 +51,16 @@ module Morphism where
     W→ (lf i) = lf (ι→ i)
     W→ (nd (c , δ)) = nd (γ→ c , λ j p → transport (W Q) (ρ←-coh c p) (W→ (δ _ (ρ← c p))) )
 
-    W→-lf-to : {i : I} (w : W P i) (j : J)
-      → Σ (hfiber ι→ j) (Leaf P w ∘ fst)
-      → Leaf Q (W→ w) j
-    W→-lf-to (lf .j) .(ι→ j) ((j , idp) , leaf .j) = leaf (ι→ j)
-    W→-lf-to (nd (c , δ)) .(ι→ j) ((j , idp) , stem {j = k} p l) =
-      stem p' (–> (lf-inv Q (snd (fst (fst (ρ≃ c) p')))
-                  (W→ (δ (ρ←-typ c p') (snd (fst (ρ≃ c) p')))) (ι→ j))
-                    (transport (λ x → Leaf Q (W→ (δ (fst x) (snd x))) (ι→ j))
-                      (pair= (fst= (fst= (! coh))) (↓-ap-in _ _ (snd= (! coh)))) l'))
-
-      where p' : ρ Q (γ→ c) (ι→ k)
-            p' =  <– (ρ≃ c) ((k , idp) , p) 
-            
-            l' : Leaf Q (W→ (δ k p)) (ι→ j)
-            l' = W→-lf-to (δ k p) (ι→ j) ((j , idp) , l)
-  
-            coh : –> (ρ≃ c) (<– (ρ≃ c) ((k , idp) , p)) == (k , idp) , p 
-            coh = <–-inv-r (ρ≃ c) ((k , idp) , p)
-
     -- Ahhhhh!  Nightmare!!!!
     -- Somewhat surprising that this doesn't pass termination ...
+    -- Probably you need an auxillary function which calculates the
+    -- first component (the hfiber) so that agda sees it is done recursively ...
     {-# TERMINATING #-}  
-    W→-lf-from : {i : I} (w : W P i) (j : J)
+    W→-lf-to : {i : I} (w : W P i) (j : J)
       → Leaf Q (W→ w) j
       → Σ (hfiber ι→ j) (Leaf P w ∘ fst)
-    W→-lf-from (lf i) .(ι→ i) (leaf .(ι→ i)) = (i , idp) , leaf i
-    W→-lf-from (nd {i} (c , δ)) j (stem {j = k} p l) = fst ih , stem (snd pr) (snd ih)
+    W→-lf-to (lf i) .(ι→ i) (leaf .(ι→ i)) = (i , idp) , leaf i
+    W→-lf-to (nd {i} (c , δ)) j (stem {j = k} p l) = fst ih , stem (snd pr) (snd ih)
 
       where pr : Σ (hfiber ι→ k) (ρ P c ∘ fst)
             pr = –> (ρ≃ c {k}) p
@@ -89,21 +72,40 @@ module Morphism where
             l' = <– (lf-inv Q (snd (fst (fst (ρ≃ c) p))) (W→ w') j) l
 
             ih : Σ (hfiber ι→ j) (Leaf P w' ∘ fst)
-            ih = W→-lf-from w' j l'
+            ih = W→-lf-to w' j l'
+
+    W→-lf-from : {i : I} (w : W P i) (j : J)
+      → Σ (hfiber ι→ j) (Leaf P w ∘ fst)
+      → Leaf Q (W→ w) j
+    W→-lf-from (lf .j) .(ι→ j) ((j , idp) , leaf .j) = leaf (ι→ j)
+    W→-lf-from (nd (c , δ)) .(ι→ j) ((j , idp) , stem {j = k} p l) =
+      stem p' (–> (lf-inv Q (snd (fst (fst (ρ≃ c) p')))
+                  (W→ (δ (ρ←-typ c p') (snd (fst (ρ≃ c) p')))) (ι→ j))
+                    (transport (λ x → Leaf Q (W→ (δ (fst x) (snd x))) (ι→ j))
+                      (pair= (fst= (fst= (! coh))) (↓-ap-in _ _ (snd= (! coh)))) l'))
+
+      where p' : ρ Q (γ→ c) (ι→ k)
+            p' =  <– (ρ≃ c) ((k , idp) , p) 
+            
+            l' : Leaf Q (W→ (δ k p)) (ι→ j)
+            l' = W→-lf-from (δ k p) (ι→ j) ((j , idp) , l)
+  
+            coh : –> (ρ≃ c) (<– (ρ≃ c) ((k , idp) , p)) == (k , idp) , p 
+            coh = <–-inv-r (ρ≃ c) ((k , idp) , p)
 
     postulate
     
       W→-lf-to-from : {i : I} (w : W P i) (j : J)
-        → (l : Leaf Q (W→ w) j)
+        → (l : Σ (hfiber ι→ j) (Leaf P w ∘ fst))
         → W→-lf-to w j (W→-lf-from w j l) == l
 
       W→-lf-from-to : {i : I} (w : W P i) (j : J)
-        → (l : Σ (hfiber ι→ j) (Leaf P w ∘ fst))
+        → (l : Leaf Q (W→ w) j)
         → W→-lf-from w j (W→-lf-to w j l) == l
 
     W→-lf-eqv : {i : I} (w : W P i) (j : J)
-      → Σ (hfiber ι→ j) (Leaf P w ∘ fst)
-      ≃ Leaf Q (W→ w) j
+      → Leaf Q (W→ w) j
+      ≃ Σ (hfiber ι→ j) (Leaf P w ∘ fst)
     W→-lf-eqv w j = equiv (W→-lf-to w j) (W→-lf-from w j)
       (W→-lf-to-from w j) (W→-lf-from-to w j)
 
@@ -111,7 +113,7 @@ module Morphism where
     -- later on ....
     Frame→ : {i : I} (w : W P i) (c : γ P i)
       → Frame P w c → Frame Q (W→ w) (γ→ c)
-    Frame→ w c f j = (ρ≃ c {j})⁻¹ ∘e Σ-emap-r (f ∘ fst) ∘e (W→-lf-eqv w j)⁻¹
+    Frame→ w c f j = (ρ≃ c {j})⁻¹ ∘e Σ-emap-r (f ∘ fst) ∘e (W→-lf-eqv w j)
 
     -- Filling families are contravariant ...
     Family← : FillingFamily Q → FillingFamily P
@@ -122,44 +124,75 @@ module Morphism where
 
     ιγ→ : Σ I (γ P) → Σ J (γ Q)
     ιγ→ (i , c) = (ι→ i , γ→ c)
-    
+
+    -- Here we use exactly the same style of argument as for the leaves.
+    -- Probably you should be able to abstract this so that it is more
+    -- easily useable in the future....
+
+    {-# TERMINATING #-}  
     W→-nd-to : {i : I} (w : W P i)
       → {j : J} (d : γ Q j) 
-      → Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf)))
       → Node Q (W→ w) d
-    W→-nd-to (lf i) {j} d (_ , ())
-    W→-nd-to (nd (c , δ)) .(γ→ d) (((j , d) , idp) , this) = this
-    W→-nd-to (nd (c , δ)) .(γ→ d) (((j , d) , idp) , that {j = k} p n) = {!!}
+      → Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf)))
+    W→-nd-to (lf i) d ()
+    W→-nd-to (nd {i} (c , δ)) .(γ→ c) this = ((i , c) , idp) , this
+    W→-nd-to (nd (c , δ)) {j} d (that {j = k} p n) = fst ih , that (snd pr) (snd ih)
+
+      where pr : Σ (hfiber ι→ k) (ρ P c ∘ fst)
+            pr = –> (ρ≃ c {k}) p
+            
+            w' : W P (fst (fst pr))
+            w' = δ (fst (fst pr)) (snd pr)
+
+            n' : Node Q (W→ w') d
+            n' = <– (nd-inv Q (snd (fst (fst (ρ≃ c) p))) (W→ w') d) n
+
+            ih : Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w' (snd (fst hf))) 
+            ih = W→-nd-to w' d n' 
 
     W→-nd-from : {i : I} (w : W P i)
       → {j : J} (d : γ Q j) 
-      → Node Q (W→ w) d
       → Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf)))
-    W→-nd-from = {!!}
+      → Node Q (W→ w) d
+    W→-nd-from (lf i) {j} d (_ , ())
+    W→-nd-from (nd (c , δ)) .(γ→ d) (((j , d) , idp) , this) = this
+    W→-nd-from (nd (c , δ)) .(γ→ d) (((j , d) , idp) , that {j = k} p n) =
+      that p' (–> (nd-inv Q (snd (fst (fst (ρ≃ c) p'))) (W→ (δ (ρ←-typ c p') (snd (fst (ρ≃ c) p')))) (γ→ d))
+                  (transport (λ x → Node Q (W→ (δ (fst x) (snd x))) (γ→ d))
+                             (pair= (fst= (fst= (! coh))) (↓-ap-in _ _ (snd= (! coh)))) n'))
+
+      where p' : ρ Q (γ→ c) (ι→ k)
+            p' =  <– (ρ≃ c) ((k , idp) , p) 
+
+            n' : Node Q (W→ (δ k p)) (γ→ d)
+            n' = W→-nd-from (δ k p) (γ→ d) (((j , d) , idp) , n)
+  
+            coh : –> (ρ≃ c) (<– (ρ≃ c) ((k , idp) , p)) == (k , idp) , p 
+            coh = <–-inv-r (ρ≃ c) ((k , idp) , p)
 
     postulate
     
       W→-nd-to-from : {i : I} (w : W P i)
         → {j : J} (d : γ Q j) 
-        → (n : Node Q (W→ w) d)
+        → (n : Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf))))
         → W→-nd-to w d (W→-nd-from w d n) == n
         
       W→-nd-from-to : {i : I} (w : W P i)
         → {j : J} (d : γ Q j) 
-        → (n : Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf))))
+        → (n : Node Q (W→ w) d)
         → W→-nd-from w d (W→-nd-to w d n) == n
 
     W→-nd-eqv : {i : I} (w : W P i)
       → {j : J} (d : γ Q j) 
-      → Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf)))
-      ≃ Node Q (W→ w) d
+      → Node Q (W→ w) d
+      ≃ Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf)))
     W→-nd-eqv w d = equiv (W→-nd-to w d) (W→-nd-from w d)
       (W→-nd-to-from w d) (W→-nd-from-to w d)
-    
+
     //-fmap : (F : FillingFamily Q) → (P // Family← F) →ₚ (Q // F)
     _→ₚ_.ι→ (//-fmap F) = ιγ→ 
     _→ₚ_.γ→ (//-fmap F) (w , f , x) = W→ w , Frame→ w _ f , x
-    _→ₚ_.ρ≃ (//-fmap F) (w , f , x) {j , d} = (W→-nd-eqv w d)⁻¹
+    _→ₚ_.ρ≃ (//-fmap F) (w , f , x) {j , d} = W→-nd-eqv w d
 
   -- ... and hence so are domains
   {-# TERMINATING #-}
@@ -183,20 +216,47 @@ module Morphism where
   ρ (ExtendedPoly {P = P} F E) (cc , _) = ρ (P // F) cc
 
   open _→ₚ_
-  
-  record _≃ₚ_ {I J : Type₀} (P : Poly I) (Q : Poly J) : Type₀ where
+
+  --
+  --  Equivalences of polynomials
+  --
+
+  record is-poly-equiv {I J : Type₀} {P : Poly I} {Q : Poly J} (α : P →ₚ Q) : Type₀ where
     constructor peq
     field
-      morph : P →ₚ Q
-      ι→-equiv : is-equiv (ι→ morph)
-      γ→-equiv : {i : I} → is-equiv (γ→ morph {i})
+      ι→-equiv : is-equiv (ι→ α)
+      γ→-equiv : {i : I} → is-equiv (γ→ α {i})
 
+  _≃ₚ_ : {I J : Type₀} (P : Poly I) (Q : Poly J) → Type₀
+  P ≃ₚ Q = Σ (P →ₚ Q) is-poly-equiv
+  
   -- Right, and so we still need this statement, I think, but here
   -- is a nice version.
-  thm : {I : Type₀} {P : Poly I} (F : FillingFamily P)
-    → (E : Extension F)
-    → (P // ExtendedFamily F E) ≃ₚ ExtendedPoly F E
-  thm F E = {!!}
+  ext-eqv-to : {I : Type₀} {P : Poly I} (F : FillingFamily P) (E : Extension F)
+    → (P // ExtendedFamily F E) →ₚ ExtendedPoly F E
+  ι→ (ext-eqv-to {I} {P} F E) = idf (Σ I (γ P))
+  γ→ (ext-eqv-to {I} {P} F E) (w , f , x , y) = (w , f , x) , y
+  ρ≃ (ext-eqv-to {I} {P} F E) (w , f , x , y) {j} = equiv to from to-from from-to
+
+    where to : Node P w (snd j) → Σ (hfiber (idf _) j) (ρ (P // ExtendedFamily F E) (w , f , x , y) ∘ fst)
+          to n = (j , idp) , n
+
+          from : Σ (hfiber (idf _) j) (ρ (P // ExtendedFamily F E) (w , f , x , y) ∘ fst) → Node P w (snd j)
+          from ((j , idp) , n) = n
+
+          to-from : (n : Σ (hfiber (idf _) j) (ρ (P // ExtendedFamily F E) (w , f , x , y) ∘ fst))
+                    → to (from n) == n
+          to-from ((j , idp) , n) = idp
+
+          from-to : (n : Node P w (snd j)) → from (to n) == n
+          from-to n = idp
+
+  ext-eqv-is-equiv : {I : Type₀} {P : Poly I} (F : FillingFamily P) (E : Extension F)
+    → is-poly-equiv (ext-eqv-to F E)
+  is-poly-equiv.ι→-equiv (ext-eqv-is-equiv {I} {P} F E) = idf-is-equiv (Σ I (γ P))
+  is-poly-equiv.γ→-equiv (ext-eqv-is-equiv {I} {P} F E) =
+    is-eq (γ→ (ext-eqv-to F E)) (λ { ((w , f , x) , y) → w , f , x , y })
+      (λ { ((w , f , x) , y) → idp }) (λ { (w , f , x , y) → idp })
 
   -- Interesting.  So pulling back along morphisms in this representation
   -- is considerably easier.  Okay, so that seriously recommends this approach
@@ -216,34 +276,4 @@ module Morphism where
   --   → BDExt F₀ F₁ →ₚ ((P // F₀) // F₁)
   -- BDMor {P = P} F₀ F₁ = {!!}
  
-  -- Okay, so I still think you are going to need a relation.  It's that, if you
-  -- have an extension of a filling family, then you can slice over the sum of
-  -- the family, or you can construct a polynomial over the slice.  And as before,
-  -- you'll need to show that these two constructions give the same answer.
 
-  -- The construction you give above is a special case.  And it's this form of
-  -- naturality that lets you connect the whole string together at the base.
-
-  -- -- Okey dokey.  And so what do we need to show about this?  Well, we'll
-  -- -- need to be able to transfer domains across equivalences.
-
-  -- module _ {I J : Type₀} {P : Poly I} {Q : Poly J} where
-
-  --   poly-family-to : P ≃ₚ Q → FillingFamily P → FillingFamily Q
-  --   poly-family-to (peq m α-eq β-eq) F w c f = {!!}
-
-
-  -- poly-domain-to : {I J : Type₀} {P : Poly I} {Q : Poly J}
-  --   → P ≃ₚ Q → PolyDomain P → PolyDomain Q
-  -- F (poly-domain-to (peq f α-equiv β-equiv) D) = {!!}
-  -- H (poly-domain-to (peq f α-equiv β-equiv) D) = {!poly-domain-to!}
-
-  -- Yikes.  So there's a shitload of boilerplate.
-  -- We have have to show that we can transform filling families
-  -- across equivalences and so on and so forth....
-
-  -- Oh holy shit.  It really goes down to everything. :(
-
-  -- So since it looks like we will really have to write out
-  -- functoriality and naturality of everything, maybe the morphism
-  -- perspective is really better....

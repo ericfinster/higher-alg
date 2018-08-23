@@ -51,6 +51,10 @@ module Polynomial where
         → {k : I} → {d : γ P k} → Node (δ j p) d
         → Node (nd (c , δ)) d
 
+    nd-inv : {i j : I} (p : i == j) (w : W i)
+      → ∀ {k} → (d : γ P k) → Node w d ≃ Node (transport W p w) d
+    nd-inv idp w d = ide (Node w d)
+    
     corolla : {i : I} (c : γ P i) → W i
     corolla {i} c = nd (c , λ j p → lf j)
 
