@@ -21,7 +21,7 @@ module Util where
   apd↓-cst f {p = idp} idp = idp
 
   to-transp-↓ : ∀ {i j} {A : Type i} (P : A → Type j) {a₁ a₂ : A}
-    (p : a₁ == a₂) (y : P a₂) → transport! P p y == y [ P ↓ p ]
+    (p : a₁ == a₂) (y : P a₁) → y == transport P p y [ P ↓ p ]
   to-transp-↓ _ idp _ = idp
 
   ↓-apd-lem : ∀ {i j k} {A : Type i} {B : A → Type j} (C : (a : A) → B a → Type k)
