@@ -21,6 +21,11 @@ module Polynomial where
       lf : (i : I) → W i
       nd : {i : I} → ⟦ P ⟧ W i → W i
 
+    -- This is the recursive version.
+    leaves : {i : I} (w : W i) → I → Type₀
+    leaves (lf i) j = i == j
+    leaves (nd (c , δ)) j = Σ I (λ k → Σ (ρ P c k) (λ p → leaves (δ k p) j))
+
     data Leaf : {i : I} (w : W i) → I → Type₀ where
       leaf : (i : I) → Leaf (lf i) i
       stem : {i : I} {c : γ P i}
