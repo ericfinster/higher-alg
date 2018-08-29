@@ -16,15 +16,15 @@ module SubstCoh {I : Type₀} {P : Poly I} (F : FillingFamily P) where
       ap (λ x → nd (c , x))
          (λ= (λ j → λ= (λ p → substitute-unit (δ j p))))
 
-    -- postulate
+    postulate
     
-    substitute-unit-frm : {i : I} (w : W P i)
-      → (c : γ P i) (f : Frame P w c) (x : F w c f)
-      → flatten-frm F (corolla (P // F) (w , f , x)) == f [ (λ w' → Frame P w' c) ↓ substitute-unit w ]
+      substitute-unit-frm : {i : I} (w : W P i)
+        → (c : γ P i) (f : Frame P w c) (x : F w c f)
+        → flatten-frm F (corolla (P // F) (w , f , x)) == f [ (λ w' → Frame P w' c) ↓ substitute-unit w ]
         
-    substitute-unit-frm (lf i) c f x = λ= (λ j → equiv-== (λ { (leaf i) → idp }))
-    substitute-unit-frm (nd (c₀ , δ)) c f x = ↓-ap-in (λ w' → Frame P w' c) (λ x → nd (c₀ , x)) (↓-Π-in (λ {j} {k} q →
-      ↓-equiv-in (λ { (stem p₀ l₀) (stem p₁ l₁) r → {!!} })))
+    -- substitute-unit-frm (lf i) c f x = λ= (λ j → equiv-== (λ { (leaf i) → idp }))
+    -- substitute-unit-frm (nd (c₀ , δ)) c f x = ↓-ap-in (λ w' → Frame P w' c) (λ x → nd (c₀ , x)) (↓-Π-in (λ {j} {k} q →
+    --   ↓-equiv-in (λ { (stem p₀ l₀) (stem p₁ l₁) r → {!!} })))
     
     -- fst (f j) (stem p₀ (substitute-lf-to (λ {;i₁} → F) (δ ;j p) (λ ic n → lf ic) j l₀))
     -- fst (f k) (stem p₁ l₁)

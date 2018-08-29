@@ -34,7 +34,7 @@ module Terminal where
 
   is-univalent : {I : Type₀} (P : Poly I) → Type₀
   is-univalent {I} P = {i : I} (w : W P i) → is-contr (Σ (γ P i) (Frame P w))
-  
+
   module _ {I : Type₀} (P : Poly I) (is-u : is-univalent P) where
 
     TF = TermFamily P
@@ -71,28 +71,49 @@ module Terminal where
   -- also uses this section.
   module _ {I : Type₀} {P : Poly I} (F : FillingFamily P) (σ : filler-comp F) where
 
-    record BDWit {i : I} {c : γ P i} (pd : W (P // F) (i , c))
-      (w : W P i) (f₀ : Frame P w c) (x : F w c f₀)
-      (f₁ : Frame (P // F) pd (w , f₀ , x)) : Type₀ where
-      constructor bdw
-      field
-        p₀ : flatten F pd == w
-        p₁ : flatten-frm F pd == f₀ [ (λ a → Frame P a c) ↓ p₀ ]
-        p₂ : σ pd == x [ (λ a → F (fst a) c (snd a)) ↓ pair= p₀ p₁ ]
-        p₃ : bd-frame F pd == f₁ [ (λ a → Frame (P // F) pd a) ↓ pair= p₀ (↓-Σ-in p₁ p₂) ]
+    -- Exactly.  This is the crucial point.  When you parse it this way, which is in
+    -- line with your "univalent" polynomials above, then it's clear you are interested
+    -- in when exactly this type is contractible.
+    -- And by the FTHTT, this will be the case when having a frame is the same as
+    -- having a path in this space.  Does that make sense?
+    WitType : {i : I} {c : γ P i} (pd : W (P // F) (i , c)) → Type₀
+    WitType {i} {c} pd = Σ (Σ (W P i) (λ w → Σ (Frame P w c) (F w c))) (Frame (P // F) pd)
+
+    -- Yes, I think you're on the right track.  This 3-to-1 decomposition
+    -- is the one which makes by far the most sense.  And it suggests a
+    -- reasonable axiom for your filler comp there: consider those for
+    -- which the "natural" map from frames to the path space is an equivalence.
+    -- Then, the total space will be contractible.
+
 
     -- Right, and so with this definition, it seems that the composites are
     -- *always* contractible.  The problem, of course, is that we must show
     -- that we can produce a new composition map.
 
     WitFam : FillingFamily (P // F)
-    WitFam pd (w , f₀ , x) f₁ = BDWit pd w f₀ x f₁
-
+    WitFam pd (w , f₀ , x) f₁ =
+      Path {A = WitType pd}
+        ((w , f₀ , x) , f₁)
+        ((flatten F pd , flatten-frm F pd , σ pd) , bd-frame F pd)
+        
     ih : filler-comp WitFam
-    ih {i , c} {w , f₀ , x} (lf .((i , c) , w , f₀ , x)) =
-      bdw (substitute-unit F w) (substitute-unit-frm F w c f₀ x) {!!} {!!}
-    ih {i , c} {._ , ._ , ._} (nd ((pd , ._ , (bdw idp idp idp idp)) , κ)) =
-      bdw {!!} {!!} {!!} {!!}
+    ih {i , c} {w , f₀ , x} pd = {!!}
+    
+    -- ih : filler-comp WitFam
+    -- ih {i , c} {w , f₀ , x} (lf .((i , c) , w , f₀ , x)) =
+    --   bdw (substitute-unit F w) (substitute-unit-frm F w c f₀ x) {!!} {!!}
+    -- ih {i , c} {._ , ._ , ._} (nd ((pd , ._ , (bdw idp idp idp idp)) , κ)) =
+    --   bdw {!!} {!!} {!!} {!!}
+
+    -- record BDWit {i : I} {c : γ P i} (pd : W (P // F) (i , c))
+    --   (w : W P i) (f₀ : Frame P w c) (x : F w c f₀)
+    --   (f₁ : Frame (P // F) pd (w , f₀ , x)) : Type₀ where
+    --   constructor bdw
+    --   field
+    --     p₀ : flatten F pd == w
+    --     p₁ : flatten-frm F pd == f₀ [ (λ a → Frame P a c) ↓ p₀ ]
+    --     p₂ : σ pd == x [ (λ a → F (fst a) c (snd a)) ↓ pair= p₀ p₁ ]
+    --     p₃ : bd-frame F pd == f₁ [ (λ a → Frame (P // F) pd a) ↓ pair= p₀ (↓-Σ-in p₁ p₂) ]
 
     -- Okay, good, at least now you're looking at what you have to prove.
     -- Now, you should keep in mind that it seems somehow wrong that you
