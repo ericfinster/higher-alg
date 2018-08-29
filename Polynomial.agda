@@ -109,7 +109,7 @@ module Polynomial where
   open PolyDomain public
 
   --
-  --  Grafting of trees
+  --  Grafting of trees (Probably move this to free monad...)
   --
 
   module _ {I : Type₀} (P : Poly I) where

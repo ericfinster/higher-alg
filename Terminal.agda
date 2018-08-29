@@ -7,6 +7,7 @@ open import Substitution
 open import SubstCoh
 open import PolyMonad
 open import Morphism
+open import Fundamental
 
 -- Attempting to construct the terminal cart-poly-monad.
 module Terminal where
@@ -25,6 +26,26 @@ module Terminal where
   F (TermDomain P) = TermFamily P
   H (TermDomain P) = TermDomain (P // TermFamily P)
 
+  -- Okay, these seems canonical enough to enshrine in a
+  -- definition to be used below.
+  CanonFamily : {I : Type₀} (P : Poly I) (F : FillingFamily P)
+    → FillingFamily (P // F)
+  CanonFamily P F {i , c} pd (w , f₀ , x₀) f₁ =
+    Σ (F (flatten F pd) c (flatten-frm F pd)) (λ x →
+      Path {A = Σ (γ (P // F) (i , c)) (Frame (P // F) pd)}
+        ((w , f₀ , x₀) , f₁)
+        ((flatten F pd , flatten-frm F pd , x) , bd-frame F pd))
+
+  CanonDomain : {I : Type₀} (P : Poly I) (F : FillingFamily P)
+    → PolyDomain (P // F)
+  F (CanonDomain P F) = CanonFamily P F
+  H (CanonDomain P F) = CanonDomain (P // F) (CanonFamily P F)
+
+    -- can-from : {i : I} {c : γ P i} (pd : W (P // F) (i , c))
+    --   → CompositeFor CanonFamily pd
+    --   → F (flatten F pd) c (flatten-frm F pd)
+    -- can-from pd ((._ , ._ , ._) , (._ , (x₁ , idp))) = x₁
+
   -- Here's another possibility: say that a polynomial is "univalent"
   -- if, for every tree in the polynomial, the type of pairs of a constructor
   -- and a frame is contractible.  (That is, without the filling family).
@@ -35,21 +56,32 @@ module Terminal where
   is-univalent : {I : Type₀} (P : Poly I) → Type₀
   is-univalent {I} P = {i : I} (w : W P i) → is-contr (Σ (γ P i) (Frame P w))
 
-  module _ {I : Type₀} (P : Poly I) (is-u : is-univalent P) where
+  -- Okay, nice.  So it follows immediately from this property
+  -- and the fundamental theorem that
+  -- frames from w to its "composite" are the same thing as paths
+  -- to the "chosen" composite.
 
-    TF = TermFamily P
-    
+  -- So this suggests using, somehow, the fundamental theorem to
+  -- show that this total space is contractible.
+
+  module _ {I : Type₀} (P : Poly I) (F : FillingFamily P) where
+
+    -- conjecture : is-univalent (P // TermFamily P)
+    -- conjecture {i , c} pd = ft-from {X = Σ (W P i) (λ w → Σ (Frame P w c) (TermFamily P w c))}
+    --                           (Frame (P // TermFamily P) pd) (flatten TF pd , flatten-frm TF pd , tt) (bd-frame TF pd)
+    --                           (λ { (w , f , tt) → is-eq _ {!!} {!!} {!!} })
+
     -- So, this is somewhat interesting.  It almost looks like it might be true.
     -- Whoa.  So the assertion is that, in the univalent situation, the baez-dolan
     -- substitution is strongly unique in the given sense.
-    conjecture : is-univalent (P // TermFamily P)
-    conjecture {i , c} pd = has-level-in (ctr , pth) 
+    -- conjecture : is-univalent (P // TermFamily P)
+    -- conjecture {i , c} pd = has-level-in (ctr , pth) 
 
-      where ctr : Σ (Σ (W P i) (λ w → Σ (Frame P w c) (TermFamily P w c))) (Frame (P // (TermFamily P)) pd)
-            ctr = (flatten TF pd  , flatten-frm TF pd , tt) , bd-frame TF pd
+    --   where ctr : Σ (Σ (W P i) (λ w → Σ (Frame P w c) (TermFamily P w c))) (Frame (P // (TermFamily P)) pd)
+    --         ctr = (flatten TF pd  , flatten-frm TF pd , tt) , bd-frame TF pd
 
-            pth : (a : Σ (Σ (W P i) (λ w → Σ (Frame P w c) (TermFamily P w c))) (Frame (P // (TermFamily P)) pd)) → ctr == a
-            pth ((w , f₀ , tt) , f₁) = {!!}
+    --         pth : (a : Σ (Σ (W P i) (λ w → Σ (Frame P w c) (TermFamily P w c))) (Frame (P // (TermFamily P)) pd)) → ctr == a
+    --         pth ((w , f₀ , tt) , f₁) = {!!}
 
     -- Could this in fact be correct? 
 
@@ -66,6 +98,8 @@ module Terminal where
   -- So, suppose you had a way to calculate a kind of filler from a tree of them:
   filler-comp : {I : Type₀} {P : Poly I} (F : FillingFamily P) → Type₀
   filler-comp {I} {P} F = {i : I} {c : γ P i} (pd : W (P // F) (i , c)) → F (flatten F pd) c (flatten-frm F pd)
+
+
 
   -- There should, then, be something like the BDWitness type which
   -- also uses this section.

@@ -44,6 +44,55 @@ module Signature where
     Relator : Type (lsucc ℓ)
     Relator = {i : I} (w : W i) (f : Op P i) → Frame w f → Type ℓ
 
+    --
+    --  Characterizing paths in W-types
+    --
+
+    -- W-unfold-eqv : (i : I) → W i ≃ ⊤ ⊔ ⟦ P ⟧ W i
+    -- W-unfold-eqv i = equiv to from to-from from-to
+
+    --   where to : W i → ⊤ ⊔ ⟦ P ⟧ W i
+    --         to (lf i) = inl tt
+    --         to (nd pw) = inr pw
+
+    --         from : ⊤ ⊔ ⟦ P ⟧ W i → W i
+    --         from (inl tt) = lf i
+    --         from (inr pw) = nd pw
+
+    --         to-from : (w : ⊤ ⊔ ⟦ P ⟧ W i) → to (from w) == w
+    --         to-from (inl tt) = idp
+    --         to-from (inr pw) = idp
+
+    --         from-to : (w : W i) → from (to w) == w
+    --         from-to (lf i) = idp
+    --         from-to (nd pw) = idp
+
+    -- Yeah, so this doesn't work because of termination.
+    -- W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
+    -- W-level op-lvl i = equiv-preserves-level ((W-unfold-eqv i)⁻¹)
+    --   ⦃ Coprod-level Unit-level (Σ-level (op-lvl i) (λ f → Π-level (λ j → Π-level (λ p → W-level op-lvl j )))) ⦄
+
+    W= : {i : I} → W i → W i → Type ℓ
+    W= (lf i) (lf .i) = Lift ⊤
+    W= (lf i) (nd pw) = Lift ⊥
+    W= (nd pw) (lf i) = Lift ⊥
+    W= (nd pw) (nd pw') = pw == pw'
+    
+    postulate
+
+      W=-equiv : {i : I} (w₀ : W i) (w₁ : W i) → (W= w₀ w₁) ≃ (w₀ == w₁)
+
+    W-level-aux : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level-aux (S (S n)) (W i)
+    W-level-aux op-lvl i (lf .i) (lf .i) = equiv-preserves-level (W=-equiv (lf i) (lf i))
+    W-level-aux op-lvl i (lf .i) (nd pw) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (lf i) (nd pw)) p)))
+    W-level-aux op-lvl i (nd pw) (lf .i) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (nd pw) (lf i)) p)))
+    W-level-aux op-lvl i (nd pw) (nd pw') = equiv-preserves-level (W=-equiv (nd pw) (nd pw'))
+      ⦃ {!!} ⦄
+
+    W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
+    W-level op-lvl i = has-level-in (W-level-aux op-lvl i)
+
+    
   -- The "slice" of a polynomial by a relator
   _//_ : {I : Type₀} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))
   Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
