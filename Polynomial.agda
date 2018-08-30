@@ -146,10 +146,6 @@ module Polynomial where
 
   module _ {ℓ} {I : Type ℓ} (P : Poly I) where
 
-    Fr : Poly I
-    Op Fr = W P
-    Param Fr w = Leaf P w
-
     graft : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) → W P i
     graft (lf i) ε = ε i idp
     graft (nd (c , δ)) ε = 
