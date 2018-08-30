@@ -16,6 +16,17 @@ module Terminal where
   γ 𝕌 unit = Type₀
   ρ 𝕌 X unit = X
 
+  --
+  -- Here's an idea: (that you've already had ...) what if you try to *characterize*
+  -- a "contractible" domain in terms of admiting sections in every dimension.
+  -- Intuitively speaking, the should force it to be contractible.
+  --
+  -- The problem is just to understand what "contractible" means in this context.
+  --
+  -- But if you suppose that every guy admits a section, possibly with some kind
+  -- of univalence assumption, then can you show you have a monad?
+  --
+
   TermFamily : {I : Type₀} (P : Poly I) → FillingFamily P
   TermFamily P w c f = ⊤
 

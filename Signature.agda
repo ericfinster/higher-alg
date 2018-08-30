@@ -44,6 +44,22 @@ module Signature where
     Relator : Type (lsucc ℓ)
     Relator = {i : I} (w : W i) (f : Op P i) → Frame w f → Type ℓ
 
+    corolla : {i : I} (f : Op P i) → W i
+    corolla {i} f = nd (f , λ j p → lf j)
+
+    corolla-lf-eqv : {i : I} (f : Op P i)
+      → (j : I) → Leaf (corolla f) j ≃ Param P f j
+    corolla-lf-eqv f j = equiv to from (λ _ → idp) from-to
+
+      where to : Leaf (corolla f) j → Param P f j
+            to (_ , p , idp) = p
+
+            from : Param P f j → Leaf (corolla f) j
+            from p = (j , p , idp) 
+
+            from-to : (l : Leaf (corolla f) j) → from (to l) == l
+            from-to (_ , p , idp) = idp
+
     --
     --  Characterizing paths in W-types
     --
@@ -82,23 +98,23 @@ module Signature where
 
       W=-equiv : {i : I} (w₀ : W i) (w₁ : W i) → (W= w₀ w₁) ≃ (w₀ == w₁)
 
-    W-level-aux : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level-aux (S (S n)) (W i)
-    W-level-aux op-lvl i (lf .i) (lf .i) = equiv-preserves-level (W=-equiv (lf i) (lf i))
-    W-level-aux op-lvl i (lf .i) (nd pw) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (lf i) (nd pw)) p)))
-    W-level-aux op-lvl i (nd pw) (lf .i) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (nd pw) (lf i)) p)))
-    W-level-aux op-lvl i (nd pw) (nd pw') = equiv-preserves-level (W=-equiv (nd pw) (nd pw'))
-      ⦃ {!!} ⦄
+    -- W-level-aux : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level-aux (S (S n)) (W i)
+    -- W-level-aux op-lvl i (lf .i) (lf .i) = equiv-preserves-level (W=-equiv (lf i) (lf i))
+    -- W-level-aux op-lvl i (lf .i) (nd pw) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (lf i) (nd pw)) p)))
+    -- W-level-aux op-lvl i (nd pw) (lf .i) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (nd pw) (lf i)) p)))
+    -- W-level-aux op-lvl i (nd pw) (nd pw') = equiv-preserves-level (W=-equiv (nd pw) (nd pw'))
+    --   ⦃ {!!} ⦄
 
-    W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
-    W-level op-lvl i = has-level-in (W-level-aux op-lvl i)
+    -- W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
+    -- W-level op-lvl i = has-level-in (W-level-aux op-lvl i)
 
     
   -- The "slice" of a polynomial by a relator
-  _//_ : {I : Type₀} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))
+  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))
   Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
   Param (P // R) (w , α , r) (j , g) = Node P w g
   
-  record Domain {I : Type₀} (P : Poly I) : Type₁ where
+  record Domain {ℓ} {I : Type ℓ} (P : Poly I) : Type (lsucc ℓ) where
     coinductive
     field
 
@@ -111,7 +127,7 @@ module Signature where
   --  Grafting of trees
   --
 
-  module _ {I : Type₀} (P : Poly I) where
+  module _ {ℓ} {I : Type ℓ} (P : Poly I) where
 
     Fr : Poly I
     Op Fr = W P

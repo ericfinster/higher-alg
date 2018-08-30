@@ -6,10 +6,10 @@ module Util where
 
   -- Used for the "inspect idiom" in proofs below
   
-  data Graph {X : Type₀} {Y : X → Type₀} (f : ∀ x → Y x) (x : X) (y : Y x) : Type₀ where
+  data Graph {ℓ : ULevel} {X : Type ℓ} {Y : X → Type ℓ} (f : ∀ x → Y x) (x : X) (y : Y x) : Type ℓ where
     ingraph : f x == y → Graph f x y
 
-  inspect : {X : Type₀} {Y : X → Type₀} (f : ∀ x → Y x) (x : X) → Graph f x (f x)
+  inspect : ∀ {ℓ} {X : Type ℓ} {Y : X → Type ℓ} (f : ∀ x → Y x) (x : X) → Graph f x (f x)
   inspect f x = ingraph idp
 
   -- Needed for a lemma.
