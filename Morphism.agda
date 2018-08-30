@@ -7,34 +7,34 @@ open import Substitution
 
 module Morphism where
 
-  record _→ₚ_ {I J : Type₀} (P : Poly I) (Q : Poly J) : Type₀ where
+  record _→ₚ_ {ℓ} {I J : Type ℓ} (P : Poly I) (Q : Poly J) : Type ℓ where
     field
-      ι→ : I → J
-      γ→ : {i : I} → γ P i → γ Q (ι→ i)
-      ρ≃ : {i : I} (c : γ P i) {j : J}
-        →  ρ Q (γ→ c) j ≃ Σ (hfiber ι→ j) (ρ P c ∘ fst)
+      Sort→ : I → J
+      Op→ : {i : I} → Op P i → Op Q (Sort→ i)
+      Param≃ : {i : I} (f : Op P i) {j : J}
+        →  Param Q (Op→ f) j ≃ Σ (hfiber Sort→ j) (Param P f ∘ fst)
 
-    ρ←-typ : {i : I} (c : γ P i) {j : J}
-      → ρ Q (γ→ c) j → I
-    ρ←-typ c p = fst (fst (–> (ρ≃ c) p))
+    Param←-typ : {i : I} (f : Op P i) {j : J}
+      → Param Q (Op→ f) j → I
+    Param←-typ f p = fst (fst (–> (Param≃ f) p))
 
-    ρ←-coh : {i : I} (c : γ P i) {j : J}
-      → (p : ρ Q (γ→ c) j)
-      → ι→ (ρ←-typ c p) == j
-    ρ←-coh c p = snd (fst (–> (ρ≃ c) p))
+    Param←-coh : {i : I} (f : Op P i) {j : J}
+      → (p : Param Q (Op→ f) j)
+      → Sort→ (Param←-typ f p) == j
+    Param←-coh f p = snd (fst (–> (Param≃ f) p))
     
-    ρ← : {i : I} (c : γ P i) {j : J}
-      → (p : ρ Q (γ→ c) j) → ρ P c (ρ←-typ c p)
-    ρ← c p = snd (–> (ρ≃ c) p)
+    Param← : {i : I} (f : Op P i) {j : J}
+      → (p : Param Q (Op→ f) j) → Param P f (Param←-typ f p)
+    Param← f p = snd (–> (Param≃ f) p)
 
   -- Functoriality of various constructions
-  module _ {I J : Type₀} {P : Poly I} {Q : Poly J} (α : P →ₚ Q) where
+  module _ {ℓ} {I J : Type ℓ} {P : Poly I} {Q : Poly J} (α : P →ₚ Q) where
 
     open _→ₚ_ α
 
-    W→ : {i : I} → W P i → W Q (ι→ i)
-    W→ (lf i) = lf (ι→ i)
-    W→ (nd (c , δ)) = nd (γ→ c , λ j p → transport (W Q) (ρ←-coh c p) (W→ (δ _ (ρ← c p))) )
+    W→ : {i : I} → W P i → W Q (Sort→ i)
+    W→ (lf i) = lf (Sort→ i)
+    W→ (nd (f , ϕ)) = nd (Op→ f , λ j p → transport (W Q) (Param←-coh f p) (W→ (ϕ _ (Param← f p))) )
 
     -- Ahhhhh!  Nightmare!!!!
     -- Somewhat surprising that this doesn't pass termination ...
@@ -43,45 +43,45 @@ module Morphism where
     {-# TERMINATING #-}  
     W→-lf-to : {i : I} (w : W P i) (j : J)
       → Leaf Q (W→ w) j
-      → Σ (hfiber ι→ j) (Leaf P w ∘ fst)
-    W→-lf-to (lf i) .(ι→ i) (leaf .(ι→ i)) = (i , idp) , leaf i
-    W→-lf-to (nd {i} (c , δ)) j (stem {j = k} p l) = fst ih , stem (snd pr) (snd ih)
+      → Σ (hfiber Sort→ j) (Leaf P w ∘ fst)
+    W→-lf-to (lf i) .(Sort→ i) idp = (i , idp) , idp
+    W→-lf-to (nd {i} (f , ϕ)) j (k , p , l) = fst ih , fst (fst pr) , snd pr , snd ih
 
-      where pr : Σ (hfiber ι→ k) (ρ P c ∘ fst)
-            pr = –> (ρ≃ c {k}) p
+      where pr : Σ (hfiber Sort→ k) (Param P f ∘ fst)
+            pr = –> (Param≃ f {k}) p
             
             w' : W P (fst (fst pr))
-            w' = δ (fst (fst pr)) (snd pr)
+            w' = ϕ (fst (fst pr)) (snd pr)
 
             l' : Leaf Q (W→ w') j
-            l' = <– (lf-inv Q (snd (fst (fst (ρ≃ c) p))) (W→ w') j) l
+            l' = <– (lf-inv Q (snd (fst (fst (Param≃ f) p))) (W→ w') j) l
 
-            ih : Σ (hfiber ι→ j) (Leaf P w' ∘ fst)
+            ih : Σ (hfiber Sort→ j) (Leaf P w' ∘ fst)
             ih = W→-lf-to w' j l'
 
     W→-lf-from : {i : I} (w : W P i) (j : J)
-      → Σ (hfiber ι→ j) (Leaf P w ∘ fst)
+      → Σ (hfiber Sort→ j) (Leaf P w ∘ fst)
       → Leaf Q (W→ w) j
-    W→-lf-from (lf .j) .(ι→ j) ((j , idp) , leaf .j) = leaf (ι→ j)
-    W→-lf-from (nd (c , δ)) .(ι→ j) ((j , idp) , stem {j = k} p l) =
-      stem p' (–> (lf-inv Q (snd (fst (fst (ρ≃ c) p')))
-                  (W→ (δ (ρ←-typ c p') (snd (fst (ρ≃ c) p')))) (ι→ j))
-                    (transport (λ x → Leaf Q (W→ (δ (fst x) (snd x))) (ι→ j))
-                      (pair= (fst= (fst= (! coh))) (↓-ap-in _ _ (snd= (! coh)))) l'))
+    W→-lf-from (lf .j) .(Sort→ j) ((j , idp) , idp) = idp
+    W→-lf-from (nd (f , ϕ)) .(Sort→ j) ((j , idp) , (k , p , l)) =
+      Sort→ k , p' , (–> (lf-inv Q (snd (fst (fst (Param≃ f) p')))
+                         (W→ (ϕ (Param←-typ f p') (snd (fst (Param≃ f) p')))) (Sort→ j))
+                           (transport (λ x → Leaf Q (W→ (ϕ (fst x) (snd x))) (Sort→ j))
+                             (pair= (fst= (fst= (! coh))) (↓-ap-in _ _ (snd= (! coh)))) l'))
 
-      where p' : ρ Q (γ→ c) (ι→ k)
-            p' =  <– (ρ≃ c) ((k , idp) , p) 
+      where p' : Param Q (Op→ f) (Sort→ k)
+            p' =  <– (Param≃ f) ((k , idp) , p) 
             
-            l' : Leaf Q (W→ (δ k p)) (ι→ j)
-            l' = W→-lf-from (δ k p) (ι→ j) ((j , idp) , l)
+            l' : Leaf Q (W→ (ϕ k p)) (Sort→ j)
+            l' = W→-lf-from (ϕ k p) (Sort→ j) ((j , idp) , l)
   
-            coh : –> (ρ≃ c) (<– (ρ≃ c) ((k , idp) , p)) == (k , idp) , p 
-            coh = <–-inv-r (ρ≃ c) ((k , idp) , p)
+            coh : –> (Param≃ f) (<– (Param≃ f) ((k , idp) , p)) == (k , idp) , p 
+            coh = <–-inv-r (Param≃ f) ((k , idp) , p)
 
     postulate
     
       W→-lf-to-from : {i : I} (w : W P i) (j : J)
-        → (l : Σ (hfiber ι→ j) (Leaf P w ∘ fst))
+        → (l : Σ (hfiber Sort→ j) (Leaf P w ∘ fst))
         → W→-lf-to w j (W→-lf-from w j l) == l
 
       W→-lf-from-to : {i : I} (w : W P i) (j : J)
@@ -90,13 +90,12 @@ module Morphism where
 
     W→-lf-eqv : {i : I} (w : W P i) (j : J)
       → Leaf Q (W→ w) j
-      ≃ Σ (hfiber ι→ j) (Leaf P w ∘ fst)
+      ≃ Σ (hfiber Sort→ j) (Leaf P w ∘ fst)
     W→-lf-eqv w j = equiv (W→-lf-to w j) (W→-lf-from w j)
       (W→-lf-to-from w j) (W→-lf-from-to w j)
 
-
-    ιγ→ : Σ I (γ P) → Σ J (γ Q)
-    ιγ→ (i , c) = (ι→ i , γ→ c)
+    SortOp→ : Σ I (Op P) → Σ J (Op Q)
+    SortOp→ (i , c) = (Sort→ i , Op→ c)
 
     -- Here we use exactly the same style of argument as for the leaves.
     -- Probably you should be able to abstract this so that it is more
@@ -104,61 +103,62 @@ module Morphism where
 
     {-# TERMINATING #-}  
     W→-nd-to : {i : I} (w : W P i)
-      → {j : J} (d : γ Q j) 
+      → {j : J} (d : Op Q j) 
       → Node Q (W→ w) d
-      → Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf)))
+      → Σ (hfiber SortOp→ (j , d)) (λ hf → Node P w (snd (fst hf)))
     W→-nd-to (lf i) d ()
-    W→-nd-to (nd {i} (c , δ)) .(γ→ c) this = ((i , c) , idp) , this
-    W→-nd-to (nd (c , δ)) {j} d (that {j = k} p n) = fst ih , that (snd pr) (snd ih)
+    W→-nd-to (nd {i} (f , ϕ)) .(Op→ f) (inl idp) = ((i , f) , idp) , inl idp
+    W→-nd-to (nd (f , ϕ)) {j} d (inr (k , p , n)) = fst ih , (inr (fst (fst pr) , snd pr , snd ih))
 
-      where pr : Σ (hfiber ι→ k) (ρ P c ∘ fst)
-            pr = –> (ρ≃ c {k}) p
+      where pr : Σ (hfiber Sort→ k) (Param P f ∘ fst)
+            pr = –> (Param≃ f {k}) p
             
             w' : W P (fst (fst pr))
-            w' = δ (fst (fst pr)) (snd pr)
+            w' = ϕ (fst (fst pr)) (snd pr)
 
             n' : Node Q (W→ w') d
-            n' = <– (nd-inv Q (snd (fst (fst (ρ≃ c) p))) (W→ w') d) n
+            n' = <– (nd-inv Q (snd (fst (fst (Param≃ f) p))) (W→ w') d) n
 
-            ih : Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w' (snd (fst hf))) 
+            ih : Σ (hfiber SortOp→ (j , d)) (λ hf → Node P w' (snd (fst hf))) 
             ih = W→-nd-to w' d n' 
 
     W→-nd-from : {i : I} (w : W P i)
-      → {j : J} (d : γ Q j) 
-      → Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf)))
+      → {j : J} (d : Op Q j) 
+      → Σ (hfiber SortOp→ (j , d)) (λ hf → Node P w (snd (fst hf)))
       → Node Q (W→ w) d
     W→-nd-from (lf i) {j} d (_ , ())
-    W→-nd-from (nd (c , δ)) .(γ→ d) (((j , d) , idp) , this) = this
-    W→-nd-from (nd (c , δ)) .(γ→ d) (((j , d) , idp) , that {j = k} p n) =
-      that p' (–> (nd-inv Q (snd (fst (fst (ρ≃ c) p'))) (W→ (δ (ρ←-typ c p') (snd (fst (ρ≃ c) p')))) (γ→ d))
-                  (transport (λ x → Node Q (W→ (δ (fst x) (snd x))) (γ→ d))
-                             (pair= (fst= (fst= (! coh))) (↓-ap-in _ _ (snd= (! coh)))) n'))
+    W→-nd-from (nd (f , ϕ)) .(Op→ d) (((j , d) , idp) , inl idp) = inl idp
+    W→-nd-from (nd (f , ϕ)) .(Op→ d) (((j , d) , idp) , inr (k , p , n)) =
+      inr (Sort→ k ,  p' ,
+        (–> (nd-inv Q (snd (fst (fst (Param≃ f) p'))) (W→ (ϕ (Param←-typ f p') (snd (fst (Param≃ f) p')))) (Op→ d))
+          (transport (λ x → Node Q (W→ (ϕ (fst x) (snd x))) (Op→ d))
+            (pair= (fst= (fst= (! coh))) (↓-ap-in _ _ (snd= (! coh)))) n')))
 
-      where p' : ρ Q (γ→ c) (ι→ k)
-            p' =  <– (ρ≃ c) ((k , idp) , p) 
+      where p' : Param Q (Op→ f) (Sort→ k)
+            p' =  <– (Param≃ f) ((k , idp) , p) 
 
-            n' : Node Q (W→ (δ k p)) (γ→ d)
-            n' = W→-nd-from (δ k p) (γ→ d) (((j , d) , idp) , n)
+            n' : Node Q (W→ (ϕ k p)) (Op→ d)
+            n' = W→-nd-from (ϕ k p) (Op→ d) (((j , d) , idp) , n)
   
-            coh : –> (ρ≃ c) (<– (ρ≃ c) ((k , idp) , p)) == (k , idp) , p 
-            coh = <–-inv-r (ρ≃ c) ((k , idp) , p)
+            coh : –> (Param≃ f) (<– (Param≃ f) ((k , idp) , p)) == (k , idp) , p 
+            coh = <–-inv-r (Param≃ f) ((k , idp) , p)
 
     postulate
     
       W→-nd-to-from : {i : I} (w : W P i)
-        → {j : J} (d : γ Q j) 
-        → (n : Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf))))
+        → {j : J} (d : Op Q j) 
+        → (n : Σ (hfiber SortOp→ (j , d)) (λ hf → Node P w (snd (fst hf))))
         → W→-nd-to w d (W→-nd-from w d n) == n
         
       W→-nd-from-to : {i : I} (w : W P i)
-        → {j : J} (d : γ Q j) 
+        → {j : J} (d : Op Q j) 
         → (n : Node Q (W→ w) d)
         → W→-nd-from w d (W→-nd-to w d n) == n
 
     W→-nd-eqv : {i : I} (w : W P i)
-      → {j : J} (d : γ Q j) 
+      → {j : J} (d : Op Q j) 
       → Node Q (W→ w) d
-      ≃ Σ (hfiber ιγ→ (j , d)) (λ hf → Node P w (snd (fst hf)))
+      ≃ Σ (hfiber SortOp→ (j , d)) (λ hf → Node P w (snd (fst hf)))
     W→-nd-eqv w d = equiv (W→-nd-to w d) (W→-nd-from w d)
       (W→-nd-to-from w d) (W→-nd-from-to w d)
 
@@ -168,64 +168,63 @@ module Morphism where
     --
 
     -- Reorganize?
-    Frame→ : {i : I} (w : W P i) (c : γ P i)
-      → Frame P w c → Frame Q (W→ w) (γ→ c)
-    Frame→ w c f j = (ρ≃ c {j})⁻¹ ∘e Σ-emap-r (f ∘ fst) ∘e (W→-lf-eqv w j)
+    Frame→ : {i : I} (w : W P i) (f : Op P i)
+      → Frame P w f → Frame Q (W→ w) (Op→ f)
+    Frame→ w f α j = (Param≃ f {j})⁻¹ ∘e Σ-emap-r (α ∘ fst) ∘e (W→-lf-eqv w j)
 
-    -- Filling families are contravariant ...
-    Family← : FillingFamily Q → FillingFamily P
-    Family← F w c f = F (W→ w) (γ→ c) (Frame→ w c f)
+    Relator← : Relator Q → Relator P
+    Relator← R w f α = R (W→ w) (Op→ f) (Frame→ w f α)
 
-    //-fmap : (F : FillingFamily Q) → (P // Family← F) →ₚ (Q // F)
-    _→ₚ_.ι→ (//-fmap F) = ιγ→ 
-    _→ₚ_.γ→ (//-fmap F) (w , f , x) = W→ w , Frame→ w _ f , x
-    _→ₚ_.ρ≃ (//-fmap F) (w , f , x) {j , d} = W→-nd-eqv w d
+    //-fmap : (F : Relator Q) → (P // Relator← F) →ₚ (Q // F)
+    _→ₚ_.Sort→ (//-fmap F) = SortOp→ 
+    _→ₚ_.Op→ (//-fmap F) (w , α , r) = W→ w , Frame→ w _ α , r
+    _→ₚ_.Param≃ (//-fmap F) (w , α , r) {j , d} = W→-nd-eqv w d
 
   -- ... and hence so are domains
   {-# TERMINATING #-}
-  Domain← : {I J : Type₀} {P : Poly I} {Q : Poly J} → P →ₚ Q → PolyDomain Q → PolyDomain P
-  F (Domain← α D) = Family← α (F D)
-  H (Domain← α D) = Domain← (//-fmap α (F D)) (H D)
+  Domain← : ∀ {ℓ} {I J : Type ℓ} {P : Poly I} {Q : Poly J} → P →ₚ Q → Domain Q → Domain P
+  Rl (Domain← α D) = Relator← α (Rl D)
+  Dm (Domain← α D) = Domain← (//-fmap α (Rl D)) (Dm D)
 
-  Extension : {I : Type₀} {P : Poly I} (F : FillingFamily P) → Type₁
-  Extension {I} {P} F = {i : I} (w : W P i) (c : γ P i) (f : Frame P w c) (x : F w c f) → Type₀
+  Extension : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) → Type (lsucc ℓ)
+  Extension {ℓ} {I} {P} R = {i : I} (w : W P i) (f : Op P i) (α : Frame P w f) (r : R w f α) → Type ℓ
 
-  ΣFam : {I : Type₀} {P : Poly I} (Fm : FillingFamily P) (E : Extension Fm) → FillingFamily P
-  ΣFam Fm E w c f = Σ (Fm w c f) (E w c f)
+  ΣRel : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) (E : Extension R) → Relator P
+  ΣRel R E w f α = Σ (R w f α) (E w f α)
 
-  ExtendedPoly : {I : Type₀} {P : Poly I} (F : FillingFamily P) (E : Extension F) → Poly (Σ I (γ P))
-  γ (ExtendedPoly {P = P} F E) (i , c) = Σ (γ (P // F) (i , c)) (λ { (w , f , x) → E w c f x })
-  ρ (ExtendedPoly {P = P} F E) (cc , _) = ρ (P // F) cc
+  ExtendedPoly : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) (E : Extension R) → Poly (Σ I (Op P))
+  Op (ExtendedPoly {P = P} R E) (i , f) = Σ (Op (P // R) (i , f)) (λ { (w , α , r) → E w f α r })
+  Param (ExtendedPoly {P = P} R E) (f , _) = Param (P // R) f
 
-  ExtendedFst : {I : Type₀} {P : Poly I} (F : FillingFamily P) (E : Extension F) → (P // ΣFam F E) →ₚ (P // F)
-  _→ₚ_.ι→ (ExtendedFst {I} {P} F E) = idf (Σ I (γ P))
-  _→ₚ_.γ→ (ExtendedFst {I} {P} F E) (w , f , x , y) = (w , f , x)
-  _→ₚ_.ρ≃ (ExtendedFst {I} {P} F E) (w , f , x , y) {j , d} = equiv to from to-from from-to
+  ExtendedFst : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) (E : Extension R) → (P // ΣRel R E) →ₚ (P // R)
+  _→ₚ_.Sort→ (ExtendedFst {I = I} {P} R E) = idf (Σ I (Op P))
+  _→ₚ_.Op→ (ExtendedFst R E) (w , α , r , y) = (w , α , r)
+  _→ₚ_.Param≃ (ExtendedFst {P = P} R E) (w , α , r , y) {j , d} = equiv to from to-from from-to
 
-    where to : Node P w d → Σ (hfiber (λ x₁ → x₁) (j , d))(ρ (P // F) (w , f , x) ∘ fst)
+    where to : Node P w d → Σ (hfiber (λ x₁ → x₁) (j , d))(Param (P // R) (w , α , r) ∘ fst)
           to n = ((j , d) , idp) , n
 
-          from : Σ (hfiber (λ x₁ → x₁) (j , d))(ρ (P // ΣFam F E) (w , f , x , y) ∘ fst) → Node P w d
+          from : Σ (hfiber (λ x₁ → x₁) (j , d))(Param (P // ΣRel R E) (w , α , r , y) ∘ fst) → Node P w d
           from (((j , d) , idp) , n) = n
 
-          to-from : (n : Σ (hfiber (λ x₁ → x₁) (j , d))(ρ (P // ΣFam F E) (w , f , x , y) ∘ fst)) → to (from n) == n
+          to-from : (n : Σ (hfiber (λ x₁ → x₁) (j , d))(Param (P // ΣRel R E) (w , α , r , y) ∘ fst)) → to (from n) == n
           to-from (((j , d) , idp) , n) = idp
 
           from-to : (n : Node P w d) → from (to n) == n
           from-to n = idp
 
-  ExtendedPrj : {I : Type₀} {P : Poly I} (F : FillingFamily P) (E : Extension F) → ExtendedPoly F E →ₚ (P // F)
-  _→ₚ_.ι→ (ExtendedPrj {I} {P} F E) = idf (Σ I (γ P))
-  _→ₚ_.γ→ (ExtendedPrj {I} {P} F E) = fst
-  _→ₚ_.ρ≃ (ExtendedPrj {I} {P} F E) ((w , f , x) , y) {j , d} = equiv to from to-from from-to
+  ExtendedPrj : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) (E : Extension R) → ExtendedPoly R E →ₚ (P // R)
+  _→ₚ_.Sort→ (ExtendedPrj {I = I} {P} R E) = idf (Σ I (Op P))
+  _→ₚ_.Op→ (ExtendedPrj R E) = fst
+  _→ₚ_.Param≃ (ExtendedPrj {P = P} R E) ((w , α , r) , y) {j , d} = equiv to from to-from from-to
 
-    where to : Node P w d → Σ (hfiber (λ x₁ → x₁) (j , d))(ρ (P // F) (w , f , x) ∘ fst)
+    where to : Node P w d → Σ (hfiber (λ x₁ → x₁) (j , d))(Param (P // R) (w , α , r) ∘ fst)
           to n = ((j , d) , idp) , n
 
-          from : Σ (hfiber (λ x₁ → x₁) (j , d))(ρ (P // F) (w , f , x) ∘ fst) → Node P w d
+          from : Σ (hfiber (λ x₁ → x₁) (j , d))(Param (P // R) (w , α , r) ∘ fst) → Node P w d
           from (((j , d) , idp) , n) = n
 
-          to-from : (n : Σ (hfiber (λ x₁ → x₁) (j , d))(ρ (P // F) (w , f , x) ∘ fst)) → to (from n) == n
+          to-from : (n : Σ (hfiber (λ x₁ → x₁) (j , d))(Param (P // R) (w , α , r) ∘ fst)) → to (from n) == n
           to-from (((j , d) , idp) , n) = idp
 
           from-to : (n : Node P w d) → from (to n) == n
@@ -237,47 +236,49 @@ module Morphism where
   --  Equivalences of polynomials
   --
 
-  record is-poly-equiv {I J : Type₀} {P : Poly I} {Q : Poly J} (α : P →ₚ Q) : Type₀ where
+  record is-poly-equiv {ℓ} {I J : Type ℓ} {P : Poly I} {Q : Poly J} (α : P →ₚ Q) : Type ℓ where
     constructor peq
     field
-      ι→-equiv : is-equiv (ι→ α)
-      γ→-equiv : {i : I} → is-equiv (γ→ α {i})
+      Sort→-equiv : is-equiv (Sort→ α)
+      Op→-equiv : {i : I} → is-equiv (Op→ α {i})
 
-  _≃ₚ_ : {I J : Type₀} (P : Poly I) (Q : Poly J) → Type₀
+  _≃ₚ_ : ∀ {ℓ} {I J : Type ℓ} (P : Poly I) (Q : Poly J) → Type ℓ
   P ≃ₚ Q = Σ (P →ₚ Q) is-poly-equiv
   
   -- The equivalence between slicing an extension and directly giving the
   -- extended polynomial.
-  ext-eqv-to : {I : Type₀} {P : Poly I} (F : FillingFamily P) (E : Extension F)
-    → (P // ΣFam F E) →ₚ ExtendedPoly F E
-  ι→ (ext-eqv-to {I} {P} F E) = idf (Σ I (γ P))
-  γ→ (ext-eqv-to {I} {P} F E) (w , f , x , y) = (w , f , x) , y
-  ρ≃ (ext-eqv-to {I} {P} F E) (w , f , x , y) {j} = equiv to from to-from from-to
+  ext-eqv-to : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) (E : Extension R)
+    → (P // ΣRel R E) →ₚ ExtendedPoly R E
+  Sort→ (ext-eqv-to {I = I} {P} R E) = idf (Σ I (Op P))
+  Op→ (ext-eqv-to R E) (w , α , r , y) = (w , α , r) , y
+  Param≃ (ext-eqv-to {P = P} R E) (w , α , r , y) {j} = equiv to from to-from from-to
 
-    where to : Node P w (snd j) → Σ (hfiber (idf _) j) (ρ (P // ΣFam F E) (w , f , x , y) ∘ fst)
+    where to : Node P w (snd j) → Σ (hfiber (idf _) j) (Param (P // ΣRel R E) (w , α , r , y) ∘ fst)
           to n = (j , idp) , n
 
-          from : Σ (hfiber (idf _) j) (ρ (P // ΣFam F E) (w , f , x , y) ∘ fst) → Node P w (snd j)
+          from : Σ (hfiber (idf _) j) (Param (P // ΣRel R E) (w , α , r , y) ∘ fst) → Node P w (snd j)
           from ((j , idp) , n) = n
 
-          to-from : (n : Σ (hfiber (idf _) j) (ρ (P // ΣFam F E) (w , f , x , y) ∘ fst))
+          to-from : (n : Σ (hfiber (idf _) j) (Param (P // ΣRel R E) (w , α , r , y) ∘ fst))
                     → to (from n) == n
           to-from ((j , idp) , n) = idp
 
           from-to : (n : Node P w (snd j)) → from (to n) == n
           from-to n = idp
 
-  ext-eqv-is-equiv : {I : Type₀} {P : Poly I} (F : FillingFamily P) (E : Extension F)
-    → is-poly-equiv (ext-eqv-to F E)
-  is-poly-equiv.ι→-equiv (ext-eqv-is-equiv {I} {P} F E) = idf-is-equiv (Σ I (γ P))
-  is-poly-equiv.γ→-equiv (ext-eqv-is-equiv {I} {P} F E) =
-    is-eq (γ→ (ext-eqv-to F E)) (λ { ((w , f , x) , y) → w , f , x , y })
-      (λ { ((w , f , x) , y) → idp }) (λ { (w , f , x , y) → idp })
+  ext-eqv-is-equiv : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) (E : Extension R)
+    → is-poly-equiv (ext-eqv-to R E)
+  is-poly-equiv.Sort→-equiv (ext-eqv-is-equiv {I = I} {P} R E) = idf-is-equiv (Σ I (Op P))
+  is-poly-equiv.Op→-equiv (ext-eqv-is-equiv R E) =
+    is-eq (Op→ (ext-eqv-to R E)) (λ { ((w , α , r) , y) → w , α , r , y })
+      (λ { ((w , α , r) , y) → idp }) (λ { (w , α , r , y) → idp })
 
   -- This version of the notion of equivalence seems somehow easier
-  -- to work with, as opposed to the one below.  But maybe not ...
-  -- record PolyEqv {I J : Type₀} (P : Poly I) (Q : Poly J) : Type₀ where
+  -- to work with, as opposed to the one below, but of course, should
+  -- be equivalent
+  -- 
+  -- record PolyEqv {I J : Type ℓ} (P : Poly I) (Q : Poly J) : Type ℓ where
   --   field
-  --     ι≃ : I ≃ J
-  --     γ≃ : (i : I) → γ P i ≃ γ Q (–> ι≃ i)
-  --     ρ≃ : {i j : I} (c : γ P i) → ρ P c j ≃ ρ Q (–> (γ≃ i) c) (–> ι≃ j)
+  --     Sort≃ : I ≃ J
+  --     Op≃ : (i : I) → Op P i ≃ Op Q (–> Sort≃ i)
+  --     Param≃ : {i j : I} (f : Op P i) → Param P f j ≃ Param Q (–> (Op≃ i) c) (–> Sort≃ j)

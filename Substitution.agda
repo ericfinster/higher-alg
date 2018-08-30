@@ -2,7 +2,7 @@
 
 open import HoTT
 open import Util
-open import Signature
+open import Polynomial
 
 -- The postulates here can all be proved (see previous incarnations of
 -- this library), however, they tend to seriously bog down typechecking.
