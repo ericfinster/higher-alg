@@ -72,6 +72,8 @@ module Polynomial where
       → ∀ {k} → (f : Op P k) → Node w f ≃ Node (transport W p w) f
     nd-inv idp w f = ide (Node w f)
 
+    -- rel-inv : (R : Relator P)
+
     --
     --  Characterizing paths in W-types
     --
