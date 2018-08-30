@@ -72,6 +72,10 @@ module Polynomial where
       → ∀ {k} → (f : Op P k) → Node w f ≃ Node (transport W p w) f
     nd-inv idp w f = ide (Node w f)
 
+    --
+    --  Level calculations
+    --
+  
     W= : {i : I} → W i → W i → Type ℓ
     W= (lf i) (lf .i) = Lift ⊤
     W= (lf i) (nd _) = Lift ⊥
@@ -82,10 +86,9 @@ module Polynomial where
             decor-eq α = (k : I) (p : Param P f k) (q : Param P g k)
                          → (r : p == q [ (λ x → Param P x k) ↓ α ])
                          → ϕ k p == ψ k q 
-
     postulate
 
-      W=-equiv : {i : I} (w₀ : W i) (w₁ : W i) → (W= w₀ w₁) ≃ (w₀ == w₁)
+      W=-equiv : {i : I} (w₀ w₁ : W i) → (W= w₀ w₁) ≃ (w₀ == w₁)
 
     W-level-aux : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level-aux (S (S n)) (W i)
     W-level-aux op-lvl i (lf .i) (lf .i) = equiv-preserves-level (W=-equiv (lf i) (lf i))
@@ -97,7 +100,32 @@ module Polynomial where
 
     W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
     W-level op-lvl i = has-level-in (W-level-aux op-lvl i)
-    
+
+    Leaf-level : ∀ {n} (s-lvl : has-level n I)
+      → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level n (Param P f j))
+      → {i : I} (w : W i) (j : I)
+      → has-level n (Leaf w j)
+    Leaf-level s-lvl p-lvl (lf i) j = =-preserves-level s-lvl
+    Leaf-level s-lvl p-lvl (nd (f , ϕ)) j = Σ-level s-lvl (λ k →
+      Σ-level (p-lvl f k) (λ p → Leaf-level s-lvl p-lvl (ϕ k p) j))
+
+    Node-level : ∀ {n} (s-lvl : has-level (S (S n)) I)
+      → (o-lvl : (i : I) → has-level (S (S n)) (Op P i))
+      → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level (S (S n)) (Param P f j))
+      → {i : I} (w : W i) {j : I} (g : Op P j)
+      → has-level (S (S n)) (Node w g)
+    Node-level s-lvl o-lvl p-lvl (lf i) g = Lift-level Empty-level
+    Node-level s-lvl o-lvl p-lvl (nd (f , ϕ)) g =
+      Coprod-level (=-preserves-level (Σ-level s-lvl o-lvl))
+                   (Σ-level s-lvl (λ j → Σ-level (p-lvl f j)
+                     (λ p → Node-level s-lvl o-lvl p-lvl (ϕ j p) g)))
+
+    Frame-level : ∀ {n} (s-lvl : has-level n I)
+      → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level n (Param P f j))
+      → {i : I} (w : W i) (f : Op P i)
+      → has-level n (Frame w f)
+    Frame-level s-lvl p-lvl w f = Π-level (λ i → ≃-level (Leaf-level s-lvl p-lvl w i) (p-lvl f i))
+
   -- The "slice" of a polynomial by a relator
   _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))
   Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
