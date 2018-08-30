@@ -72,56 +72,31 @@ module Polynomial where
       → ∀ {k} → (f : Op P k) → Node w f ≃ Node (transport W p w) f
     nd-inv idp w f = ide (Node w f)
 
-    -- rel-inv : (R : Relator P)
-
-    --
-    --  Characterizing paths in W-types
-    --
-
-    -- W-unfold-eqv : (i : I) → W i ≃ ⊤ ⊔ ⟦ P ⟧ W i
-    -- W-unfold-eqv i = equiv to from to-from from-to
-
-    --   where to : W i → ⊤ ⊔ ⟦ P ⟧ W i
-    --         to (lf i) = inl tt
-    --         to (nd pw) = inr pw
-
-    --         from : ⊤ ⊔ ⟦ P ⟧ W i → W i
-    --         from (inl tt) = lf i
-    --         from (inr pw) = nd pw
-
-    --         to-from : (w : ⊤ ⊔ ⟦ P ⟧ W i) → to (from w) == w
-    --         to-from (inl tt) = idp
-    --         to-from (inr pw) = idp
-
-    --         from-to : (w : W i) → from (to w) == w
-    --         from-to (lf i) = idp
-    --         from-to (nd pw) = idp
-
-    -- Yeah, so this doesn't work because of termination.
-    -- W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
-    -- W-level op-lvl i = equiv-preserves-level ((W-unfold-eqv i)⁻¹)
-    --   ⦃ Coprod-level Unit-level (Σ-level (op-lvl i) (λ f → Π-level (λ j → Π-level (λ p → W-level op-lvl j )))) ⦄
-
     W= : {i : I} → W i → W i → Type ℓ
     W= (lf i) (lf .i) = Lift ⊤
-    W= (lf i) (nd pw) = Lift ⊥
-    W= (nd pw) (lf i) = Lift ⊥
-    W= (nd pw) (nd pw') = pw == pw'
-    
+    W= (lf i) (nd _) = Lift ⊥
+    W= (nd _) (lf i) = Lift ⊥
+    W= (nd (f , ϕ)) (nd (g , ψ)) = Σ (f == g) decor-eq
+
+      where decor-eq : f == g → Type ℓ
+            decor-eq α = (k : I) (p : Param P f k) (q : Param P g k)
+                         → (r : p == q [ (λ x → Param P x k) ↓ α ])
+                         → ϕ k p == ψ k q 
+
     postulate
 
       W=-equiv : {i : I} (w₀ : W i) (w₁ : W i) → (W= w₀ w₁) ≃ (w₀ == w₁)
 
-    -- W-level-aux : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level-aux (S (S n)) (W i)
-    -- W-level-aux op-lvl i (lf .i) (lf .i) = equiv-preserves-level (W=-equiv (lf i) (lf i))
-    -- W-level-aux op-lvl i (lf .i) (nd pw) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (lf i) (nd pw)) p)))
-    -- W-level-aux op-lvl i (nd pw) (lf .i) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (nd pw) (lf i)) p)))
-    -- W-level-aux op-lvl i (nd pw) (nd pw') = equiv-preserves-level (W=-equiv (nd pw) (nd pw'))
-    --   ⦃ {!!} ⦄
+    W-level-aux : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level-aux (S (S n)) (W i)
+    W-level-aux op-lvl i (lf .i) (lf .i) = equiv-preserves-level (W=-equiv (lf i) (lf i))
+    W-level-aux op-lvl i (lf .i) (nd pw) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (lf i) (nd pw)) p)))
+    W-level-aux op-lvl i (nd pw) (lf .i) = has-level-in (λ p → Empty-rec (lower (<– (W=-equiv (nd pw) (lf i)) p)))
+    W-level-aux op-lvl i (nd (f , ϕ)) (nd (g , ψ)) = equiv-preserves-level (W=-equiv (nd (f , ϕ)) (nd (g , ψ)))
+      ⦃ Σ-level (has-level-apply (op-lvl i) f g) (λ α → Π-level (λ k → Π-level (λ p → Π-level (λ q →
+                  Π-level (λ r → W-level-aux op-lvl k (ϕ k p) (ψ k q)))))) ⦄
 
-    -- W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
-    -- W-level op-lvl i = has-level-in (W-level-aux op-lvl i)
-
+    W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
+    W-level op-lvl i = has-level-in (W-level-aux op-lvl i)
     
   -- The "slice" of a polynomial by a relator
   _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))

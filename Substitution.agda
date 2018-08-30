@@ -80,13 +80,13 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) where
   --
 
   flatten (lf (i , f)) = corolla P f
-  flatten (nd ((w , f , x) , κ)) = substitute w κ
+  flatten (nd ((w , α , r) , κ)) = substitute w κ
 
   flatten-frm-to (lf _) j (_ , p , idp) = p
-  flatten-frm-to (nd ((w , f , x) , κ)) j l = –> (f j) (substitute-lf-to w κ j l)
+  flatten-frm-to (nd ((w , α , r) , κ)) j l = –> (α j) (substitute-lf-to w κ j l)
   
   flatten-frm-from (lf (i , f)) j p = (j , p , idp)
-  flatten-frm-from (nd ((w , f , x) , κ)) j p = substitute-lf-from w κ j (<– (f j) p)
+  flatten-frm-from (nd ((w , α , r) , κ)) j p = substitute-lf-from w κ j (<– (α j) p)
   
   flatten-frm pd j =
     equiv (flatten-frm-to pd j) (flatten-frm-from pd j)
@@ -190,12 +190,12 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) where
   --
 
   bd-frame-to (lf .(j , g)) (j , g) idp = (inl idp)
-  bd-frame-to (nd ((w , f , x) , κ)) (j , g) (k , p , l) =
+  bd-frame-to (nd ((w , α , r) , κ)) (j , g) (k , p , l) =
     substitute-nd-to w κ (j , g) (k , p , l)
   
   bd-frame-from (lf .(j , g)) (j , g) (inl idp) = idp
   bd-frame-from (lf .(_ , _)) (j , g) (inr (_ , p , ()))
-  bd-frame-from (nd ((w , f , x) , κ)) (j , g) n =
+  bd-frame-from (nd ((w , α , r) , κ)) (j , g) n =
     substitute-nd-from w κ (j , g) n
     
   bd-frame pd jd =

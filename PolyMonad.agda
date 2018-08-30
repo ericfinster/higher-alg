@@ -16,10 +16,10 @@ module PolyMonad where
   CoherenceFor {P = P} {R} RR {f = f} pd = Σ (R (flatten R pd) f (flatten-frm R pd))
     (λ f → RR pd (flatten R pd , flatten-frm R pd , f) (bd-frame R pd))
 
-  CoherenceToComposite : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {R : Relator P} (RR : Relator (P // R))
+  coh-to-comp : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {R : Relator P} (RR : Relator (P // R))
    {i : I} {f : Op P i} (pd : W (P // R) (i , f))
    → CoherenceFor RR pd → CompositeFor RR pd
-  CoherenceToComposite {P = P} {R} RR pd (f₀ , f₁) =
+  coh-to-comp {P = P} {R} RR pd (f₀ , f₁) =
     (flatten R pd , flatten-frm R pd , f₀) , bd-frame R pd , f₁
 
   Filler : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P)
@@ -39,7 +39,7 @@ module PolyMonad where
         → is-contr (CompositeFor (Rl D) w)
 
       is-coherent : {i : I} {f : Op P i} (pd : W (P // Rl D) (i , f))
-        → is-equiv (CoherenceToComposite (Rl (Dm D)) pd)
+        → is-equiv (coh-to-comp (Rl (Dm D)) pd)
         
       coh-algebraic : is-algebraic (Dm D)
 
@@ -49,7 +49,7 @@ module PolyMonad where
 
     bd-contr : {i : I} {f : Op P i} (tr : W (P // Rl D) (i , f))
       → is-contr (CoherenceFor (Rl (Dm D)) tr)
-    bd-contr pd = equiv-preserves-level ((CoherenceToComposite (Rl (Dm D)) pd , is-coherent is-alg pd)⁻¹)
+    bd-contr pd = equiv-preserves-level ((coh-to-comp (Rl (Dm D)) pd , is-coherent is-alg pd)⁻¹)
       ⦃ is-fillable (coh-algebraic is-alg) pd ⦄
 
     μ : {i : I} (w : W P i) → Op P i
