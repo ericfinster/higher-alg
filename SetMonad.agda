@@ -13,7 +13,22 @@ module SetMonad where
       mult-frm : {i : I} (w : W P i) → Frame P w (mult w)
 
   open PolyMagma
-  
+
+  -- Phew.  Saved your ass here!!!
+  magma-leaves-are-sets : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P)
+    → (p-is-set : {i : I} (f : Op P i) (j : I) → is-set (Param P f j))
+    → {i : I} (w : W P i) (j : I)
+    → is-set (Leaf P w j)
+  magma-leaves-are-sets P M p-is-set w j =
+    equiv-preserves-level ((mult-frm M w j)⁻¹) ⦃ p-is-set (mult M w) j  ⦄
+
+  magma-frames-are-sets : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P)
+    → (p-is-set : {i : I} (f : Op P i) (j : I) → is-set (Param P f j))
+    → {i : I} (w : W P i) (f : Op P i)
+    → is-set (Frame P w f)
+  magma-frames-are-sets P M p-is-set w f =
+    Π-level (λ j → ≃-level (magma-leaves-are-sets P M p-is-set w j) (p-is-set f j))
+
   module _ {ℓ} {I : Type ℓ} (P : Poly I) where
 
     Fr : Poly I
@@ -62,9 +77,8 @@ module SetMonad where
   record SetMonad {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
     field
 
-      sort-is-groupoid : has-level 1 I
-      op-is-groupoid : (i : I) → has-level 1 (Op P i)
-      param-is-groupoid : {i : I} (f : Op P i) (j : I) → has-level 1 (Param P f j)
+      op-is-set : (i : I) → is-set (Op P i)
+      param-is-set : {i : I} (f : Op P i) (j : I) → is-set (Param P f j)
 
       mag : PolyMagma P
       
@@ -79,12 +93,6 @@ module SetMonad where
 
 
   open SetMonad
-
-  -- Phew.  Saved your ass here!!!
-  weird : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P)
-    → (p-is-set : {i : I} (f : Op P i) (j : I) → is-set (Param P f j))
-    → {i : I} (w : W P i) (j : I) → is-set (Leaf P w j)
-  weird P M p-is-set w j = equiv-preserves-level ((mult-frm M w j)⁻¹) ⦃ p-is-set (mult M w) j  ⦄
 
   module _ {ℓ} {I : Type ℓ} (P : Poly I) (M : SetMonad P) where
 
@@ -105,7 +113,15 @@ module SetMonad where
 
     HomPoly : Poly (Σ I (Op P))
     HomPoly = P // MndRel
-    
+
+    -- Phew, nice!  And even more is true: the values of the relator
+    -- are in fact propositions.
+    hom-op-is-set : {i : I} (f : Op P i) → is-set (Op HomPoly (i , f))
+    hom-op-is-set {i} f = Σ-level (W-level P (op-is-set M) i) (λ w →
+      Σ-level (magma-frames-are-sets P (mag M) (param-is-set M) w f) (λ α →
+              =-preserves-level (Σ-level (op-is-set M i)
+                (magma-frames-are-sets P (mag M) (param-is-set M) w))))
+
     -- Oh crap.  But the parameters of the hom polynomial are the
     -- nodes of the given tree.  And these are *not* a set in general
     -- because they have the truncation level of the type of sorts,
@@ -123,40 +139,6 @@ module SetMonad where
     -- are in fact a set.
 
     -- Wow, that almost gave me a heart attack.
-
-    hom-sort-is-groupoid : has-level 1 (Σ I (Op P))
-    hom-sort-is-groupoid = Σ-level (sort-is-groupoid M) (op-is-groupoid M)
-
-    -- Right, so this shows that, indeed, that the values of MndRel are
-    -- sets.  Not sure if this helps, but there you go.
-    hom-op-is-groupoid : {i : I} (f : Op P i) → has-level 1 (Op HomPoly (i , f))
-    hom-op-is-groupoid {i} f = Σ-level (W-level P (op-is-groupoid M) i) (λ w →
-      Σ-level (Frame-level P (sort-is-groupoid M) (param-is-groupoid M) w f) (λ f →
-        =-preserves-level (Σ-level (op-is-groupoid M i)
-          (Frame-level P (sort-is-groupoid M) (param-is-groupoid M) w))))
-
-    hom-param-is-groupoid : {i : I} (f : Op P i) (h : Op HomPoly (i , f))
-      → {j : I} (g : Op P j)
-      → has-level 1 (Param HomPoly h (j , g))
-    hom-param-is-groupoid f (w , α , r) = Node-level P (sort-is-groupoid M)
-      (op-is-groupoid M) (param-is-groupoid M) w 
-  
-    -- So there you have it.  We have stability of the truncation level
-    -- for groupoids, but not sets.  That is really bad news.
-
-    -- But this is strange.  Are you missing something?
-    -- Because suppose that this thing is indeed a monad.
-    -- Then, frames should be equivalent to paths in the space
-    -- of constructors, which is even *better* than a set.
-
-    -- No. In the lowest dimension, it should be somehow rare that
-    -- there is a *unique* frame, as is the case for the universe.
-
-    -- But something is strange because, if you have a monad,
-    -- then for every tree, the set of leaves is actually a *set*.
-
-
-    -- Right, so does this fix the problem?
 
 
     hom-mult : {i : I} (f : Op P i) → W HomPoly (i , f) → Op HomPoly (i , f)
