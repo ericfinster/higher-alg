@@ -130,77 +130,75 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) where
   --
   
   bd-frame-to : {i : I} {f : Op P i}
-    → (pd : W (P // R) (i , f)) (jd : Σ I (Op P))
-    → Leaf (P // R) pd jd → Node P (flatten pd) (snd jd)
+    → (pd : W (P // R) (i , f)) (jg : Σ I (Op P))
+    → Leaf (P // R) pd jg → Node P (flatten pd) (snd jg)
 
   bd-frame-from : {i : I} {f : Op P i}
-    → (pd : W (P // R) (i , f)) (jd : Σ I (Op P))
-    → Node P (flatten pd) (snd jd) → Leaf (P // R) pd jd
+    → (pd : W (P // R) (i , f)) (jg : Σ I (Op P))
+    → Node P (flatten pd) (snd jg) → Leaf (P // R) pd jg
 
   postulate
   
     bd-frame-to-from : {i : I} {f : Op P i}
-      → (pd : W (P // R) (i , f)) (jd : Σ I (Op P))
-      → (n : Node P (flatten pd) (snd jd))
-      → bd-frame-to pd jd (bd-frame-from pd jd n) == n
+      → (pd : W (P // R) (i , f)) (jg : Σ I (Op P))
+      → (n : Node P (flatten pd) (snd jg))
+      → bd-frame-to pd jg (bd-frame-from pd jg n) == n
 
     bd-frame-from-to : {i : I} {f : Op P i}
-      → (pd : W (P // R) (i , f)) (jd : Σ I (Op P))
-      → (l : Leaf (P // R) pd jd)
-      → bd-frame-from pd jd (bd-frame-to pd jd l) == l
+      → (pd : W (P // R) (i , f)) (jg : Σ I (Op P))
+      → (l : Leaf (P // R) pd jg)
+      → bd-frame-from pd jg (bd-frame-to pd jg l) == l
 
   bd-frame : {i : I} {f : Op P i}
     → (pd : W (P // R) (i , f))
-    → (jd : Σ I (Op P)) → Leaf (P // R) pd jd ≃ Node P (flatten pd) (snd jd)
+    → (jg : Σ I (Op P)) → Leaf (P // R) pd jg ≃ Node P (flatten pd) (snd jg)
 
   --
   --  Nodes in a substituted tree
   --
 
   substitute-nd-to : {i : I} (w : W P i)
-    → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c) (jd : Σ I (Op P))
-    → Σ (Σ I (Op P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // R) (κ ke n) jd))
-    → Node P (substitute w κ) (snd jd) 
+    → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c) (jg : Σ I (Op P))
+    → Σ (Σ I (Op P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // R) (κ ke n) jg))
+    → Node P (substitute w κ) (snd jg) 
 
   substitute-nd-from : {i : I} (w : W P i)
-    → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c) (jd : Σ I (Op P))
-    → Node P (substitute w κ) (snd jd) 
-    → Σ (Σ I (Op P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // R) (κ ke n) jd))
+    → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c) (jg : Σ I (Op P))
+    → Node P (substitute w κ) (snd jg) 
+    → Σ (Σ I (Op P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // R) (κ ke n) jg))
 
   postulate
   
     substitute-nd-to-from : {i : I} (w : W P i)
-      → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c) (jd : Σ I (Op P))
-      → (n : Node P (substitute w κ) (snd jd))
-      → substitute-nd-to w κ jd (substitute-nd-from w κ jd n) == n
+      → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c) (jg : Σ I (Op P))
+      → (n : Node P (substitute w κ) (snd jg))
+      → substitute-nd-to w κ jg (substitute-nd-from w κ jg n) == n
 
     substitute-nd-from-to : {i : I} (w : W P i)
-      → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c) (jd : Σ I (Op P))
-      → (t : Σ (Σ I (Op P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // R) (κ ke n) jd)))
-      → substitute-nd-from w κ jd (substitute-nd-to w κ jd t) == t
+      → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c) (jg : Σ I (Op P))
+      → (t : Σ (Σ I (Op P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // R) (κ ke n) jg)))
+      → substitute-nd-from w κ jg (substitute-nd-to w κ jg t) == t
 
   substitute-nd-eqv : {i : I} (w : W P i)
     → (κ : (c : Σ I (Op P)) → Node P w (snd c) → W (P // R) c)
-    → (jd : Σ I (Op P))
-    → Σ (Σ I (Op P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // R) (κ ke n) jd))
-    ≃ Node P (substitute w κ) (snd jd) 
+    → (jg : Σ I (Op P))
+    → Σ (Σ I (Op P)) (λ ke → Σ (Node P w (snd ke)) (λ n → Leaf (P // R) (κ ke n) jg))
+    ≃ Node P (substitute w κ) (snd jg) 
 
   --
   --  Implementation
   --
 
   bd-frame-to (lf .(j , g)) (j , g) idp = (inl idp)
-  bd-frame-to (nd ((w , α , r) , κ)) (j , g) (k , p , l) =
-    substitute-nd-to w κ (j , g) (k , p , l)
+  bd-frame-to (nd ((w , α , r) , κ)) = substitute-nd-to w κ
   
   bd-frame-from (lf .(j , g)) (j , g) (inl idp) = idp
   bd-frame-from (lf .(_ , _)) (j , g) (inr (_ , p , ()))
-  bd-frame-from (nd ((w , α , r) , κ)) (j , g) n =
-    substitute-nd-from w κ (j , g) n
+  bd-frame-from (nd ((w , α , r) , κ)) = substitute-nd-from w κ 
     
-  bd-frame pd jd =
-    equiv (bd-frame-to pd jd) (bd-frame-from pd jd)
-          (bd-frame-to-from pd jd) (bd-frame-from-to pd jd)
+  bd-frame pd jg =
+    equiv (bd-frame-to pd jg) (bd-frame-from pd jg)
+          (bd-frame-to-from pd jg) (bd-frame-from-to pd jg)
 
   substitute-nd-to (lf i) κ (j , g) ((k , e) , () , l)
   substitute-nd-to (nd (f , ϕ)) κ (j , g) ((k , .f) , (inl idp) , l) = 
@@ -233,9 +231,9 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) where
         (ke , n'' , l'') = substitute-nd-from (ϕ k p') (λ ic n₀ → κ ic (inr (k , p' , n₀))) (j , g) n'
     in ke , (inr (k , p' , n'')) , l''
     
-  substitute-nd-eqv w κ jd =
-    equiv (substitute-nd-to w κ jd) (substitute-nd-from w κ jd)
-          (substitute-nd-to-from w κ jd) (substitute-nd-from-to w κ jd)
+  substitute-nd-eqv w κ jg =
+    equiv (substitute-nd-to w κ jg) (substitute-nd-from w κ jg)
+          (substitute-nd-to-from w κ jg) (substitute-nd-from-to w κ jg)
 
 
 

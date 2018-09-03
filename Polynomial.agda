@@ -20,7 +20,12 @@ module Polynomial where
       Param : {i : I} → Op i → I → Type ℓ
 
   open Poly public
-  
+
+  Decor : ∀ {ℓ} {I : Type ℓ} (P : Poly I)
+    → {i : I} (f : Op P i) (X : I → Type ℓ)
+    → Type ℓ
+  Decor P f X = ∀ j → Param P f j → X j
+
   ⟦_⟧ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) → (I → Type ℓ) → I → Type ℓ
   ⟦ P ⟧ X i = Σ (Op P i) (λ f → ∀ j → Param P f j → X j)
 
@@ -101,30 +106,50 @@ module Polynomial where
     W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
     W-level op-lvl i = has-level-in (W-level-aux op-lvl i)
 
-    Leaf-level : ∀ {n} (s-lvl : has-level n I)
-      → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level n (Param P f j))
+    -- Leaf-level : ∀ {n} (s-lvl : has-level n I)
+    --   → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level n (Param P f j))
+    --   → {i : I} (w : W i) (j : I)
+    --   → has-level n (Leaf w j)
+    -- Leaf-level s-lvl p-lvl (lf i) j = =-preserves-level s-lvl
+    -- Leaf-level s-lvl p-lvl (nd (f , ϕ)) j = Σ-level s-lvl (λ k →
+    --   Σ-level (p-lvl f k) (λ p → Leaf-level s-lvl p-lvl (ϕ k p) j))
+
+    Leaf-level : ∀ {n} (s-lvl : has-level (S n) I)
+      → (p-lvl : {i : I} (f : Op P i) → has-level n (Σ I (Param P f)))
       → {i : I} (w : W i) (j : I)
       → has-level n (Leaf w j)
-    Leaf-level s-lvl p-lvl (lf i) j = =-preserves-level s-lvl
-    Leaf-level s-lvl p-lvl (nd (f , ϕ)) j = Σ-level s-lvl (λ k →
-      Σ-level (p-lvl f k) (λ p → Leaf-level s-lvl p-lvl (ϕ k p) j))
+    Leaf-level s-lvl p-lvl (lf i) j = has-level-apply s-lvl i j
+    Leaf-level s-lvl p-lvl (nd (f , ϕ)) j = equiv-preserves-level Σ-assoc
+      ⦃ Σ-level (p-lvl f) (λ { (i , p) → Leaf-level s-lvl p-lvl (ϕ i p) j }) ⦄
+    
+    -- Node-level : ∀ {n} (s-lvl : has-level (S (S n)) I)
+    --   → (o-lvl : (i : I) → has-level (S (S n)) (Op P i))
+    --   → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level (S (S n)) (Param P f j))
+    --   → {i : I} (w : W i) {j : I} (g : Op P j)
+    --   → has-level (S (S n)) (Node w g)
+    -- Node-level s-lvl o-lvl p-lvl (lf i) g = Lift-level Empty-level
+    -- Node-level s-lvl o-lvl p-lvl (nd (f , ϕ)) g =
+    --   Coprod-level (=-preserves-level (Σ-level s-lvl o-lvl))
+    --                (Σ-level s-lvl (λ j → Σ-level (p-lvl f j)
+    --                  (λ p → Node-level s-lvl o-lvl p-lvl (ϕ j p) g)))
 
-    Node-level : ∀ {n} (s-lvl : has-level (S (S n)) I)
+    -- Is this maybe the more useful statement?  And similarly for leaves, by the way ...
+    Node-level : ∀ {n} (s-lvl : has-level (S (S (S n))) I)
       → (o-lvl : (i : I) → has-level (S (S n)) (Op P i))
-      → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level (S (S n)) (Param P f j))
+      → (p-lvl : {i : I} (f : Op P i) → has-level (S (S n)) (Σ I (Param P f)))
       → {i : I} (w : W i) {j : I} (g : Op P j)
       → has-level (S (S n)) (Node w g)
     Node-level s-lvl o-lvl p-lvl (lf i) g = Lift-level Empty-level
     Node-level s-lvl o-lvl p-lvl (nd (f , ϕ)) g =
-      Coprod-level (=-preserves-level (Σ-level s-lvl o-lvl))
-                   (Σ-level s-lvl (λ j → Σ-level (p-lvl f j)
-                     (λ p → Node-level s-lvl o-lvl p-lvl (ϕ j p) g)))
+      Coprod-level (has-level-apply (Σ-level s-lvl (λ j → raise-level _ (o-lvl j))) (_ , f) (_ , g))
+                   (equiv-preserves-level Σ-assoc ⦃ Σ-level (p-lvl f) (λ { (j , p) → Node-level s-lvl o-lvl p-lvl (ϕ j p) g }) ⦄)
 
-    Frame-level : ∀ {n} (s-lvl : has-level n I)
-      → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level n (Param P f j))
-      → {i : I} (w : W i) (f : Op P i)
-      → has-level n (Frame w f)
-    Frame-level s-lvl p-lvl w f = Π-level (λ i → ≃-level (Leaf-level s-lvl p-lvl w i) (p-lvl f i))
+    -- Hmmm.  The natural implementation here uses the other, naive version
+    -- Frame-level : ∀ {n} (s-lvl : has-level (S n) I)
+    --   → (p-lvl : {i : I} (f : Op P i) → has-level n (Σ I (Param P f)))
+    --   → {i : I} (w : W i) (f : Op P i)
+    --   → has-level n (Frame w f)
+    -- Frame-level s-lvl p-lvl w f = Π-level (λ i → ≃-level (Leaf-level s-lvl p-lvl w i) {!!})
 
   -- The "slice" of a polynomial by a relator
   _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))
