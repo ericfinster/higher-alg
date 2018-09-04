@@ -229,14 +229,16 @@ module Polynomial where
       graft-leaf-from : Leaf P (graft w ψ) j → Σ I (λ k → Σ (Leaf P w k) (λ l → Leaf P (ψ k l) j))
       graft-leaf-from = graft-leaf-rec w ψ j (λ k l m → k , l , m) 
 
-      graft-leaf-to-from : (l : Leaf P (graft w ψ) j)
-        → graft-leaf-to (graft-leaf-from l) == l
-      graft-leaf-to-from = graft-leaf-elim w ψ j (λ l → graft-leaf-to (graft-leaf-from l) == l) 
-        (λ k l m → ap (graft-leaf-to) (graft-leaf-rec-β w ψ j (λ k l m → k , l , m) k l m))
+      abstract
+      
+        graft-leaf-to-from : (l : Leaf P (graft w ψ) j)
+          → graft-leaf-to (graft-leaf-from l) == l
+        graft-leaf-to-from = graft-leaf-elim w ψ j (λ l → graft-leaf-to (graft-leaf-from l) == l) 
+          (λ k l m → ap (graft-leaf-to) (graft-leaf-rec-β w ψ j (λ k l m → k , l , m) k l m))
 
-      graft-leaf-from-to : (l : Σ I (λ k → Σ (Leaf P w k) (λ l → Leaf P (ψ k l) j)))
-        → graft-leaf-from (graft-leaf-to l) == l
-      graft-leaf-from-to (k , l , m) = graft-leaf-rec-β w ψ j (λ k l m → k , l , m) k l m
+        graft-leaf-from-to : (l : Σ I (λ k → Σ (Leaf P w k) (λ l → Leaf P (ψ k l) j)))
+          → graft-leaf-from (graft-leaf-to l) == l
+        graft-leaf-from-to (k , l , m) = graft-leaf-rec-β w ψ j (λ k l m → k , l , m) k l m
 
       graft-leaf-eqv : Σ I (λ k → Σ (Leaf P w k) (λ l → Leaf P (ψ k l) j)) ≃ Leaf P (graft w ψ) j
       graft-leaf-eqv = equiv graft-leaf-to graft-leaf-from
@@ -254,8 +256,8 @@ module Polynomial where
       inr (h , p , graft-node-inl (ϕ h p) (λ k l → ψ k (h , p , l)) g n)
 
     graft-node-inr : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (g : Ops P)
-      → (k : I) (l : Leaf P w k)
-      → Node P (ψ k l) g → Node P (graft w ψ) g
+      → (k : I) (l : Leaf P w k) (n : Node P (ψ k l) g)
+      → Node P (graft w ψ) g
     graft-node-inr (lf i) ψ g .i idp n = n
     graft-node-inr (nd (f , ϕ)) ψ g k (h , p , l) n =
       inr (h , p , graft-node-inr (ϕ h p) (λ k l → ψ k (h , p , l)) g k l n)
@@ -273,6 +275,33 @@ module Polynomial where
         (λ n₁ → Q (inr (h , p , n₁))) (λ n₁ → inl* (inr (h , p , n₁)))
         (λ k l n₁ → inr* k (h , p , l) n₁) n
 
+    graft-node-elim-inl-β : ∀ {ℓ'} {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
+      → (g : Ops P) (Q : Node P (graft w ψ) g → Type ℓ')
+      → (inl* : (n : Node P w g) → Q (graft-node-inl w ψ g n))
+      → (inr* : (k : I) (l : Leaf P w k) (n : Node P (ψ k l) g)
+              →  Q (graft-node-inr w ψ g k l n))
+      → (n : Node P w g)
+      → graft-node-elim w ψ g Q inl* inr* (graft-node-inl w ψ g n) == inl* n
+    graft-node-elim-inl-β (lf i) ψ g Q inl* inr* (lift ())
+    graft-node-elim-inl-β (nd (f , ϕ)) ψ .(_ , f) Q inl* inr* (inl idp) = idp
+    graft-node-elim-inl-β (nd (f , ϕ)) ψ g Q inl* inr* (inr (h , p , n)) =
+      graft-node-elim-inl-β (ϕ h p) (λ k l → ψ k (h , p , l)) g
+        (λ n₁ → Q (inr (h , p , n₁))) (λ n₁ → inl* (inr (h , p , n₁)))
+        (λ k l n₁ → inr* k (h , p , l) n₁) n
+
+    graft-node-elim-inr-β : ∀ {ℓ'} {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
+      → (g : Ops P) (Q : Node P (graft w ψ) g → Type ℓ')
+      → (inl* : (n : Node P w g) → Q (graft-node-inl w ψ g n))
+      → (inr* : (k : I) (l : Leaf P w k) (n : Node P (ψ k l) g)
+              →  Q (graft-node-inr w ψ g k l n))
+      → (k : I) (l : Leaf P w k) (n : Node P (ψ k l) g)
+      → graft-node-elim w ψ g Q inl* inr* (graft-node-inr w ψ g k l n) == inr* k l n
+    graft-node-elim-inr-β (lf i) ψ g Q inl* inr* .i idp n = idp
+    graft-node-elim-inr-β (nd (f , ϕ)) ψ g Q inl* inr* k (h , p , l) n =
+      graft-node-elim-inr-β (ϕ h p) (λ k l → ψ k (h , p , l)) g
+        (λ n₁ → Q (inr (h , p , n₁))) (λ n₁ → inl* (inr (h , p , n₁)))
+        (λ k l n₁ → inr* k (h , p , l) n₁) k l n
+
     graft-node-rec : ∀ {ℓ'} {A : Type ℓ'}
       → {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (g : Ops P)
       → (inl* : (n : Node P w g) → A)
@@ -281,6 +310,23 @@ module Polynomial where
     graft-node-rec {A = A} w ψ g inl* inr* =
       graft-node-elim w ψ g (cst A) inl* inr*  
 
+    graft-node-rec-inl-β : ∀ {ℓ'} {A : Type ℓ'}
+      → {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (g : Ops P)
+      → (inl* : (n : Node P w g) → A)
+      → (inr* : (k : I) (l : Leaf P w k) (n : Node P (ψ k l) g) → A)
+      → (n : Node P w g)
+      → graft-node-rec w ψ g inl* inr* (graft-node-inl w ψ g n) == inl* n
+    graft-node-rec-inl-β {A = A} w ψ g inl* inr* =
+      graft-node-elim-inl-β w ψ g (cst A) inl* inr*
+
+    graft-node-rec-inr-β : ∀ {ℓ'} {A : Type ℓ'}
+      → {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (g : Ops P)
+      → (inl* : (n : Node P w g) → A)
+      → (inr* : (k : I) (l : Leaf P w k) (n : Node P (ψ k l) g) → A)
+      → (k : I) (l : Leaf P w k) (n : Node P (ψ k l) g)
+      → graft-node-rec w ψ g inl* inr* (graft-node-inr w ψ g k l n) == inr* k l n
+    graft-node-rec-inr-β {A = A} w ψ g inl* inr* = 
+      graft-node-elim-inr-β w ψ g (cst A) inl* inr*
 
     module _ {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (g : Ops P) where
 
@@ -291,137 +337,58 @@ module Polynomial where
       graft-node-from : Node P (graft w ψ) g → Node P w g ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ψ k l) g))
       graft-node-from = graft-node-rec w ψ g inl (λ k l n → inr (k , l , n))
 
-
-
-  --   abstract
-
-  --     graft-node-to-from : {i : I} (w : W P i)
-  --       → (ε : ∀ j → Leaf P w j → W P j)
-  --       → {j : I} (c : Op P j)
-  --       → (n : Node P (graft w ε) c)
-  --       → graft-node-to w ε c (graft-node-from w ε c n) == n
-  --     graft-node-to-from (lf i) ε c₀ n = idp
-  --     graft-node-to-from (nd (c , δ)) ε .c (inl idp) = idp
-  --     graft-node-to-from (nd (c , δ)) ε c₀ (inr (j , p , n)) with
-  --       graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n |
-  --       inspect (graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀) n
-  --     graft-node-to-from (nd (c , δ)) ε c₀ (inr (j , p , n)) | inl n' | ingraph e = 
-  --       ap (λ x → inr (j , p , x)) lem
-
-  --       where lem = graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inl n')
-  --                     =⟨ ! e |in-ctx (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) ⟩
-  --                   graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀
-  --                     (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ n)
-  --                     =⟨ graft-node-to-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ n ⟩ 
-  --                   n ∎
-
-  --     graft-node-to-from (nd (c , δ)) ε c₀ (inr (j , p , n)) | inr (k , l , n') | ingraph e = 
-  --       ap (λ x → inr (j , p , x)) lem
-
-  --       where lem = graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inr (k , l , n')) 
-  --                     =⟨ ! e |in-ctx (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) ⟩
-  --                   graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀
-  --                     (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ n)
-  --                     =⟨ graft-node-to-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ n ⟩ 
-  --                   n ∎
-
-
-  --     graft-node-from-to : {i : I} (w : W P i)
-  --       → (ε : ∀ j → Leaf P w j → W P j)
-  --       → {j : I} (c : Op P j)
-  --       → (n : Node P w c ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ε k l) c)))
-  --       → graft-node-from w ε c (graft-node-to w ε c n) == n
-  --     graft-node-from-to (lf i) ε c₀ (inl ())
-  --     graft-node-from-to (lf i) ε c₀ (inr (.i , idp , n)) = idp
-  --     graft-node-from-to (nd (c , δ)) ε .c (inl (inl idp)) = idp
-  --     graft-node-from-to (nd (c , δ)) ε c₀ (inl (inr (j , p , n))) with 
-  --       (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ ∘ graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) (inl n)
-  --       | inspect (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ ∘ graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) (inl n)
-  --     graft-node-from-to (nd (c , δ)) ε c₀ (inl (inr (j , p , n))) | inl n' | ingraph e = 
-  --       ap (λ x → inl (inr (j , p , x))) (–> (inl=inl-equiv n' n) lem)
-
-  --       where lem = inl n' =⟨ ! e ⟩
-  --                   graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀
-  --                     (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inl n))
-  --                     =⟨ graft-node-from-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inl n) ⟩ 
-  --                   inl n ∎
-
-  --     graft-node-from-to (nd (c , δ)) ε c₀ (inl (inr (j , p , n))) | inr (k , l , n') | ingraph e = 
-  --       ⊥-elim (inr≠inl (k , l , n') n lem)
-
-  --       where lem = inr (k , l , n') =⟨ ! e ⟩
-  --                   graft-node-from (δ _ p) (λ k₁ l₁ → ε k₁ (j , p , l₁)) c₀
-  --                     (graft-node-to (δ _ p) (λ k₁ l₁ → ε k₁ (j , p , l₁)) c₀ (inl n))
-  --                     =⟨ graft-node-from-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inl n) ⟩ 
-  --                   inl n ∎
-
-  --     graft-node-from-to (nd (c , δ)) ε c₀ (inr (k , (j , p , l) , n)) with
-  --       (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ ∘ graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) (inr (k , l , n))
-  --       | inspect (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ ∘ graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) (inr (k , l , n))
-  --     graft-node-from-to (nd (c , δ)) ε c₀ (inr (k , (j , p , l) , n)) | inl n' | ingraph e = 
-  --       ⊥-elim (inl≠inr n' (k , l , n) lem)
-
-  --       where lem = inl n' =⟨ ! e ⟩
-  --                   graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀
-  --                     (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inr (k , l , n)))
-  --                     =⟨ graft-node-from-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inr (k , l , n)) ⟩
-  --                   inr (k , l , n) ∎
-
-  --     graft-node-from-to (nd (c , δ)) ε c₀ (inr (k , (j , p , l) , n)) | inr (k' , l' , n') | ingraph e = 
-  --       let lem' = –> (inr=inr-equiv (k' , l' , n') (k , l , n)) lem
-  --       in ap inr (pair= (fst= lem') (apd↓-cst (λ x → ((j , p , fst x) , snd x)) (snd= lem')))
-
-  --       where lem = inr (k' , l' , n') =⟨ ! e ⟩ 
-  --                   graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀
-  --                     (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inr (k , l , n)))
-  --                     =⟨ graft-node-from-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inr (k , l , n)) ⟩ 
-  --                   inr (k , l , n) ∎
+      abstract
       
-  --   graft-node-eqv : {i : I} (w : W P i)
-  --     → (ε : ∀ j → Leaf P w j → W P j)
-  --     → {j : I} (c : Op P j)
-  --     → Node P w c ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ε k l) c))
-  --       ≃ Node P (graft w ε) c
-  --   graft-node-eqv w ε c =
-  --     equiv (graft-node-to w ε c) (graft-node-from w ε c)
-  --           (graft-node-to-from w ε c) (graft-node-from-to w ε c)
+        graft-node-to-from : (n : Node P (graft w ψ) g)
+          → graft-node-to (graft-node-from n) == n
+        graft-node-to-from = graft-node-elim w ψ g (λ n → graft-node-to (graft-node-from n) == n)
+          (λ n → ap graft-node-to (graft-node-rec-inl-β w ψ g inl (λ k l n → inr (k , l , n)) n))
+          (λ k l n → ap graft-node-to (graft-node-rec-inr-β w ψ g inl (λ k l n → inr (k , l , n)) k l n))
 
+        graft-node-from-to : (n : Node P w g ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ψ k l) g)))
+          → graft-node-from (graft-node-to n) == n
+        graft-node-from-to (inl n) = graft-node-rec-inl-β w ψ g inl (λ k l n → inr (k , l , n)) n
+        graft-node-from-to (inr (k , l , n)) = graft-node-rec-inr-β w ψ g inl (λ k l n → inr (k , l , n)) k l n
+      
+      graft-node-eqv : Node P w g ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ψ k l) g)) ≃ Node P (graft w ψ) g
+      graft-node-eqv = equiv graft-node-to graft-node-from 
+                             graft-node-to-from graft-node-from-to 
 
-    -- --
-    -- -- Basic laws of grafting
-    -- --
+    --
+    -- Basic laws of grafting
+    --
 
-    -- -- grafting is unital
-    -- graft-unit : {i : I} (w : W P i) → graft w (λ j l → lf j) == w
-    -- graft-unit (lf i) = idp
-    -- graft-unit (nd (f , ϕ)) =
-    --   ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ l → graft-unit (ϕ j l))))
+    -- grafting is unital
+    graft-unit : {i : I} (w : W P i) → graft w (λ j l → lf j) == w
+    graft-unit (lf i) = idp
+    graft-unit (nd (f , ϕ)) =
+      ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ l → graft-unit (ϕ j l))))
 
-    -- -- grafting is associative
-    -- graft-assoc : {i : I} (w : W P i)
-    --   → (ψ₀ : ∀ j → Leaf P w j → W P j)
-    --   → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
-    --   → graft (graft w ψ₀) (λ j l → ψ₁ j (graft-leaf-to w ψ₀ j l)) ==
-    --     graft w (λ j l₀ → graft (ψ₀ j l₀) (λ k l₁ → ψ₁ k (j , l₀ , l₁)))
-    -- graft-assoc (lf i) ψ₀ ψ₁ = idp
-    -- graft-assoc (nd (f , ϕ)) ψ₀ ψ₁ = ap (λ x → nd (f , x))
-    --   (λ= (λ j → λ= (λ p → graft-assoc (ϕ j p) (λ k l → ψ₀ k (j , p , l))
-    --     (λ k t → ψ₁ k (fst t , (j , p , fst (snd t)) , snd (snd t))))))
+    -- grafting is associative
+    graft-assoc : {i : I} (w : W P i)
+      → (ψ₀ : ∀ j → Leaf P w j → W P j)
+      → (ψ₁ : ∀ j k → (l : Leaf P w k) → Leaf P (ψ₀ k l) j → W P j)
+      → graft (graft w ψ₀) (λ j → graft-leaf-rec w ψ₀ j (ψ₁ j))
+        == graft w (λ j l → graft (ψ₀ j l) (λ k m → ψ₁ k j l m))
+    graft-assoc (lf i) ψ₀ ψ₁ = idp
+    graft-assoc (nd (f , ϕ)) ψ₀ ψ₁ = ap (λ x → nd (f , x))
+      (λ= (λ h → λ= (λ p → graft-assoc (ϕ h p) (λ k l → ψ₀ k (h , p , l))
+        (λ j k l m → ψ₁ j k (h , p , l) m))))
 
   --
   --  Domains and slicing
   --
 
-  -- -- The "slice" of a polynomial by a relator
-  -- _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))
-  -- Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
-  -- Param (P // R) (w , α , r) (j , g) = Node P w g
+  -- The "slice" of a polynomial by a relator
+  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))
+  Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
+  Param (P // R) (w , α , r) g = Node P w g
   
-  -- record Domain {ℓ} {I : Type ℓ} (P : Poly I) : Type (lsucc ℓ) where
-  --   coinductive
-  --   field
+  record Domain {ℓ} {I : Type ℓ} (P : Poly I) : Type (lsucc ℓ) where
+    coinductive
+    field
 
-  --     Rl : Relator P 
-  --     Dm : Domain (P // Rl)
+      Rl : Relator P 
+      Dm : Domain (P // Rl)
 
-  -- open Domain public
+  open Domain public
