@@ -166,10 +166,7 @@ module Polynomial where
   --
   --  Grafting of trees
   --
-
-  --
-  --  TODO: Update this section to use naming conventions above....
-  --
+  
   module _ {ℓ} {I : Type ℓ} (P : Poly I) where
 
     graft : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) → W P i
