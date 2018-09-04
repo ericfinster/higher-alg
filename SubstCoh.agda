@@ -15,24 +15,8 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) where
   substitute-unit (nd (f , ϕ)) =
     ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ p → substitute-unit (ϕ j p))))
 
-  -- This does not depend on a relator and therefore
-  -- should go somewhere else.
-  graft-unit : {i : I} (w : W P i) →
-    graft P w (λ j l → lf j) == w
-  graft-unit (lf i) = idp
-  graft-unit (nd (f , ϕ)) =
-    ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ l → graft-unit (ϕ j l))))
-
-  -- Substitution is compatible with *vertical* grafting
-  subst-graft : {i : I} (w : W P i)
-    → (κ : (j : Σ I (Op P)) → Node P w (snd j) → W (P // R) j)
-    → (θ : (j : Σ I (Op P)) → Σ (Σ I (Op P)) (λ k → Σ (Node P w (snd k)) (λ p → Leaf (P // R) (κ k p) j)) →  W (P // R) j)
-    → substitute R w (λ j p → graft (P // R) (κ j p) (λ k l → θ k (j , p , l)))
-      == substitute R (substitute R w κ) (λ jg n → θ jg (substitute-nd-from R w κ jg n))
-  subst-graft (lf i) κ θ = idp
-  subst-graft (nd (f , ϕ)) κ θ = {!!}
-
   -- Substitution is compatible with *horizontal* grafting
+  -- Hmmm.  Maybe the more general version is a better way to go here ...
   graft-subst : {i : I} (w : W P i)
     → (ψ : (j : I) → Leaf P w j → W P j)
     → (κ : (jg : Σ I (Op P)) → Node P w (snd jg) → W (P // R) jg)
@@ -50,6 +34,15 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (R : Relator P) where
        -- substitute R (graft P (nd (f , ϕ)) ψ) (λ jg n → Coprod-elim (κ jg) (λ _ → lf jg) (graft-node-from P (nd (f , ϕ)) ψ (snd jg) n)) ∎
 
   -- Okay, yeah, so the first step is associativity of grafting.
+
+  -- Substitution is compatible with *vertical* grafting
+  subst-graft : {i : I} (w : W P i)
+    → (κ : (j : Σ I (Op P)) → Node P w (snd j) → W (P // R) j)
+    → (θ : (j : Σ I (Op P)) → Σ (Σ I (Op P)) (λ k → Σ (Node P w (snd k)) (λ p → Leaf (P // R) (κ k p) j)) →  W (P // R) j)
+    → substitute R w (λ j p → graft (P // R) (κ j p) (λ k l → θ k (j , p , l)))
+      == substitute R (substitute R w κ) (λ jg n → θ jg (substitute-nd-from R w κ jg n))
+  subst-graft (lf i) κ θ = idp
+  subst-graft (nd (f , ϕ)) κ θ = {!!}
 
   -- substitute (nd {i} (f , ϕ)) κ = 
   --   let pd = κ (i , f) (inl idp)

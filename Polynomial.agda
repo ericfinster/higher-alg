@@ -169,6 +169,9 @@ module Polynomial where
   --  Grafting of trees
   --
 
+  --
+  --  TODO: Update this section to use naming conventions above....
+  --
   module _ {ℓ} {I : Type ℓ} (P : Poly I) where
 
     graft : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) → W P i
@@ -257,8 +260,82 @@ module Polynomial where
     graft-node-from (nd (c , δ)) ε c₀ (inr (j , p , n)) | inl n' = inl (inr (j , p , n'))
     graft-node-from (nd (c , δ)) ε c₀ (inr (j , p , n)) | inr (k , l , n') = inr (k , (j , p , l) , n')
 
+    -- I wonder if this is better so that things compute correctly in types ...
+    -- graft-node-from' : {i : I} (w : W P i)
+    --   → (ε : ∀ j → Leaf P w j → W P j)
+    --   → {j : I} (c : Op P j)
+    --   → Node P (graft w ε) c
+    --   → Node P w c ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ε k l) c))
+    -- graft-node-from' (lf i) ε c₀ n = inr (i , idp , n)
+    -- graft-node-from' (nd (c , δ)) ε .c (inl idp) = inl (inl idp)
+    -- graft-node-from' (nd (c , δ)) ε c₀ (inr (j , p , n)) = 
+    --   Coprod-elim
+    --     {A = Node P (δ j p) c₀}
+    --     {B = Σ I (λ k → Σ (Leaf P (δ j p) k) (λ l → Node P (ε k (j , p , l)) c₀))}
+    --     (λ n' → inl (inr (j , p , n')))
+    --     (λ { (k , l , n') → inr (k , (j , p , l) , n') })
+    --     (graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n)
+
     abstract
-    
+
+      -- graft-node-to-from' : {i : I} (w : W P i)
+      --   → (ε : ∀ j → Leaf P w j → W P j)
+      --   → {j : I} (c : Op P j)
+      --   → (n : Node P (graft w ε) c)
+      --   → graft-node-to w ε c (graft-node-from' w ε c n) == n
+      -- graft-node-to-from' (lf i) ε c₀ n = idp
+      -- graft-node-to-from' (nd (c , δ)) ε .c (inl idp) = idp
+      -- graft-node-to-from' (nd (c , δ)) ε c₀ (inr (j , p , n)) = {!(graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n)!}
+        -- Coprod-elim
+        --   {A = Node P (δ j p) c₀}
+        --   {B = Σ I (λ k → Σ (Leaf P (δ j p) k) (λ l → Node P (ε k (j , p , l)) c₀))}
+        --   {C = λ _ → graft-node-to (nd (c , δ)) ε c₀ (graft-node-from' (nd (c , δ)) ε c₀ (inr (j , p , n))) == inr (j , p , n)}
+        --   {!!}
+        --   {!!}
+        --   (graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n)
+
+    -- Right, so it looks like you want different things in each of these branchs, which
+    -- makes specifying the thing a bit tricky (the type family itself is a coproduct elim.
+
+    -- But the thing is, I think you have to do something like this, since later on,
+    -- eliminations over these kinds of coproducts appear in the types of various
+    -- relations (such as the compatibility of substitution and grafting).
+
+      --   graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n |
+      --   inspect (graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀) n
+      -- graft-node-to-from' (nd (c , δ)) ε c₀ (inr (j , p , n)) | inl n' | ingraph e = 
+      --   ap (λ x → inr (j , p , x)) lem
+
+    -- graft-node-to : {i : I} (w : W P i)
+    --   → (ε : ∀ j → Leaf P w j → W P j)
+    --   → {j : I} (c : Op P j)
+    --   → Node P w c ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ε k l) c))
+
+
+      --   where lem = graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inl n')
+      --                 =⟨ ! e |in-ctx (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) ⟩
+      --               graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀
+      --                 (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ n)
+      --                 =⟨ graft-node-to-from' (δ _ p) (λ k l → ε k (j , p , l)) c₀ n ⟩ 
+      --               n ∎
+
+      -- graft-node-to-from' (nd (c , δ)) ε c₀ (inr (j , p , n)) | inr (k , l , n') | ingraph e = 
+      --   ap (λ x → inr (j , p , x)) lem
+
+      --   where lem = graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inr (k , l , n')) 
+      --                 =⟨ ! e |in-ctx (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) ⟩
+      --               graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀
+      --                 (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ n)
+      --                 =⟨ graft-node-to-from' (δ _ p) (λ k l → ε k (j , p , l)) c₀ n ⟩ 
+      --               n ∎
+
+
+
+
+
+
+
+
       graft-node-to-from : {i : I} (w : W P i)
         → (ε : ∀ j → Leaf P w j → W P j)
         → {j : I} (c : Op P j)
@@ -351,7 +428,23 @@ module Polynomial where
             (graft-node-to-from w ε c) (graft-node-from-to w ε c)
 
 
+    --
+    -- Basic laws of grafting
+    --
 
+    -- grafting is unital
+    graft-unit : {i : I} (w : W P i) → graft w (λ j l → lf j) == w
+    graft-unit (lf i) = idp
+    graft-unit (nd (f , ϕ)) =
+      ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ l → graft-unit (ϕ j l))))
 
-
-
+    -- grafting is associative
+    graft-assoc : {i : I} (w : W P i)
+      → (ε₀ : ∀ j → Leaf P w j → W P j)
+      → (ε₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ε₀ j l) k))) → W P k)
+      → graft (graft w ε₀) (λ j l → ε₁ j (graft-leaf-to w ε₀ j l)) ==
+        graft w (λ j l₀ → graft (ε₀ j l₀) (λ k l₁ → ε₁ k (j , l₀ , l₁)))
+    graft-assoc (lf i) ε₀ ε₁ = idp
+    graft-assoc (nd (f , ϕ)) ε₀ ε₁ = ap (λ x → nd (f , x))
+      (λ= (λ j → λ= (λ p → graft-assoc (ϕ j p) (λ k l → ε₀ k (j , p , l))
+        (λ k t → ε₁ k (fst t , (j , p , fst (snd t)) , snd (snd t))))))
