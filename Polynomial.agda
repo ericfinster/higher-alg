@@ -260,81 +260,50 @@ module Polynomial where
     graft-node-from (nd (c , δ)) ε c₀ (inr (j , p , n)) | inl n' = inl (inr (j , p , n'))
     graft-node-from (nd (c , δ)) ε c₀ (inr (j , p , n)) | inr (k , l , n') = inr (k , (j , p , l) , n')
 
-    -- I wonder if this is better so that things compute correctly in types ...
-    -- graft-node-from' : {i : I} (w : W P i)
-    --   → (ε : ∀ j → Leaf P w j → W P j)
-    --   → {j : I} (c : Op P j)
-    --   → Node P (graft w ε) c
-    --   → Node P w c ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ε k l) c))
-    -- graft-node-from' (lf i) ε c₀ n = inr (i , idp , n)
-    -- graft-node-from' (nd (c , δ)) ε .c (inl idp) = inl (inl idp)
-    -- graft-node-from' (nd (c , δ)) ε c₀ (inr (j , p , n)) = 
-    --   Coprod-elim
-    --     {A = Node P (δ j p) c₀}
-    --     {B = Σ I (λ k → Σ (Leaf P (δ j p) k) (λ l → Node P (ε k (j , p , l)) c₀))}
-    --     (λ n' → inl (inr (j , p , n')))
-    --     (λ { (k , l , n') → inr (k , (j , p , l) , n') })
-    --     (graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n)
+    --
+    --  An elimination princple for graft nodes
+    --
+
+    module _ {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j) where
+    
+      graft-node-inl : {j : I} (f : Op P j)
+        → Node P w f → Node P (graft w ε) f
+      graft-node-inl f n = graft-node-to w ε f (inl n)
+
+      graft-node-inr : {j : I} (f : Op P j)
+        → ∀ k → (l : Leaf P w k) → Node P (ε k l) f → Node P (graft w ε) f
+      graft-node-inr f k l n = graft-node-to w ε f (inr (k , l , n))
+
+    -- Fix universe level and naming conventions...
+    graft-node-elim : {i : I} (w : W P i) (ε : ∀ j → Leaf P w j → W P j)
+      → (Q : {j : I} (f : Op P j) → Node P (graft w ε) f → Type ℓ)
+      → (inl* : {j : I} (f : Op P j) (n : Node P w f) → Q f (graft-node-inl w ε f n))
+      → (inr* : {j : I} (f : Op P j) (k : I) (l : Leaf P w k) (n : Node P (ε k l) f)
+              →  Q f (graft-node-inr w ε f k l n))
+      → {j : I} (f : Op P j) (n : Node P (graft w ε) f) → Q f n
+    graft-node-elim (lf i) ε Q inl* inr* f n = inr* f i idp n
+    graft-node-elim (nd (f , ϕ)) ε Q inl* inr* .f (inl idp) = inl* f (inl idp)
+    graft-node-elim (nd (g , ϕ)) ε Q inl* inr* f (inr (k , p , n')) =
+      graft-node-elim (ϕ k p) (λ m l → ε m (k , p , l))
+        (λ g' n'' → Q g' (inr (k , p , n'')))
+        (λ g' n'' → inl* g' (inr (k , p , n'')))
+        (λ g' k' l' n'' → inr* g' k' (k , p , l') n'') f n'
+
+    graft-node-from' : {i : I} (w : W P i)
+      → (ε : ∀ j → Leaf P w j → W P j)
+      → {j : I} (f : Op P j)
+      → Node P (graft w ε) f
+      → Node P w f ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ε k l) f))
+    graft-node-from' w ε f = graft-node-elim w ε
+                               (λ g _ → Node P w g ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ε k l) g)))
+                               (λ g n → inl n) (λ g k l n → inr (k , l , n)) f
+
+    -- Uhhh. Yeah.  This is clearly the right way to go.
+    -- You manage this way to remove all the stupid "with" matches which
+    -- don't compute nicely anyway, and you also get an elimination principle
+    -- which you can use to write decorations when it is handy.
 
     abstract
-
-      -- graft-node-to-from' : {i : I} (w : W P i)
-      --   → (ε : ∀ j → Leaf P w j → W P j)
-      --   → {j : I} (c : Op P j)
-      --   → (n : Node P (graft w ε) c)
-      --   → graft-node-to w ε c (graft-node-from' w ε c n) == n
-      -- graft-node-to-from' (lf i) ε c₀ n = idp
-      -- graft-node-to-from' (nd (c , δ)) ε .c (inl idp) = idp
-      -- graft-node-to-from' (nd (c , δ)) ε c₀ (inr (j , p , n)) = {!(graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n)!}
-        -- Coprod-elim
-        --   {A = Node P (δ j p) c₀}
-        --   {B = Σ I (λ k → Σ (Leaf P (δ j p) k) (λ l → Node P (ε k (j , p , l)) c₀))}
-        --   {C = λ _ → graft-node-to (nd (c , δ)) ε c₀ (graft-node-from' (nd (c , δ)) ε c₀ (inr (j , p , n))) == inr (j , p , n)}
-        --   {!!}
-        --   {!!}
-        --   (graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n)
-
-    -- Right, so it looks like you want different things in each of these branchs, which
-    -- makes specifying the thing a bit tricky (the type family itself is a coproduct elim.
-
-    -- But the thing is, I think you have to do something like this, since later on,
-    -- eliminations over these kinds of coproducts appear in the types of various
-    -- relations (such as the compatibility of substitution and grafting).
-
-      --   graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀ n |
-      --   inspect (graft-node-from (δ j p) (λ k l → ε k (j , p , l)) c₀) n
-      -- graft-node-to-from' (nd (c , δ)) ε c₀ (inr (j , p , n)) | inl n' | ingraph e = 
-      --   ap (λ x → inr (j , p , x)) lem
-
-    -- graft-node-to : {i : I} (w : W P i)
-    --   → (ε : ∀ j → Leaf P w j → W P j)
-    --   → {j : I} (c : Op P j)
-    --   → Node P w c ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ε k l) c))
-
-
-      --   where lem = graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inl n')
-      --                 =⟨ ! e |in-ctx (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) ⟩
-      --               graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀
-      --                 (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ n)
-      --                 =⟨ graft-node-to-from' (δ _ p) (λ k l → ε k (j , p , l)) c₀ n ⟩ 
-      --               n ∎
-
-      -- graft-node-to-from' (nd (c , δ)) ε c₀ (inr (j , p , n)) | inr (k , l , n') | ingraph e = 
-      --   ap (λ x → inr (j , p , x)) lem
-
-      --   where lem = graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀ (inr (k , l , n')) 
-      --                 =⟨ ! e |in-ctx (graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀) ⟩
-      --               graft-node-to (δ _ p) (λ k l → ε k (j , p , l)) c₀
-      --                 (graft-node-from (δ _ p) (λ k l → ε k (j , p , l)) c₀ n)
-      --                 =⟨ graft-node-to-from' (δ _ p) (λ k l → ε k (j , p , l)) c₀ n ⟩ 
-      --               n ∎
-
-
-
-
-
-
-
 
       graft-node-to-from : {i : I} (w : W P i)
         → (ε : ∀ j → Leaf P w j → W P j)
