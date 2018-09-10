@@ -123,3 +123,13 @@ module Util where
           from-to : (x : Σ (A ⊔ B) P) → from (to x) == x
           from-to (inl a , p) = idp
           from-to (inr b , p) = idp
+
+  -- Probably there is a more explicit way, but since we only use
+  -- this abstractly, equiv induction is enough for our purposes.
+  transport-equiv-lemma : ∀ {i j} {A B : Type i} (α : A ≃ B)
+    → (P : A → Type j) (σ : (b : B) → P (<– α b)) (b : B)
+    → transport P (<–-inv-l α (<– α b)) (σ (–> α (<– α b))) == σ b
+  transport-equiv-lemma {j = j} = equiv-induction
+     (λ {A} {B} α → (P : A → Type j) (σ : (b : B) → P (<– α b)) (b : B) → transport P (<–-inv-l α (<– α b)) (σ (–> α (<– α b))) == σ b)
+     (λ A B σ a → idp)
+

@@ -29,19 +29,31 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
     → (Q : Leaf P (flatten pd) j → Type ℓ')
     → (σ : (p : Param P f j) → Q (flatten-leaf-in pd j p))
     → (l : Leaf P (flatten pd) j) → Q l
-
-  postulate
   
-    flatten-leaf-elim-β : ∀ {ℓ'} {i : I} {f : Op P i}
-      → (pd : W (P // R) (i , f)) (j : I)
-      → (Q : Leaf P (flatten pd) j → Type ℓ')
-      → (σ : (p : Param P f j) → Q (flatten-leaf-in pd j p))
-      → (p : Param P f j)
-      → flatten-leaf-elim pd j Q σ (flatten-leaf-in pd j p) == σ p
+  flatten-leaf-elim-β : ∀ {ℓ'} {i : I} {f : Op P i}
+    → (pd : W (P // R) (i , f)) (j : I)
+    → (Q : Leaf P (flatten pd) j → Type ℓ')
+    → (σ : (p : Param P f j) → Q (flatten-leaf-in pd j p))
+    → (p : Param P f j)
+    → flatten-leaf-elim pd j Q σ (flatten-leaf-in pd j p) == σ p
 
-    flatten-frm : {i : I} {f : Op P i}
-      → (pd : W (P // R) (i , f))
-      → (j : I) → Leaf P (flatten pd) j ≃ Param P f j
+  module _ {i : I} {f : Op P i} (pd : W (P // R) (i , f)) (j : I) where
+  
+    flatten-to : Leaf P (flatten pd) j → Param P f j
+    flatten-to l = flatten-leaf-elim pd j (cst (Param P f j)) (idf _) l
+
+    flatten-from : Param P f j → Leaf P (flatten pd) j
+    flatten-from p = flatten-leaf-in pd j p
+
+    flatten-to-from : (p : Param P f j) → flatten-to (flatten-from p) == p
+    flatten-to-from p = flatten-leaf-elim-β pd j (cst (Param P f j)) (idf _) p
+
+    flatten-from-to : (l : Leaf P (flatten pd) j) → flatten-from (flatten-to l) == l
+    flatten-from-to l = flatten-leaf-elim pd j (λ l' → flatten-from (flatten-to l') == l')
+      (λ p → ap (flatten-leaf-in pd j) (flatten-to-from p)) l
+
+    flatten-frm : Leaf P (flatten pd) j ≃ Param P f j
+    flatten-frm = equiv flatten-to flatten-from flatten-to-from flatten-from-to
 
   --
   --  Substitution
@@ -55,14 +67,13 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
     → (κ : (g : Ops P) → Node P w g → W (P // R) g)
     → ∀ j → Leaf P w j → Leaf P (substitute w κ) j
 
+  substitute-leaf-elim : ∀ {ℓ'} {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → W (P // R) g) (j : I)
+    → (Q : Leaf P (substitute w κ) j → Type ℓ')
+    → (σ : (l : Leaf P w j) → Q (substitute-leaf-in w κ j l))
+    → (l : Leaf P (substitute w κ) j) → Q l
 
   postulate
-
-    substitute-leaf-elim : ∀ {ℓ'} {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → W (P // R) g) (j : I)
-      → (Q : Leaf P (substitute w κ) j → Type ℓ')
-      → (σ : (l : Leaf P w j) → Q (substitute-leaf-in w κ j l))
-      → (l : Leaf P (substitute w κ) j) → Q l
 
     substitute-leaf-elim-β : ∀ {ℓ'} {i : I} (w : W P i)
       → (κ : (g : Ops P) → Node P w g → W (P // R) g) (j : I)
@@ -71,11 +82,25 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
       → (l : Leaf P w j)
       → substitute-leaf-elim w κ j Q σ (substitute-leaf-in w κ j l) == σ l
 
-    -- A substituted tree has the same leaves
-    substitute-lf-eqv : {i : I} (w : W P i)
-      → (κ : (f : Ops P) → Node P w f → W (P // R) f)
-      → (j : I) → Leaf P (substitute w κ) j ≃ Leaf P w j
+  module _ {i : I} (w : W P i) (κ : (f : Ops P) → Node P w f → W (P // R) f) (j : I) where
 
+    substitute-to : Leaf P (substitute w κ) j → Leaf P w j
+    substitute-to = substitute-leaf-elim w κ j (cst (Leaf P w j)) (idf _)
+
+    substitute-from : Leaf P w j → Leaf P (substitute w κ) j
+    substitute-from = substitute-leaf-in w κ j
+
+    substitute-to-from : (l : Leaf P w j) → substitute-to (substitute-from l) == l
+    substitute-to-from = substitute-leaf-elim-β w κ j (cst (Leaf P w j)) (idf _) 
+
+    substitute-from-to : (l : Leaf P (substitute w κ) j) → substitute-from (substitute-to l) == l
+    substitute-from-to = substitute-leaf-elim w κ j (λ l' → substitute-from (substitute-to l') == l')
+      (λ l → ap substitute-from (substitute-to-from l))
+
+    substitute-lf-eqv : Leaf P (substitute w κ) j ≃ Leaf P w j
+    substitute-lf-eqv = equiv substitute-to substitute-from substitute-to-from substitute-from-to
+
+    
   --
   --  Implementation
   --
@@ -94,11 +119,12 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
         σ' l = transport (λ x → Q (substitute-leaf-in w κ j x)) (<–-inv-l (α j) l) (σ (–> (α j) l))
     in substitute-leaf-elim w κ j Q σ' l₀
 
-  -- flatten-leaf-elim-β (lf (i , f)) j Q σ p = idp
-  -- flatten-leaf-elim-β (nd ((w , r) , κ)) j Q σ p =
-  --   let α = is-cart w _ r
-  --       σ' l = transport (λ x → Q (substitute-leaf-in w κ j x)) (<–-inv-l (α j) l) (σ (–> (α j) l))
-  --   in substitute-leaf-elim-β w κ j Q σ' (<– (α j) p) ∙ {!!} 
+  flatten-leaf-elim-β (lf (i , f)) j Q σ p = idp
+  flatten-leaf-elim-β (nd ((w , r) , κ)) j Q σ p =
+    let α = is-cart w _ r
+        σ' l = transport (λ x → Q (substitute-leaf-in w κ j x)) (<–-inv-l (α j) l) (σ (–> (α j) l))
+    in substitute-leaf-elim-β w κ j Q σ' (<– (α j) p) ∙
+        transport-equiv-lemma (is-cart w _ r j) (λ x → Q (substitute-leaf-in w κ j x)) σ p 
 
   substitute (lf i) κ = lf i
   substitute (nd (f , ϕ)) κ =
@@ -125,29 +151,35 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
   --   → (σ : (l : Leaf P w j) → Q (substitute-leaf-in w κ j l))
   --   → (l : Leaf P (substitute w κ) j) → Q l
 
-  -- substitute-leaf-elim (lf i) κ .i Q σ idp = σ idp
-  -- substitute-leaf-elim (nd (f , ϕ)) κ j Q σ l = 
-  --   let pd = κ (_ , f) (inl idp)
-  --       κ' j p g n = κ g (inr (j , p , n))
-  --       θ j p = substitute (ϕ j p) (κ' j p)
-  --       ψ j = flatten-leaf-elim pd j (cst (W P j)) (θ j)
-  --       -- Okay, I see.  *First* split l into its components
-  --       -- This does not depend on any parameters.
-  --       (h , l₀ , l₁) = graft-leaf-from P (flatten pd) ψ j l
-  --       p₀ = flatten-leaf-elim pd h (cst (Param P f h)) (idf _) l₀
+  substitute-leaf-elim (lf i) κ .i Q σ idp = σ idp
+  substitute-leaf-elim {ℓ'} (nd (f , ϕ)) κ j Q σ l = 
+    let pd = κ (_ , f) (inl idp)
+        κ' j p g n = κ g (inr (j , p , n))
+        θ j p = substitute (ϕ j p) (κ' j p)
+        ψ j = flatten-leaf-elim pd j (cst (W P j)) (θ j)
+        (h , l₀ , l₁) = graft-leaf-from P (flatten pd) ψ j l
+        p₀ = flatten-to pd h l₀
 
-  --       -- Okay, so this, then is the η rule for flatten-leaf-elim.
-  --       test₀ : flatten-leaf-in pd h p₀ == l₀
-  --       test₀ = {!!}
+        test₀ : flatten-leaf-in pd h p₀ == l₀
+        test₀ = flatten-from-to pd h l₀
 
-  --       test : flatten-leaf-elim pd h (cst (W P h)) (θ h) l₀ == substitute (ϕ h p₀) (κ' h p₀)
-  --       test = ap (flatten-leaf-elim pd h (cst (W P h)) (θ h)) (! test₀) ∙
-  --                 flatten-leaf-elim-β pd h (cst (W P h)) (θ h) p₀ 
+        ψ-coh : ψ h l₀ == substitute (ϕ h p₀) (κ' h p₀)
+        ψ-coh = ap (flatten-leaf-elim pd h (cst (W P h)) (θ h)) (! test₀) ∙
+                   flatten-leaf-elim-β pd h (cst (W P h)) (θ h) p₀ 
 
-  --       l₁' : Leaf P (substitute (ϕ h p₀) (κ' h p₀)) j
-  --       l₁' = transport (λ x → Leaf P x j) test l₁
+        Q' : Leaf P (substitute (ϕ h p₀) (κ' h p₀)) j → Type ℓ'
+        Q' ll = Q (graft-leaf-to P (flatten pd) ψ j (h , flatten-from pd h p₀ , transport! (λ y → Leaf P y j) (flatten-leaf-elim-β pd h (cst (W P h)) (θ h) p₀) ll))
+
+        σ' : (l : Leaf P (ϕ h p₀) j) → Q' (substitute-leaf-in (ϕ h p₀) (κ' h p₀) j l)
+        σ' ll = σ (h , p₀ , ll)
+
+        l₁' : Leaf P (substitute (ϕ h p₀) (κ' h p₀)) j
+        l₁' = transport (λ x → Leaf P x j) ψ-coh l₁
+
+        ih : Q' l₁'
+        ih = substitute-leaf-elim (ϕ h p₀) (κ' h p₀) j Q' σ' l₁'
         
-  --   in transport Q {!!} (substitute-leaf-elim (ϕ h p₀) (κ' h p₀) j (λ x → Q (graft-leaf-in P (flatten pd) ψ j h l₀ (transport! (λ y → Leaf P y j) test x))) {!!} l₁') 
+    in transport Q {!!} ih 
 
   -- substitute-lf-to (lf i) κ j l = l
   -- substitute-lf-to (nd {i} (f , ϕ)) κ j l = 
