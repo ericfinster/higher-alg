@@ -170,7 +170,7 @@ module Polynomial where
                     from-to : (a : A) → from (to a) == a
                     from-to (inl tt) = idp
                     from-to (inr ((k , p) , ((j , g) , n))) = idp
-                    
+
   --
   --  Grafting of trees
   --
