@@ -36,6 +36,11 @@ module Polynomial where
   ⟦_⟧ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) → (I → Type ℓ) → I → Type ℓ
   ⟦ P ⟧ X i = Σ (Op P i) (λ f → ∀ j → Param P f j → X j)
 
+  ⟦_⟧f : ∀ {ℓ} {I : Type ℓ} (P : Poly I) {X Y : I → Type ℓ}
+    → (ψ : (i : I) → X i → Y i)
+    → (i : I) → ⟦ P ⟧ X i → ⟦ P ⟧ Y i
+  ⟦ P ⟧f ψ i (f , ϕ)= f , λ j p → ψ j (ϕ j p)
+
   module _ {ℓ} {I : Type ℓ} (P : Poly I) where
 
     data W : I → Type ℓ where
@@ -53,8 +58,14 @@ module Polynomial where
     Frame : {i : I} (w : W i) (f : Op P i) → Type ℓ
     Frame w f = (j : I) → Leaf w j ≃ Param P f j
 
-    Relator : Type (lsucc ℓ)
-    Relator = {i : I} (w : W i) (f : Op P i) → Frame w f → Type ℓ
+    PolyRel : Type (lsucc ℓ)
+    PolyRel = {i : I} (w : W i) (f : Op P i) → Type ℓ
+
+    is-cartesian : PolyRel → Type ℓ
+    is-cartesian R = {i : I} (w : W i) (f : Op P i) (r : R w f) → Frame w f
+
+    CartesianRel : Type (lsucc ℓ)
+    CartesianRel = Σ PolyRel is-cartesian
 
     corolla : {i : I} (f : Op P i) → W i
     corolla {i} f = nd (f , λ j p → lf j)
@@ -113,56 +124,53 @@ module Polynomial where
     W-level : ∀ {n} (op-lvl : (i : I) → has-level (S (S n)) (Op P i)) → (i : I) → has-level (S (S n)) (W i)
     W-level op-lvl i = has-level-in (W-level-aux op-lvl i)
 
-  --
-  --  Need to rework level calculations using total spaces and arities ...
-  --
+    Leaf-level : ∀ {n} (arity-lvl : {i : I} (f : Op P i) → has-level n (Arity P f))
+      → {i : I} (w : W i) → has-level n (Σ I (Leaf w))
+    Leaf-level arity-lvl (lf i) = contr-has-level (pathfrom-is-contr i)
+    Leaf-level arity-lvl (nd (f , ϕ)) = equiv-preserves-level switch-eqv
+      ⦃ Σ-level (arity-lvl f) (λ p → Leaf-level arity-lvl (ϕ (fst p) (snd p))) ⦄
+  
+      where switch-eqv : Σ (Arity P f) (λ { (k , p) → Σ I (Leaf (ϕ k p)) })
+                         ≃ (Σ I (λ j → Σ I (λ k → Σ (Param P f k) (λ p → Leaf (ϕ k p) j))))
+            switch-eqv = equiv (λ { ((k , p) , (j , l)) → j , k , p , l })
+                               (λ { (j , k , p , l) → ((k , p) , (j , l)) })
+                               (λ { (j , k , p , l) → idp } )
+                               (λ { ((k , p) , (j , l)) → idp })
 
-  --   -- Leaf-level : ∀ {n} (s-lvl : has-level n I)
-  --   --   → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level n (Param P f j))
-  --   --   → {i : I} (w : W i) (j : I)
-  --   --   → has-level n (Leaf w j)
-  --   -- Leaf-level s-lvl p-lvl (lf i) j = =-preserves-level s-lvl
-  --   -- Leaf-level s-lvl p-lvl (nd (f , ϕ)) j = Σ-level s-lvl (λ k →
-  --   --   Σ-level (p-lvl f k) (λ p → Leaf-level s-lvl p-lvl (ϕ k p) j))
-
-  --   Leaf-level : ∀ {n} (s-lvl : has-level (S n) I)
-  --     → (p-lvl : {i : I} (f : Op P i) → has-level n (Σ I (Param P f)))
-  --     → {i : I} (w : W i) (j : I)
-  --     → has-level n (Leaf w j)
-  --   Leaf-level s-lvl p-lvl (lf i) j = has-level-apply s-lvl i j
-  --   Leaf-level s-lvl p-lvl (nd (f , ϕ)) j = equiv-preserves-level Σ-assoc
-  --     ⦃ Σ-level (p-lvl f) (λ { (i , p) → Leaf-level s-lvl p-lvl (ϕ i p) j }) ⦄
+    Node-level : ∀ {n} (arity-lvl : {i : I} (f : Op P i) → has-level (S (S n)) (Arity P f))
+      → {i : I} (w : W i) → has-level (S (S n)) (Σ (Ops P) (Node w))
+    Node-level arity-lvl (lf i) = equiv-preserves-level no-node ⦃ ⊥-level ⦄
     
-  --   -- Node-level : ∀ {n} (s-lvl : has-level (S (S n)) I)
-  --   --   → (o-lvl : (i : I) → has-level (S (S n)) (Op P i))
-  --   --   → (p-lvl : {i : I} (f : Op P i) (j : I) → has-level (S (S n)) (Param P f j))
-  --   --   → {i : I} (w : W i) {j : I} (g : Op P j)
-  --   --   → has-level (S (S n)) (Node w g)
-  --   -- Node-level s-lvl o-lvl p-lvl (lf i) g = Lift-level Empty-level
-  --   -- Node-level s-lvl o-lvl p-lvl (nd (f , ϕ)) g =
-  --   --   Coprod-level (=-preserves-level (Σ-level s-lvl o-lvl))
-  --   --                (Σ-level s-lvl (λ j → Σ-level (p-lvl f j)
-  --   --                  (λ p → Node-level s-lvl o-lvl p-lvl (ϕ j p) g)))
+      where no-node : ⊥ ≃ Σ (Ops P) (cst (Lift ⊥))
+            no-node = equiv ⊥-elim (λ { (_ , ()) }) (λ { (_ , ()) }) ⊥-elim
+            
+    Node-level arity-lvl (nd (f , ϕ)) = equiv-preserves-level switch-eqv
+      ⦃ Coprod-level (raise-level _ Unit-level) (Σ-level (arity-lvl f)
+                     (λ p → Node-level arity-lvl (ϕ (fst p) (snd p)))) ⦄
 
-  --   -- Is this maybe the more useful statement?  And similarly for leaves, by the way ...
-  --   Node-level : ∀ {n} (s-lvl : has-level (S (S (S n))) I)
-  --     → (o-lvl : (i : I) → has-level (S (S n)) (Op P i))
-  --     → (p-lvl : {i : I} (f : Op P i) → has-level (S (S n)) (Σ I (Param P f)))
-  --     → {i : I} (w : W i) {j : I} (g : Op P j)
-  --     → has-level (S (S n)) (Node w g)
-  --   Node-level s-lvl o-lvl p-lvl (lf i) g = Lift-level Empty-level
-  --   Node-level s-lvl o-lvl p-lvl (nd (f , ϕ)) g =
-  --     Coprod-level (has-level-apply (Σ-level s-lvl (λ j → raise-level _ (o-lvl j))) (_ , f) (_ , g))
-  --                  (equiv-preserves-level Σ-assoc ⦃ Σ-level (p-lvl f) (λ { (j , p) → Node-level s-lvl o-lvl p-lvl (ϕ j p) g }) ⦄)
+      where switch-eqv : ⊤ ⊔ Σ (Arity P f) (λ { (k , p) → Σ (Ops P) (Node (ϕ k p)) })
+                         ≃ Σ (Ops P) (λ g → ((_ , f) == g) ⊔ Σ I (λ k → Σ (Param P f k) (λ p → Node (ϕ k p) g)))
+            switch-eqv = equiv to from to-from from-to
 
-  --   -- Hmmm.  The natural implementation here uses the other, naive version
-  --   -- Frame-level : ∀ {n} (s-lvl : has-level (S n) I)
-  --   --   → (p-lvl : {i : I} (f : Op P i) → has-level n (Σ I (Param P f)))
-  --   --   → {i : I} (w : W i) (f : Op P i)
-  --   --   → has-level n (Frame w f)
-  --   -- Frame-level s-lvl p-lvl w f = Π-level (λ i → ≃-level (Leaf-level s-lvl p-lvl w i) {!!})
+              where A = ⊤ ⊔ Σ (Arity P f) (λ { (k , p) → Σ (Ops P) (Node (ϕ k p)) })
+                    B = Σ (Ops P) (λ g → ((_ , f) == g) ⊔ Σ I (λ k → Σ (Param P f k) (λ p → Node (ϕ k p) g)))
 
+                    to : A → B
+                    to (inl tt) = (_ , f) , (inl idp)
+                    to (inr ((k , p) , ((j , g) , n))) = (j , g) , (inr (k , p , n))
 
+                    from : B → A
+                    from (._ , inl idp) = inl tt
+                    from ((j , g) , inr (k , p , n)) = inr ((k , p) , ((j , g) , n))
+
+                    to-from : (b : B) → to (from b) == b
+                    to-from (._ , inl idp) = idp
+                    to-from ((j , g) , inr (k , p , n)) = idp
+
+                    from-to : (a : A) → from (to a) == a
+                    from-to (inl tt) = idp
+                    from-to (inr ((k , p) , ((j , g) , n))) = idp
+                    
   --
   --  Grafting of trees
   --
@@ -376,16 +384,16 @@ module Polynomial where
   --  Domains and slicing
   --
 
-  -- The "slice" of a polynomial by a relator
-  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : Relator P) → Poly (Σ I (Op P))
-  Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
-  Param (P // R) (w , α , r) g = Node P w g
-  
-  record Domain {ℓ} {I : Type ℓ} (P : Poly I) : Type (lsucc ℓ) where
-    coinductive
-    field
+  -- The "slice" of a polynomial by a relation
+  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Σ I (Op P))
+  Op (P // R) (i , f) = Σ (W P i) (λ w → R w f)
+  Param (P // R) (w , _) g = Node P w g
 
-      Rl : Relator P 
-      Dm : Domain (P // Rl)
+  -- record Domain {ℓ} {I : Type ℓ} (P : Poly I) : Type (lsucc ℓ) where
+  --   coinductive
+  --   field
 
-  open Domain public
+  --     Rl : Relator P 
+  --     Dm : Domain (P // Rl)
+
+  -- open Domain public

@@ -103,3 +103,23 @@ module Util where
           from-to : (a : A ⊔ A') → from (to a) == a
           from-to (inl a) = <– (inl=inl-equiv (<– e (–> e a)) a) (<–-inv-l e a)
           from-to (inr a') = <– (inr=inr-equiv (<– f (–> f a')) a') (<–-inv-l f a')
+
+  Σ-⊔-equiv : ∀ {i j k} {A : Type i} {B : Type j} (P : A ⊔ B → Type k)
+    → Σ (A ⊔ B) P ≃ Σ A (P ∘ inl) ⊔ Σ B (P ∘ inr)
+  Σ-⊔-equiv {A = A} {B = B} P = equiv to from to-from from-to
+
+    where to : Σ (A ⊔ B) P → Σ A (P ∘ inl) ⊔ Σ B (P ∘ inr)
+          to (inl a , p) = inl (a , p)
+          to (inr b , p) = inr (b , p)
+
+          from : Σ A (P ∘ inl) ⊔ Σ B (P ∘ inr) → Σ (A ⊔ B) P
+          from (inl (a , p)) = inl a , p
+          from (inr (b , p)) = inr b , p
+
+          to-from : (x : Σ A (P ∘ inl) ⊔ Σ B (P ∘ inr)) → to (from x) == x
+          to-from (inl (a , p)) = idp
+          to-from (inr (b , p)) = idp
+
+          from-to : (x : Σ (A ⊔ B) P) → from (to x) == x
+          from-to (inl a , p) = idp
+          from-to (inr b , p) = idp
