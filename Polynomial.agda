@@ -67,6 +67,9 @@ module Polynomial where
     CartesianRel : Type (lsucc ℓ)
     CartesianRel = Σ PolyRel is-cartesian
 
+    FrameRel : CartesianRel 
+    FrameRel = Frame , λ w f → idf _
+
     corolla : {i : I} (f : Op P i) → W i
     corolla {i} f = nd (f , λ j p → lf j)
 
@@ -171,6 +174,15 @@ module Polynomial where
                     from-to (inl tt) = idp
                     from-to (inr ((k , p) , ((j , g) , n))) = idp
 
+
+  --
+  -- Slicing a polynomial by a relation
+  --
+  
+  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Σ I (Op P))
+  Op (P // R) (i , f) = Σ (W P i) (λ w → R w f)
+  Param (P // R) (w , _) g = Node P w g
+  
   --
   --  Grafting of trees
   --
@@ -380,20 +392,4 @@ module Polynomial where
       (λ= (λ h → λ= (λ p → graft-assoc (ϕ h p) (λ k l → ψ₀ k (h , p , l))
         (λ j k l m → ψ₁ j k (h , p , l) m))))
 
-  --
-  --  Domains and slicing
-  --
 
-  -- The "slice" of a polynomial by a relation
-  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Σ I (Op P))
-  Op (P // R) (i , f) = Σ (W P i) (λ w → R w f)
-  Param (P // R) (w , _) g = Node P w g
-
-  -- record Domain {ℓ} {I : Type ℓ} (P : Poly I) : Type (lsucc ℓ) where
-  --   coinductive
-  --   field
-
-  --     Rl : Relator P 
-  --     Dm : Domain (P // Rl)
-
-  -- open Domain public

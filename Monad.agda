@@ -7,78 +7,102 @@ open import Substitution
 
 module Monad where
 
-  record OpDom {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) : Type (lsucc ℓ) where
-    coinductive
-    field
+  Refinement : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) → Type (lsucc ℓ)
+  Refinement {ℓ} {I} {P} C = {i : I} {w : W P i} {f : Op P i} (r : fst C w f) → Type ℓ
 
-      Fillers : {i : I} (w : W P i) (f : Op P i) (r : fst C w f) → Type ℓ
-      HomDom : OpDom (P // fst C) (FlattenRel C) -- Oh, don't you mean the extended relation here?
+  ΣRef : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P)
+    → Refinement C
+    → CartesianRel P
+  ΣRef C R = (λ w f → Σ (fst C w f) R) , (λ w f r → snd C w f (fst r))
 
-  open OpDom
+  Composite : ∀ {ℓ} {I : Type ℓ} {P : Poly I}
+    → (C : CartesianRel P)
+    → {i : I} (w : W P i) → Type ℓ
+  Composite {P = P} C {i} w = Σ (Op P i) (λ f → fst C w f)
+
+  is-multiplicative : ∀ {ℓ} {I : Type ℓ} {P : Poly I}
+    → (C : CartesianRel P) → Type ℓ
+  is-multiplicative {I = I} {P = P} C =
+    {i : I} (w : W P i) → is-contr (Composite C w)
   
-  record is-algebraic {ℓ} {I : Type ℓ} {P : Poly I}
-    {C : CartesianRel P} (R : OpDom P C) : Type ℓ where
+  record OpetopicType {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) : Type (lsucc ℓ) where
     coinductive
     field
 
-      has-fillers : {i : I} (w : W P i) → is-contr (Σ (Op P i) (λ f → Σ (fst C w f) (λ r → Fillers R w f r)))
-      hom-has-fillers : is-algebraic (HomDom R)
+      Ref : Refinement C
+      Hom : OpetopicType (P // fst (ΣRef C Ref)) (FlattenRel (ΣRef C Ref))
+
+  open OpetopicType
+
+  -- We'll have to come back to this example ....
+  -- TerminalType : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) → OpDom P C
+  -- Fillers (TerminalDom P C) w f r = Lift ⊤
+  -- HomDom (TerminalDom P C) = TerminalDom (P // fst C) (FlattenRel C)
+
+  record is-algebraic {ℓ} {I : Type ℓ} {P : Poly I} {C : CartesianRel P} (T : OpetopicType P C) : Type ℓ where
+    coinductive
+    field
+
+      is-mult : is-multiplicative (ΣRef C (Ref T))
+      hom-is-alg : is-algebraic (Hom T)
 
   open is-algebraic
-
-  FrameRel : ∀ {ℓ} {I : Type ℓ} (P : Poly I) → CartesianRel P
-  FrameRel P = Frame P , λ w f → idf _
   
-  TerminalDom : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) → OpDom P C
-  Fillers (TerminalDom P C) w f r = Lift ⊤
-  HomDom (TerminalDom P C) = TerminalDom (P // fst C) (FlattenRel C)
-
-  -- So, what did you want to prove?
-  -- Well, the claim should be that if you are known to be algebraic with
-  -- respect to some cartesian relation, then you are algebraic for the
-  -- terminal domain.
+  --
+  --  Some basic coherences
+  --
   
-  conj : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P)
-    → (is-alg : {i : I} (w : W P i) → is-contr (Σ (Op P i) (λ f → fst C w f)))
-    → (σ : {g : Ops P} (pd : W (P // (fst C)) g) → fst C (flatten C pd) (snd g))
-    → is-algebraic (TerminalDom P C)
-  has-fillers (conj P C is-alg σ) w = {!!} -- this is now trivial ..
-  hom-has-fillers (conj P C is-alg σ) = conj (P // fst C) (FlattenRel C) thm {!!}
+  module _ {ℓ} {I : Type ℓ} {P : Poly I} (T : OpetopicType P (FrameRel P)) (is-alg : is-algebraic T) where
 
-    where thm : {g : Ops P} (pd : W (P // (fst C)) g) 
-                → is-contr (Σ (Σ (W P (fst g)) (λ w → fst C w (snd g))) (fst (FlattenRel C) pd))
-          thm (lf (i , g)) = has-level-in (((corolla P g , {!!}) , idp) , {!!})
-          thm {i , g} (nd ((w , r) , ϕ)) = {!!}
+    μ : {i : I} (w : W P i) → Op P i
+    μ w = fst (contr-center (is-mult is-alg w))
 
-    -- where thm : {g : Ops P} (pd : W (P // (fst C)) g) 
-    --             → is-contr (Σ (Σ (W P (fst g)) (λ w → fst C w (snd g))) (fst (FlattenRel C) pd))
-    --       thm {g} pd = has-level-in (ctr , pth)
+  --   μ-frm : {i : I} (w : W P i) (j : I) → Leaf P w j ≃ Param P (μ w) j
+  --   μ-frm w = fst (snd (contr-center (is-fillable is-alg w)))
 
-    --         where ctr : Σ (Σ (W P (fst g)) (λ w → fst C w (snd g))) (fst (FlattenRel C) pd)
-    --               ctr = (flatten C pd , σ pd) , idp
+  --   μ-witness : {i : I} (w : W P i) → (Rl D) w (μ w) (μ-frm w)
+  --   μ-witness w = snd (snd (contr-center (is-fillable is-alg w))) 
 
-    --               pth : (y : Σ (Σ (W P (fst g)) (λ w → fst C w (snd g))) (fst (FlattenRel C) pd)) → ctr == y
-    --               pth ((._ , r) , idp) = pair= {!contr-has-all-paths ⦃ is-alg (flatten C pd) ⦄ (snd g , σ pd) (snd g , r)!} {!!}
+    η : (i : I) → Op P i
+    η i = μ (lf i)
 
+  --   ηρ-eqv : (i : I) (j : I) → Leaf P (lf i) j ≃ Param P (η i) j
+  --   ηρ-eqv i = μ-frm (lf i)
 
-  -- Okay, not completely trivial.
-  -- You sill have to think about this a bit....
-  -- Hmmm.  So no, something here doesn't look quite right.
+    -- ηρ-contr : (i : I) → is-contr (Σ I (Param P (η i)))
+    -- ηρ-contr i = equiv-preserves-level (Σ-emap-r (ηρ-eqv i)) ⦃ lf-lf-contr P i ⦄
 
-  -- Yeah, you're going to have to give this some time and think a bit.
-  -- What was the idea?
+    -- Okay, yeah, you'll need a bit more setup because you have to actually
+    -- use the multiplication in the next dimension.
 
-  -- Oh yes, the thing was, you wanted to think about your "coherence condition"
-  -- from the previous version as being correct.  That is, coherences are somes
-  -- of two consecutive extension witnesses.  And dominoes.
+    HomRel : CartesianRel P 
+    HomRel = ΣRef (FrameRel P) (Ref T) 
 
-  -- And indeed, the second looks like it should be an instance of
-  -- globularity, which I think indeed should hold for FlattenRel C.
+    BlorpRel : CartesianRel (P // fst HomRel)
+    BlorpRel = ΣRef (FlattenRel HomRel) (λ {i} {pd} {w} r → Ref (Hom T) {i} {pd} {w} r)
 
-  -- Right.  Still not completely clear.
+    μ-coh : {i : I} {f : Op P i} (w : W (P // fst HomRel) (i , f)) → Op (P // fst HomRel) (i , f)
+    μ-coh w = fst (contr-center (is-mult (hom-is-alg is-alg) w))
 
-  -- But anyway, you should calculate a couple of coherences to get used to the
-  -- new picture.  Maybe when you have a bit more experience with the setup,
-  -- the right idea will follow.
+    -- Nice!  So this is now completely general!!
+    μ-coh' : {i : I} {f : Op P i} (w : W (P // fst HomRel) (i , f)) → μ (flatten HomRel w) == f
+    μ-coh' {i} {f} pd = fst= (contr-path (is-mult is-alg (flatten HomRel pd)) lem₄)
 
-  -- Hmmm.  But were you supposed to slice it once?
+      where lem₀ : Composite BlorpRel pd
+            lem₀ = contr-center (is-mult (hom-is-alg is-alg) pd)
+
+            lem₁ : flatten HomRel pd == fst (μ-coh pd)
+            lem₁ = fst (snd lem₀)
+
+            lem₂ : fst HomRel (fst (μ-coh pd)) f
+            lem₂ = snd (μ-coh pd)
+
+            lem₃ : fst HomRel (flatten HomRel pd) f
+            lem₃ = transport! (λ x → fst HomRel x f) lem₁ lem₂
+
+            lem₄ : Composite HomRel (flatten HomRel pd)
+            lem₄ = f , lem₃
+
+    unit-r : (i : I) (f : Op P i) → μ (corolla P f) == f
+    unit-r i f = μ-coh' (lf (i , f))
+
