@@ -4,7 +4,7 @@ open import HoTT
 open import Util
 open import Polynomial
 open import Substitution
--- open import SubstCoh
+open import SubstCoh
 open import Monad
 
 module SetMonad where
@@ -82,8 +82,21 @@ module SetMonad where
       → (coh : W (HomPoly // fst (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult))) (f , pd))
       → fst (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult))
             (flatten (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult)) coh) pd
-    hom-laws pd (lf i) = {!!} , {!!}
+    hom-laws (w , (r , e)) (lf i) =
+      substitute-unit R w , (pair= (pair= (substitute-unit R w) {!!})
+        (prop-has-all-paths-↓ {B = (fst (FlattenRel R) (nd ((w , r , e) , (λ j p → lf j))))}
+          ⦃ has-level-apply ((W-level P (ops-is-set M) _)) (substitute R w (λ j p → lf j)) w ⦄))
+      
     hom-laws ._ (nd ((w , ._ , idp) , κ)) = {!!} , {!!}
+
+    -- prop-has-all-paths-↓ : {x y : A} {p : x == y} {u : B x} {v : B y}
+    --   {{_ : is-prop (B y)}} → u == v [ B ↓ p ]
+    -- prop-has-all-paths-↓ {p = idp} = prop-has-all-paths _ _
+
+  -- FlattenRel : CartesianRel (P // R)
+  -- FlattenRel = (λ pd wr → flatten pd == fst wr) ,
+  --              (λ { pd (._ , r) idp → bd-frame pd })
+
 
     HomMnd : SetMonad HomPoly (FlattenRel R)
     sort-is-gpd HomMnd = Σ-level (sort-is-gpd M) (λ i → raise-level _ (ops-is-set M i))
