@@ -133,3 +133,11 @@ module Util where
      (λ {A} {B} α → (P : A → Type j) (σ : (b : B) → P (<– α b)) (b : B) → transport P (<–-inv-l α (<– α b)) (σ (–> α (<– α b))) == σ b)
      (λ A B σ a → idp)
 
+  -- So I'm pretty sure that I've proved this before,
+  -- but is there a direct way to see it?
+  postulate
+  
+    n-type-right-cancel : ∀ {i j n} {A : Type i} {B : A → Type j}
+      → has-level n (Σ A B)
+      → has-level (S n) A
+      → (a : A) → has-level n (B a)

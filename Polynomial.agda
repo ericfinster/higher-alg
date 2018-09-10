@@ -67,6 +67,12 @@ module Polynomial where
     CartesianRel : Type (lsucc ℓ)
     CartesianRel = Σ PolyRel is-cartesian
 
+    Composite : (C : CartesianRel) {i : I} (w : W i) → Type ℓ
+    Composite C {i} w = Σ (Op P i) (λ f → fst C w f)
+
+    is-multiplicative : CartesianRel → Type ℓ
+    is-multiplicative C = {i : I} (w : W i) → is-contr (Composite C w)
+
     FrameRel : CartesianRel 
     FrameRel = Frame , λ w f → idf _
 

@@ -8,22 +8,12 @@ open import Substitution
 module Monad where
 
   Refinement : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) → Type (lsucc ℓ)
-  Refinement {ℓ} {I} {P} C = {i : I} {w : W P i} {f : Op P i} (r : fst C w f) → Type ℓ
+  Refinement {ℓ} {I} {P} C = {i : I} (w : W P i) (f : Op P i) (r : fst C w f) → Type ℓ
 
   ΣRef : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P)
     → Refinement C
     → CartesianRel P
-  ΣRef C R = (λ w f → Σ (fst C w f) R) , (λ w f r → snd C w f (fst r))
-
-  Composite : ∀ {ℓ} {I : Type ℓ} {P : Poly I}
-    → (C : CartesianRel P)
-    → {i : I} (w : W P i) → Type ℓ
-  Composite {P = P} C {i} w = Σ (Op P i) (λ f → fst C w f)
-
-  is-multiplicative : ∀ {ℓ} {I : Type ℓ} {P : Poly I}
-    → (C : CartesianRel P) → Type ℓ
-  is-multiplicative {I = I} {P = P} C =
-    {i : I} (w : W P i) → is-contr (Composite C w)
+  ΣRef C R = (λ w f → Σ (fst C w f) (R w f)) , (λ w f r → snd C w f (fst r))
   
   record OpetopicType {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) : Type (lsucc ℓ) where
     coinductive
@@ -32,7 +22,7 @@ module Monad where
       Ref : Refinement C
       Hom : OpetopicType (P // fst (ΣRef C Ref)) (FlattenRel (ΣRef C Ref))
 
-  open OpetopicType
+  open OpetopicType public
 
   -- We'll have to come back to this example ....
   -- TerminalType : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) → OpDom P C
@@ -43,16 +33,17 @@ module Monad where
     coinductive
     field
 
-      is-mult : is-multiplicative (ΣRef C (Ref T))
+      is-mult : is-multiplicative P (ΣRef C (Ref T))
       hom-is-alg : is-algebraic (Hom T)
 
-  open is-algebraic
+  open is-algebraic public
   
   --
   --  Some basic coherences
   --
   
-  module _ {ℓ} {I : Type ℓ} {P : Poly I} (T : OpetopicType P (FrameRel P)) (is-alg : is-algebraic T) where
+  module _ {ℓ} {I : Type ℓ} {P : Poly I} {C : CartesianRel P}
+    (T : OpetopicType P C) (is-alg : is-algebraic T) where
 
     μ : {i : I} (w : W P i) → Op P i
     μ w = fst (contr-center (is-mult is-alg w))
@@ -72,37 +63,34 @@ module Monad where
     -- ηρ-contr : (i : I) → is-contr (Σ I (Param P (η i)))
     -- ηρ-contr i = equiv-preserves-level (Σ-emap-r (ηρ-eqv i)) ⦃ lf-lf-contr P i ⦄
 
-    -- Okay, yeah, you'll need a bit more setup because you have to actually
-    -- use the multiplication in the next dimension.
+    WitRel : CartesianRel P 
+    WitRel = ΣRef C (Ref T) 
 
-    HomRel : CartesianRel P 
-    HomRel = ΣRef (FrameRel P) (Ref T) 
+    HomRel : CartesianRel (P // fst WitRel)
+    HomRel = ΣRef (FlattenRel WitRel) (Ref (Hom T))
 
-    BlorpRel : CartesianRel (P // fst HomRel)
-    BlorpRel = ΣRef (FlattenRel HomRel) (λ {i} {pd} {w} r → Ref (Hom T) {i} {pd} {w} r)
-
-    μ-coh : {i : I} {f : Op P i} (w : W (P // fst HomRel) (i , f)) → Op (P // fst HomRel) (i , f)
+    μ-coh : {i : I} {f : Op P i} (w : W (P // fst WitRel) (i , f)) → Op (P // fst WitRel) (i , f)
     μ-coh w = fst (contr-center (is-mult (hom-is-alg is-alg) w))
 
     -- Nice!  So this is now completely general!!
-    μ-coh' : {i : I} {f : Op P i} (w : W (P // fst HomRel) (i , f)) → μ (flatten HomRel w) == f
-    μ-coh' {i} {f} pd = fst= (contr-path (is-mult is-alg (flatten HomRel pd)) lem₄)
+    μ-flatten : {i : I} {f : Op P i} (w : W (P // fst WitRel) (i , f)) → μ (flatten WitRel w) == f
+    μ-flatten {i} {f} pd = fst= (contr-path (is-mult is-alg (flatten WitRel pd)) lem₄)
 
-      where lem₀ : Composite BlorpRel pd
+      where lem₀ : Composite (P // fst WitRel) HomRel pd
             lem₀ = contr-center (is-mult (hom-is-alg is-alg) pd)
 
-            lem₁ : flatten HomRel pd == fst (μ-coh pd)
+            lem₁ : flatten WitRel pd == fst (μ-coh pd)
             lem₁ = fst (snd lem₀)
 
-            lem₂ : fst HomRel (fst (μ-coh pd)) f
+            lem₂ : fst WitRel (fst (μ-coh pd)) f
             lem₂ = snd (μ-coh pd)
 
-            lem₃ : fst HomRel (flatten HomRel pd) f
-            lem₃ = transport! (λ x → fst HomRel x f) lem₁ lem₂
+            lem₃ : fst WitRel (flatten WitRel pd) f
+            lem₃ = transport! (λ x → fst WitRel x f) lem₁ lem₂
 
-            lem₄ : Composite HomRel (flatten HomRel pd)
+            lem₄ : Composite P WitRel (flatten WitRel pd)
             lem₄ = f , lem₃
 
     unit-r : (i : I) (f : Op P i) → μ (corolla P f) == f
-    unit-r i f = μ-coh' (lf (i , f))
+    unit-r i f = μ-flatten (lf (i , f))
 
