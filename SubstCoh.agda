@@ -15,23 +15,6 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
   substitute-unit (nd (f , ϕ)) =
     ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ p → substitute-unit (ϕ j p))))
 
-  -- substitute-unit-rel : {i : I} (w : W P i)
-  --   → (g : Op P i) (r : fst C w g)
-  --   → {!!} == r [ (λ x → fst C x g) ↓ substitute-unit w ]
-  -- substitute-unit-rel = {!!}
-  
-  -- substitute-unit-frm : {i : I} (w : W P i)
-  --   → (g : Op P i) (α : Frame P w g) (r : R w g α)
-  --   → flatten-frm R (corolla (P // R) (w , α , r)) == α [ (λ w' → Frame P w' g) ↓ substitute-unit w ]
-  -- substitute-unit-frm (lf i) g α r = λ= (λ j → equiv-== (λ { idp → idp }))
-  -- substitute-unit-frm (nd (f , ϕ)) g α r =
-  --   ↓-ap-in (λ w' → Frame P w' g) (λ x → nd (f , x))
-  --     (↓-Π-in (λ {j} {k} q → ↓-equiv-in (λ { (i₀ , p₀ , l₀) (i₁ , p₁ , l₁) q' → {!!} })))
-
-
-
-
-
   -- -- Substitution is compatible with *horizontal* grafting
   -- -- Hmmm.  Maybe the more general version is a better way to go here ...
   -- graft-subst : {i : I} (w : W P i)
@@ -128,6 +111,21 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
   --   (wt : Op (P // R) jg) (β : Frame (P // R) pd wt)
   --   → RR pd wt β → flatten R pd == fst wt
 
+  is-globular : CartesianRel (P // fst C) → Type ℓ
+  is-globular D = {f : Ops P} (pd : W (P // fst C) f)
+    (w : Op (P // fst C) f) (r : fst D pd w) → flatten C pd == fst w
+
+  flatten-is-globular : is-globular (FlattenRel C)
+  flatten-is-globular pd w = idf _
+
+  module _ (D : CartesianRel (P // fst C)) (is-g : is-globular D) where
+
+    postulate
+    
+      flatten-subst :  {f : Ops P} (pd : W (P // fst C) f)
+        → (κ : (g : Σ (Ops P) (Op (P // fst C))) → Node (P // fst C) pd g → W ((P // fst C) // fst D) g)
+        → flatten C (substitute D pd κ) == flatten C pd
+        
   -- mutual
 
   --   -- Okay, and this path-over looks like just an extra coherence

@@ -57,8 +57,6 @@ module SetMonad where
 
   module _ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) (M : SetMonad P C)  where
 
-    -- Idea is clear: from a set monad, pass to the canonical fillers given
-    -- by the identity types and show that this is again a set monad.
     private
       R = ΣRef C (MgmExt P C (mag M))
 
@@ -94,12 +92,21 @@ module SetMonad where
             has-level-apply (Σ-level (ops-is-set M (fst f)) (λ g → raise-level _ (rel-is-prop M w g)))
               (mult (mag M) w , mult-rel (mag M) w) (snd f , s)) ⦄))
         (prop-has-all-paths-↓ {B = (fst (FlattenRel R) (nd ((w , r , e) , (λ j p → lf j))))}
-          ⦃ has-level-apply ((W-level P (ops-is-set M) _)) (substitute R w (λ j p → lf j)) w ⦄))
+          ⦃ has-level-apply (W-level P (ops-is-set M) _) (substitute R w (λ j p → lf j)) w ⦄))
 
-    hom-laws ._ (nd ((w , ._ , idp) , κ)) = {!!} , {!!}
+    hom-laws {f} ._ (nd ((w , ._ , idp) , κ)) = fs-coh , pair= (pair= fs-coh
+      (prop-has-all-paths-↓ {B = (λ w₁ → fst R w₁ (snd f))}
+        ⦃ Σ-level (rel-is-prop M (flatten R w) (snd f)) (λ s →
+          has-level-apply (Σ-level (ops-is-set M (fst f)) (λ g →
+            raise-level _ (rel-is-prop M (flatten R w) g)))
+            (mult (mag M) (flatten R w) , mult-rel (mag M) (flatten R w)) (snd f , s)) ⦄))
+      (prop-has-all-paths-↓ {B = fst (FlattenRel R) (substitute D w κ)}
+        ⦃ has-level-apply (W-level P (ops-is-set M) _) (flatten R (substitute D w κ)) (flatten R w) ⦄)
 
-    -- So, it appears you have completely reduced the above to the remaining
-    -- globularity condition.
+      where D = ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult)
+
+            fs-coh : flatten R (substitute D w κ) == flatten R w
+            fs-coh = flatten-subst R D (λ pd w r → fst r) w κ
 
     HomMnd : SetMonad HomPoly (FlattenRel R)
     rel-is-prop HomMnd w f = has-level-apply (W-level P (ops-is-set M) _) (flatten R w) (fst f)
