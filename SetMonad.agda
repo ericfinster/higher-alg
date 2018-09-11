@@ -35,12 +35,16 @@ module SetMonad where
   --
   --  Our definition of a set-level monad.
   --
-  
+
+  -- Somewhat surprisingly, I do not seem to need the assumption that the
+  -- type of sorts is truncated for some level.  So either univalence will
+  -- imply that this is the case, or else you have managed to also construct
+  -- the groupoid structure on a type, which would be fantastic.
+
   record SetMonad {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) : Type ℓ where
     field
 
-      sort-is-gpd : is-gpd I
-      rel-is-set : {i : I} (w :  W P i) (f : Op P i) → is-set (fst C w f)
+      rel-is-prop : {i : I} (w :  W P i) (f : Op P i) → is-prop (fst C w f)
       ops-is-set : (i : I) → is-set (Op P i)
       arity-is-set : {i : I} (f : Op P i) → is-set (Arity P f)
 
@@ -63,8 +67,9 @@ module SetMonad where
 
     hom-op-is-set : (f : Ops P) → is-set (Op HomPoly f)
     hom-op-is-set (_ , f) = Σ-level (W-level P (ops-is-set M) _)
-      (λ w → Σ-level (rel-is-set M w f) (λ r → =-preserves-level (Σ-level (ops-is-set M _)
-      (λ f → rel-is-set M w f))))
+      (λ w → Σ-level (raise-level _ (rel-is-prop M w f))
+      (λ r → =-preserves-level (Σ-level (ops-is-set M _)
+      (λ g → raise-level _ (rel-is-prop M w g)))))
 
     hom-mult : {i : I} (f : Op P i) → W HomPoly (i , f) → Op HomPoly (i , f)
     hom-mult f w = flatten R w , laws M f w 
@@ -82,25 +87,22 @@ module SetMonad where
       → (coh : W (HomPoly // fst (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult))) (f , pd))
       → fst (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult))
             (flatten (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult)) coh) pd
-    hom-laws (w , (r , e)) (lf i) =
-      substitute-unit R w , (pair= (pair= (substitute-unit R w) {!!})
+    hom-laws {f} (w , (r , e)) (lf i) =
+      substitute-unit R w , (pair= (pair= (substitute-unit R w) 
+        (prop-has-all-paths-↓ {B = (λ w₁ → fst R w₁ (snd f))} 
+          ⦃ Σ-level (rel-is-prop M w (snd f)) (λ s →
+            has-level-apply (Σ-level (ops-is-set M (fst f)) (λ g → raise-level _ (rel-is-prop M w g)))
+              (mult (mag M) w , mult-rel (mag M) w) (snd f , s)) ⦄))
         (prop-has-all-paths-↓ {B = (fst (FlattenRel R) (nd ((w , r , e) , (λ j p → lf j))))}
           ⦃ has-level-apply ((W-level P (ops-is-set M) _)) (substitute R w (λ j p → lf j)) w ⦄))
-      
+
     hom-laws ._ (nd ((w , ._ , idp) , κ)) = {!!} , {!!}
 
-    -- prop-has-all-paths-↓ : {x y : A} {p : x == y} {u : B x} {v : B y}
-    --   {{_ : is-prop (B y)}} → u == v [ B ↓ p ]
-    -- prop-has-all-paths-↓ {p = idp} = prop-has-all-paths _ _
-
-  -- FlattenRel : CartesianRel (P // R)
-  -- FlattenRel = (λ pd wr → flatten pd == fst wr) ,
-  --              (λ { pd (._ , r) idp → bd-frame pd })
-
+    -- So, it appears you have completely reduced the above to the remaining
+    -- globularity condition.
 
     HomMnd : SetMonad HomPoly (FlattenRel R)
-    sort-is-gpd HomMnd = Σ-level (sort-is-gpd M) (λ i → raise-level _ (ops-is-set M i))
-    rel-is-set HomMnd w f = =-preserves-level (W-level P (ops-is-set M) _)
+    rel-is-prop HomMnd w f = has-level-apply (W-level P (ops-is-set M) _) (flatten R w) (fst f)
     ops-is-set HomMnd = hom-op-is-set
     arity-is-set HomMnd (w , _) = Node-level P (arity-is-set M) w
     mag HomMnd = HomMult

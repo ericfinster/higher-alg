@@ -15,6 +15,23 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
   substitute-unit (nd (f , ϕ)) =
     ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ p → substitute-unit (ϕ j p))))
 
+  -- substitute-unit-rel : {i : I} (w : W P i)
+  --   → (g : Op P i) (r : fst C w g)
+  --   → {!!} == r [ (λ x → fst C x g) ↓ substitute-unit w ]
+  -- substitute-unit-rel = {!!}
+  
+  -- substitute-unit-frm : {i : I} (w : W P i)
+  --   → (g : Op P i) (α : Frame P w g) (r : R w g α)
+  --   → flatten-frm R (corolla (P // R) (w , α , r)) == α [ (λ w' → Frame P w' g) ↓ substitute-unit w ]
+  -- substitute-unit-frm (lf i) g α r = λ= (λ j → equiv-== (λ { idp → idp }))
+  -- substitute-unit-frm (nd (f , ϕ)) g α r =
+  --   ↓-ap-in (λ w' → Frame P w' g) (λ x → nd (f , x))
+  --     (↓-Π-in (λ {j} {k} q → ↓-equiv-in (λ { (i₀ , p₀ , l₀) (i₁ , p₁ , l₁) q' → {!!} })))
+
+
+
+
+
   -- -- Substitution is compatible with *horizontal* grafting
   -- -- Hmmm.  Maybe the more general version is a better way to go here ...
   -- graft-subst : {i : I} (w : W P i)
@@ -235,14 +252,6 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
 
   -- --         p₀==p₁ : p₀ == p₁ [ (λ z → Param P f (snd z)) ↓ (pair= (λ= (λ j₁ → λ= (λ p → substitute-unit (ϕ j₁ p)))) (↓-Σ-fst po)) ]
   -- --         p₀==p₁ = ↓-Σ-fst (↓-Σ-snd po)
-
-  -- -- substitute-unit-frm : {i : I} (w : W P i)
-  -- --   → (g : Op P i) (α : Frame P w g) (r : R w g α)
-  -- --   → flatten-frm R (corolla (P // R) (w , α , r)) == α [ (λ w' → Frame P w' g) ↓ substitute-unit w ]
-  -- -- substitute-unit-frm (lf i) g α r = λ= (λ j → equiv-== (λ { idp → idp }))
-  -- -- substitute-unit-frm (nd (f , ϕ)) g α r =
-  -- --   ↓-ap-in (λ w' → Frame P w' g) (λ x → nd (f , x))
-  -- --     (↓-Π-in (λ {j} {k} q → ↓-equiv-in (λ { (i₀ , p₀ , l₀) (i₁ , p₁ , l₁) q' → {!!} })))
 
   -- -- So, uh, yeah, I think we need to use the induction hypothesis.
   -- -- But how exactly does one do this?
