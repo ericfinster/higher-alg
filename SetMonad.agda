@@ -6,121 +6,130 @@ open import Polynomial
 open import Substitution
 open import SubstCoh
 open import Monad
+open import Magma
 
 module SetMonad where
-
-  record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) : Type ℓ where
-    field
-
-      mult : {i : I} (w : W P i) → Op P i
-      mult-rel : {i : I} (w : W P i) → fst C w (mult w)
-
-  open PolyMagma
-
-  MgmExt : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P)
-    → (M : PolyMagma P C) → Refinement C
-  MgmExt P C M {i} w f r = (mult M w , mult-rel M w) == (f , r)
-
-  mgm-is-mult : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P)
-    → (M : PolyMagma P C)
-    → is-multiplicative P (ΣRef C (MgmExt P C M))
-  mgm-is-mult P C M w = has-level-in (ctr , pth)
-
-    where ctr : Composite P (ΣRef C (MgmExt P C M)) w
-          ctr = mult M w , mult-rel M w , idp
-
-          pth : (c : Composite P (ΣRef C (MgmExt P C M)) w) → ctr == c
-          pth (._ , ._ , idp) = idp
-
+            
   --
   --  Our definition of a set-level monad.
   --
 
-  -- Somewhat surprisingly, I do not seem to need the assumption that the
-  -- type of sorts is truncated for some level.  So either univalence will
-  -- imply that this is the case, or else you have managed to also construct
-  -- the groupoid structure on a type, which would be fantastic.
-
-  record SetMonad {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) : Type ℓ where
+  record SetMonad {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) : Type ℓ where
     field
 
-      rel-is-prop : {i : I} (w :  W P i) (f : Op P i) → is-prop (fst C w f)
-      ops-is-set : (i : I) → is-set (Op P i)
+      sort-is-gpd : is-gpd I
+      op-is-set : (i : I) → is-set (Op P i)
       arity-is-set : {i : I} (f : Op P i) → is-set (Arity P f)
+      rel-is-prop : {i : I} (w :  W P i) (f : Op P i) (α : Frame P w f) → is-prop (R w f α)
+      
+      mag : PolyMagma P R
 
-      mag : PolyMagma P C
+    MR : PolyRel P
+    MR = ΣR R (MgmRef mag)
 
-      laws : {i : I} (f : Op P i) (pd : W (P // fst (ΣRef C (MgmExt P C mag))) (i , f))
-        → fst (ΣRef C (MgmExt P C mag)) (flatten (ΣRef C (MgmExt P C mag)) pd) f
+    field
+
+      laws : {i : I} (f : Op P i) (pd : W (P // MR) (i , f))
+        →  MR (flatten MR pd) f (flatten-frm MR pd)
         
   open SetMonad
 
-  module _ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) (M : SetMonad P C)  where
+  module _ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) (M : SetMonad P R)  where
 
-    private
-      R = ΣRef C (MgmExt P C (mag M))
-
+    -- Derived data
+    
     HomPoly : Poly (Ops P)
-    HomPoly = P // fst R
+    HomPoly = P // MR M
+
+    HomRel : PolyRel HomPoly
+    HomRel = FlattenRel (MR M)
+
+    HomMagma : PolyMagma HomPoly HomRel
+    mult HomMagma pd = flatten (MR M) pd , flatten-frm (MR M) pd , laws M _ pd
+    mult-frm HomMagma pd = bd-frame (MR M) pd
+    mult-rel HomMagma pd = laws M _ pd , idp
+
+    -- Level calculations
+
+    W-is-set : (i : I) → is-set (W P i)
+    W-is-set = W-level P (op-is-set M) 
+    
+    leaf-is-set : {i : I} (w : W P i) → ∀ j → is-set (Leaf P w j)
+    leaf-is-set w = n-type-right-cancel (Leaf-level P (arity-is-set M) w) (sort-is-gpd M)
+
+    param-is-set : {i : I} (f : Op P i) → ∀ j → is-set (Param P f j)
+    param-is-set f = n-type-right-cancel (arity-is-set M f) (sort-is-gpd M)
+    
+    frame-is-set : {i : I} (w : W P i) (f : Op P i) → is-set (Frame P w f)
+    frame-is-set w f = Π-level (λ i → ≃-level (leaf-is-set w i) (param-is-set f i))
+
+    hom-sort-is-gpd : is-gpd (Ops P)
+    hom-sort-is-gpd = Σ-level (sort-is-gpd M) (λ i → raise-level _ (op-is-set M i))
 
     hom-op-is-set : (f : Ops P) → is-set (Op HomPoly f)
-    hom-op-is-set (_ , f) = Σ-level (W-level P (ops-is-set M) _)
-      (λ w → Σ-level (raise-level _ (rel-is-prop M w f))
-      (λ r → =-preserves-level (Σ-level (ops-is-set M _)
-      (λ g → raise-level _ (rel-is-prop M w g)))))
+    hom-op-is-set (i , f) = Σ-level (W-is-set i) (λ w →
+      Σ-level (frame-is-set w f) (λ α →
+      Σ-level (raise-level _ (rel-is-prop M w f α)) (λ r →
+      =-preserves-level (Σ-level (op-is-set M i) (λ g →
+                         Σ-level (frame-is-set w g) λ β →
+                         raise-level _ (rel-is-prop M w g β))))))
 
-    hom-mult : {i : I} (f : Op P i) → W HomPoly (i , f) → Op HomPoly (i , f)
-    hom-mult f w = flatten R w , laws M f w 
+    hom-arity-is-set : {f : Ops P} (pd : Op HomPoly f) → is-set (Arity HomPoly pd)
+    hom-arity-is-set pd = Node-level P (arity-is-set M) (fst pd)
 
-    hom-mult-rel : {i : I} (f : Op P i)
-      → (w : W HomPoly (i , f))
-      → fst (FlattenRel R) w (hom-mult f w) 
-    hom-mult-rel f w = idp
-    
-    HomMult : PolyMagma HomPoly (FlattenRel R)
-    mult HomMult {i , f} = hom-mult f
-    mult-rel HomMult {i , f} = hom-mult-rel f
+    -- Yeah, well, okay, it's obvious this is going to come out right
+    -- even if it's a bit annoying ...
+    hom-rel-is-prop : {f : Ops P} (pd : W HomPoly f) (w : Op HomPoly f)
+      (α : Frame HomPoly pd w) → is-prop (HomRel pd w α)
+    hom-rel-is-prop {i , f} pd (w , α , r) β = Σ-level
+      (Σ-level (rel-is-prop M (flatten (MR M) pd) f (flatten-frm (MR M) pd))
+        (λ r → MgmRef-level (mag M) (op-is-set M) frame-is-set
+          (λ w₀ f₀ α₀ → raise-level _ (rel-is-prop M w₀ f₀ α₀))
+          (flatten (MR M) pd) f (flatten-frm (MR M) pd) r))
+      (λ s → has-level-apply (Σ-level {!!} {!!})
+        ((flatten (MR M) pd , flatten-frm (MR M) pd , s) , bd-frame (MR M) pd)
+        ((w , α , r) , β))
+
+
+    -- Derived laws
 
     hom-laws : {f : Ops P} (pd : Op HomPoly f)
-      → (coh : W (HomPoly // fst (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult))) (f , pd))
-      → fst (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult))
-            (flatten (ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult)) coh) pd
-    hom-laws {f} (w , (r , e)) (lf i) =
-      substitute-unit R w , (pair= (pair= (substitute-unit R w) 
-        (prop-has-all-paths-↓ {B = (λ w₁ → fst R w₁ (snd f))} 
-          ⦃ Σ-level (rel-is-prop M w (snd f)) (λ s →
-            has-level-apply (Σ-level (ops-is-set M (fst f)) (λ g → raise-level _ (rel-is-prop M w g)))
-              (mult (mag M) w , mult-rel (mag M) w) (snd f , s)) ⦄))
-        (prop-has-all-paths-↓ {B = (fst (FlattenRel R) (nd ((w , r , e) , (λ j p → lf j))))}
-          ⦃ has-level-apply (W-level P (ops-is-set M) _) (substitute R w (λ j p → lf j)) w ⦄))
+      (coh : W (HomPoly // ΣR HomRel (MgmRef HomMagma)) (f , pd)) →
+        ΣR HomRel (MgmRef HomMagma)
+          (flatten (ΣR HomRel (MgmRef HomMagma)) coh) pd
+          (flatten-frm (ΣR HomRel (MgmRef HomMagma)) coh)
+    hom-laws {i , f} (w , α , r) coh =
+      (laws M f (flatten (ΣR HomRel (MgmRef HomMagma)) coh) , pair= claim {!!}) ,
+      pair= claim {!!}
 
-    hom-laws {f} ._ (nd ((w , ._ , idp) , κ)) = fs-coh , pair= (pair= fs-coh
-      (prop-has-all-paths-↓ {B = (λ w₁ → fst R w₁ (snd f))}
-        ⦃ Σ-level (rel-is-prop M (flatten R w) (snd f)) (λ s →
-          has-level-apply (Σ-level (ops-is-set M (fst f)) (λ g →
-            raise-level _ (rel-is-prop M (flatten R w) g)))
-            (mult (mag M) (flatten R w) , mult-rel (mag M) (flatten R w)) (snd f , s)) ⦄))
-      (prop-has-all-paths-↓ {B = fst (FlattenRel R) (substitute D w κ)}
-        ⦃ has-level-apply (W-level P (ops-is-set M) _) (flatten R (substitute D w κ)) (flatten R w) ⦄)
+      where claim : (flatten (MR M) (flatten (ΣR HomRel (MgmRef HomMagma)) coh) ,
+                     flatten-frm (MR M) (flatten (ΣR HomRel (MgmRef HomMagma)) coh) ,
+                     laws M f (flatten (ΣR HomRel (MgmRef HomMagma)) coh))
+                    == (w , α , r)
+            claim = {!!}
 
-      where D = ΣRef (FlattenRel R) (MgmExt HomPoly (FlattenRel R) HomMult)
+  -- It's funny that we get it twice, but, well, okay ...
+  -- So, the point should be that this all follows from globulariy
+  -- as well as the assumption that the relation here is a proposition.
+  -- From there, I believe the remaining holes are, as before, simply
+  -- provable directly.
 
-            fs-coh : flatten R (substitute D w κ) == flatten R w
-            fs-coh = flatten-subst R D (λ pd w r → fst r) w κ
+  -- But we will, clearly, need to check that the relation is again a proposition.
 
-    HomMnd : SetMonad HomPoly (FlattenRel R)
-    rel-is-prop HomMnd w f = has-level-apply (W-level P (ops-is-set M) _) (flatten R w) (fst f)
-    ops-is-set HomMnd = hom-op-is-set
-    arity-is-set HomMnd (w , _) = Node-level P (arity-is-set M) w
-    mag HomMnd = HomMult
+    HomMnd : SetMonad HomPoly HomRel
+    sort-is-gpd HomMnd = hom-sort-is-gpd
+    op-is-set HomMnd = hom-op-is-set
+    arity-is-set HomMnd = hom-arity-is-set
+    rel-is-prop HomMnd = hom-rel-is-prop
+    mag HomMnd = HomMagma
     laws HomMnd = hom-laws
 
   -- Now, we want to define an OpetopicType associated to our monad
-  MndType : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (C : CartesianRel P) (M : SetMonad P C) → OpetopicType P C
-  OpetopicType.Ref (MndType P C M) = MgmExt P C (mag M) 
-  OpetopicType.Hom (MndType P C M) = MndType (HomPoly P C M) (FlattenRel (ΣRef C (MgmExt P C (mag M)))) (HomMnd P C M)
+  MndType : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) (M : SetMonad P R) → OpetopicType P R
+  Ref (MndType P R M) = MgmRef (mag M)
+  Hom (MndType P R M) = MndType (HomPoly R M) (HomRel R M) (HomMnd R M)
 
-  set-mnd-is-algebraic : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {C : CartesianRel P} (M : SetMonad P C)
-    → is-algebraic (MndType P C M)
-  is-mult (set-mnd-is-algebraic M) = mgm-is-mult _ _ (mag M) 
-  hom-is-alg (set-mnd-is-algebraic M) = set-mnd-is-algebraic (HomMnd _ _ M)
+  -- set-mnd-is-algebraic : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {C : CartesianRel P} (M : SetMonad P C)
+  --   → is-algebraic (MndType P C M)
+  -- is-mult (set-mnd-is-algebraic M) = mgm-is-mult _ _ (mag M) 
+  -- hom-is-alg (set-mnd-is-algebraic M) = set-mnd-is-algebraic (HomMnd _ _ M)

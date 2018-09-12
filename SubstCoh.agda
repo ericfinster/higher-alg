@@ -5,12 +5,12 @@ open import Util
 open import Polynomial
 open import Substitution
 
-module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
+module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
         
   -- Substituting a trivial decoration
   -- gives back the tree
   substitute-unit : {i : I} (w : W P i)
-    → substitute C w (λ ic n → lf ic) == w
+    → substitute R w (λ ic n → lf ic) == w
   substitute-unit (lf i) = idp
   substitute-unit (nd (f , ϕ)) =
     ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ p → substitute-unit (ϕ j p))))
@@ -111,20 +111,27 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
   --   (wt : Op (P // R) jg) (β : Frame (P // R) pd wt)
   --   → RR pd wt β → flatten R pd == fst wt
 
-  is-globular : CartesianRel (P // fst C) → Type ℓ
-  is-globular D = {f : Ops P} (pd : W (P // fst C) f)
-    (w : Op (P // fst C) f) (r : fst D pd w) → flatten C pd == fst w
 
-  flatten-is-globular : is-globular (FlattenRel C)
-  flatten-is-globular pd w = idf _
+    -- postulate
 
-  module _ (D : CartesianRel (P // fst C)) (is-g : is-globular D) where
+    --   flatten-flatten :
 
-    postulate
-    
-      flatten-subst :  {f : Ops P} (pd : W (P // fst C) f)
-        → (κ : (g : Σ (Ops P) (Op (P // fst C))) → Node (P // fst C) pd g → W ((P // fst C) // fst D) g)
-        → flatten C (substitute D pd κ) == flatten C pd
+
+  --   -- Yeah, so like, if our relation RR doesn't imply at least that
+  --   -- flatten R pd == w, then I don't see how to finish this.
+  --   flatten-flatten : (RR : Relator (P // R)) (is-normal : normal RR)
+  --     → {i : I} {f : Op P i}
+  --     → (w : W P i) (α : Frame P w f) (r : R w f α)
+  --     → (γ : W ((P // R) // RR) ((i , f) , (w , α , r)))
+  --     → flatten R (flatten RR γ) == w
+  --   flatten-flatten RR is-n w α r (lf ._) = substitute-unit w
+  --   flatten-flatten RR is-n w α r (nd ((pd , β , rr) , κ)) =
+  --     flatten-subst RR is-n pd κ ∙ is-n pd (w , α , r) β rr
+
+
+  --     flatten-subst :  {f : Ops P} (pd : W (P // fst C) f)
+  --       → (κ : (g : Σ (Ops P) (Op (P // fst C))) → Node (P // fst C) pd g → W ((P // fst C) // fst D) g)
+  --       → flatten C (substitute D pd κ) == flatten C pd
         
   -- mutual
 

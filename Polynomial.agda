@@ -59,23 +59,14 @@ module Polynomial where
     Frame w f = (j : I) → Leaf w j ≃ Param P f j
 
     PolyRel : Type (lsucc ℓ)
-    PolyRel = {i : I} (w : W i) (f : Op P i) → Type ℓ
+    PolyRel = {i : I} (w : W i) (f : Op P i) (α : Frame w f) → Type ℓ
 
-    is-cartesian : PolyRel → Type ℓ
-    is-cartesian R = {i : I} (w : W i) (f : Op P i) (r : R w f) → Frame w f
+    Composite : (R : PolyRel) {i : I} (w : W i) → Type ℓ
+    Composite R {i} w = Σ (Op P i) (λ f → Σ (Frame w f) (R w f))
 
-    CartesianRel : Type (lsucc ℓ)
-    CartesianRel = Σ PolyRel is-cartesian
-
-    Composite : (C : CartesianRel) {i : I} (w : W i) → Type ℓ
-    Composite C {i} w = Σ (Op P i) (λ f → fst C w f)
-
-    is-multiplicative : CartesianRel → Type ℓ
-    is-multiplicative C = {i : I} (w : W i) → is-contr (Composite C w)
-
-    FrameRel : CartesianRel 
-    FrameRel = Frame , λ w f → idf _
-
+    is-multiplicative : PolyRel → Type ℓ
+    is-multiplicative R = {i : I} (w : W i) → is-contr (Composite R w)
+    
     corolla : {i : I} (f : Op P i) → W i
     corolla {i} f = nd (f , λ j p → lf j)
 
@@ -184,9 +175,19 @@ module Polynomial where
   --
   -- Slicing a polynomial by a relation
   --
+
+  -- There are some other definitions above where the polynomial
+  -- can be inferred ....
+  module _ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
   
+    Refinement : Type (lsucc ℓ)
+    Refinement = {i : I} (w : W P i) (f : Op P i) (α : Frame P w f) (r : R w f α) → Type ℓ
+
+    ΣR : Refinement → PolyRel P
+    ΣR X w f α = Σ (R w f α) (X w f α)
+
   _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Σ I (Op P))
-  Op (P // R) (i , f) = Σ (W P i) (λ w → R w f)
+  Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
   Param (P // R) (w , _) g = Node P w g
   
   --

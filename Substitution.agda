@@ -9,11 +9,7 @@ open import Polynomial
 -- Since we thus want to abstract them anyway, we leave them as
 -- postulates here.
 
-module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
-
-  private
-    R = fst C
-    is-cart = snd C
+module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
 
   --
   --  Flattening, and the associated frame
@@ -87,14 +83,12 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
   flatten (nd ((w , r) , κ)) = substitute w κ
 
   flatten-frm-to (lf _) j (_ , p , idp) = p
-  flatten-frm-to (nd ((w , r) , κ)) j l =
-    let α = is-cart w _ r j
-    in –> α (substitute-lf-to w κ j l) 
+  flatten-frm-to (nd ((w , α , r) , κ)) j l =
+    –> (α j) (substitute-lf-to w κ j l) 
   
   flatten-frm-from (lf (i , f)) j p = (j , p , idp)
-  flatten-frm-from (nd ((w , r) , κ)) j p = 
-    let α = is-cart w _ r j
-    in substitute-lf-from w κ j (<– α p)
+  flatten-frm-from (nd ((w , α , r) , κ)) j p =
+    substitute-lf-from w κ j (<– (α j) p)
   
   flatten-frm pd j =
     equiv (flatten-frm-to pd j) (flatten-frm-from pd j)
@@ -287,14 +281,10 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (C : CartesianRel P) where
       → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
       → (l : Leaf P w j)
       → subst-lf-elim w κ j Q σ (subst-lf-in w κ j l) == σ l
-  
-  --
+
   -- The flatten relation
-  --
-  
-  FlattenRel : CartesianRel (P // R)
-  FlattenRel = (λ pd wr → flatten pd == fst wr) ,
-               (λ { pd (._ , r) idp → bd-frame pd })
-
-
-
+  FlattenRel : PolyRel (P // R)
+  FlattenRel {i , f} pd (w , α , r) β = Σ (R (flatten pd) f (flatten-frm pd))
+    (λ s → Path {A = Σ (Op (P // R) (i , f)) (Frame (P // R) pd) }
+      ((flatten pd , flatten-frm pd , s) , bd-frame pd)
+      ((w , α , r) , β))
