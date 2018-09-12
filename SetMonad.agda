@@ -14,6 +14,9 @@ module SetMonad where
   --  Our definition of a set-level monad.
   --
 
+  TrivRef : ∀ {ℓ} {I : Type ℓ} {P : Poly I} → PolyRel P → PolyRel P
+  TrivRef R = ΣR R λ _ _ _ _ → Lift ⊤
+  
   record SetMonad {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) : Type ℓ where
     field
 
@@ -21,33 +24,23 @@ module SetMonad where
       op-is-set : (i : I) → is-set (Op P i)
       arity-is-set : {i : I} (f : Op P i) → is-set (Arity P f)
       rel-is-prop : {i : I} (w :  W P i) (f : Op P i) (α : Frame P w f) → is-prop (R w f α)
-      
-      mag : PolyMagma P R
 
-    MR : PolyRel P
-    MR = ΣR R (MgmRef mag)
+      is-multip : is-multiplicative P R
 
-    field
-
-      laws : {i : I} (f : Op P i) (pd : W (P // MR) (i , f))
-        →  MR (flatten MR pd) f (flatten-frm MR pd)
+      laws : {i : I} (f : Op P i) (pd : W (P // TrivRef R) (i , f)) 
+        → (TrivRef R) (flatten (TrivRef R) pd) f (flatten-frm (TrivRef R) pd)
         
   open SetMonad
 
   module _ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) (M : SetMonad P R)  where
 
     -- Derived data
-    
+
     HomPoly : Poly (Ops P)
-    HomPoly = P // MR M
+    HomPoly = P // (TrivRef R)
 
     HomRel : PolyRel HomPoly
-    HomRel = FlattenRel (MR M)
-
-    HomMagma : PolyMagma HomPoly HomRel
-    mult HomMagma pd = flatten (MR M) pd , flatten-frm (MR M) pd , laws M _ pd
-    mult-frm HomMagma pd = bd-frame (MR M) pd
-    mult-rel HomMagma pd = laws M _ pd , idp
+    HomRel = FlattenRel (TrivRef R)
 
     -- Level calculations
 
@@ -68,68 +61,69 @@ module SetMonad where
 
     hom-op-is-set : (f : Ops P) → is-set (Op HomPoly f)
     hom-op-is-set (i , f) = Σ-level (W-is-set i) (λ w →
-      Σ-level (frame-is-set w f) (λ α →
-      Σ-level (raise-level _ (rel-is-prop M w f α)) (λ r →
-      =-preserves-level (Σ-level (op-is-set M i) (λ g →
-                         Σ-level (frame-is-set w g) λ β →
-                         raise-level _ (rel-is-prop M w g β))))))
+      Σ-level (frame-is-set w f) (λ α → raise-level _
+      (Σ-level (rel-is-prop M w f α) (λ _ → Lift-level Unit-level))))
 
     hom-arity-is-set : {f : Ops P} (pd : Op HomPoly f) → is-set (Arity HomPoly pd)
     hom-arity-is-set pd = Node-level P (arity-is-set M) (fst pd)
 
-    -- Yeah, well, okay, it's obvious this is going to come out right
-    -- even if it's a bit annoying ...
     hom-rel-is-prop : {f : Ops P} (pd : W HomPoly f) (w : Op HomPoly f)
       (α : Frame HomPoly pd w) → is-prop (HomRel pd w α)
     hom-rel-is-prop {i , f} pd (w , α , r) β = Σ-level
-      (Σ-level (rel-is-prop M (flatten (MR M) pd) f (flatten-frm (MR M) pd))
-        (λ r → MgmRef-level (mag M) (op-is-set M) frame-is-set
-          (λ w₀ f₀ α₀ → raise-level _ (rel-is-prop M w₀ f₀ α₀))
-          (flatten (MR M) pd) f (flatten-frm (MR M) pd) r))
-      (λ s → has-level-apply (Σ-level {!!} {!!})
-        ((flatten (MR M) pd , flatten-frm (MR M) pd , s) , bd-frame (MR M) pd)
-        ((w , α , r) , β))
+      (Σ-level (rel-is-prop M (flatten (TrivRef R) pd) f (flatten-frm (TrivRef R) pd)) (λ _ → Lift-level Unit-level))
+      (λ s → {!!})
 
+    -- Yeah, and this is obvious :
+    -- Goal: has-level (S ⟨-2⟩)
+    --       (Path ((flatten R' pd , flatten-frm R' pd , s) , bd-frame R' pd)
+    --        ((w , α , r) , β))
 
+    hom-is-multip : {f : Ops P} (pd : W HomPoly f) → is-contr (Composite HomPoly HomRel pd)
+    hom-is-multip {i , f} pd = has-level-in (ctr , pth)
+
+      where ctr : Composite HomPoly HomRel pd
+            ctr = (flatten (TrivRef R) pd , flatten-frm (TrivRef R) pd , laws M f pd) ,
+              bd-frame (TrivRef R) pd , laws M f pd , idp
+
+            pth : (c : Composite HomPoly HomRel pd) → ctr == c
+            pth ((._ , ._ , ._) , ._ , (m , lift tt) , idp) =
+              pair= (pair= idp (pair= idp (pair=
+                (prop-has-all-paths ⦃ rel-is-prop M (flatten (TrivRef R) pd) f (flatten-frm (TrivRef R) pd) ⦄
+                  (fst (laws M f pd)) m) (↓-cst-in idp)))) (↓-Σ-in {!m!} {!fst (laws M f pd)!})
+
+    -- Yeah, so again we see here that there's this lame duplication coming from how we have
+    -- defined the flatten relation.  This makes things annoying...  And I feel like if you
+    -- use the kind of record setup you had before, then the proof here will be idp.
+
+    -- This should be easily polished off: the space of paths you are trying to get a pathover
+    -- in is contractible.  So clearly there is a guy over it but contractibility elim.  And
+    -- then just a bit of work to make the types match.  But this is going to be fine.
+    
     -- Derived laws
-
     hom-laws : {f : Ops P} (pd : Op HomPoly f)
-      (coh : W (HomPoly // ΣR HomRel (MgmRef HomMagma)) (f , pd)) →
-        ΣR HomRel (MgmRef HomMagma)
-          (flatten (ΣR HomRel (MgmRef HomMagma)) coh) pd
-          (flatten-frm (ΣR HomRel (MgmRef HomMagma)) coh)
+      → (coh : W (HomPoly // (TrivRef HomRel)) (f , pd))
+      → (TrivRef HomRel) (flatten (TrivRef HomRel) coh) pd (flatten-frm (TrivRef HomRel) coh)
     hom-laws {i , f} (w , α , r) coh =
-      (laws M f (flatten (ΣR HomRel (MgmRef HomMagma)) coh) , pair= claim {!!}) ,
-      pair= claim {!!}
+      (laws M f (flatten (TrivRef HomRel) coh) , pair= (pair= {!!} {!!}) {!!}) , lift tt
 
-      where claim : (flatten (MR M) (flatten (ΣR HomRel (MgmRef HomMagma)) coh) ,
-                     flatten-frm (MR M) (flatten (ΣR HomRel (MgmRef HomMagma)) coh) ,
-                     laws M f (flatten (ΣR HomRel (MgmRef HomMagma)) coh))
-                    == (w , α , r)
-            claim = {!!}
-
-  -- It's funny that we get it twice, but, well, okay ...
-  -- So, the point should be that this all follows from globulariy
-  -- as well as the assumption that the relation here is a proposition.
-  -- From there, I believe the remaining holes are, as before, simply
-  -- provable directly.
-
-  -- But we will, clearly, need to check that the relation is again a proposition.
+    -- Okay, nice.  And now you really are left just with globularity
+    -- like you thought, and you got around the bizarre duplication.
 
     HomMnd : SetMonad HomPoly HomRel
     sort-is-gpd HomMnd = hom-sort-is-gpd
     op-is-set HomMnd = hom-op-is-set
     arity-is-set HomMnd = hom-arity-is-set
     rel-is-prop HomMnd = hom-rel-is-prop
-    mag HomMnd = HomMagma
+    is-multip HomMnd = hom-is-multip
     laws HomMnd = hom-laws
 
   -- Now, we want to define an OpetopicType associated to our monad
   MndType : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) (M : SetMonad P R) → OpetopicType P R
-  Ref (MndType P R M) = MgmRef (mag M)
+  Ref (MndType P R M) w f α r = Lift ⊤
   Hom (MndType P R M) = MndType (HomPoly R M) (HomRel R M) (HomMnd R M)
 
-  -- set-mnd-is-algebraic : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {C : CartesianRel P} (M : SetMonad P C)
-  --   → is-algebraic (MndType P C M)
-  -- is-mult (set-mnd-is-algebraic M) = mgm-is-mult _ _ (mag M) 
-  -- hom-is-alg (set-mnd-is-algebraic M) = set-mnd-is-algebraic (HomMnd _ _ M)
+  set-mnd-is-algebraic : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {R : PolyRel P} (M : SetMonad P R)
+    → is-algebraic (MndType P R M)
+  is-mult (set-mnd-is-algebraic M) w = {!!}
+  hom-is-alg (set-mnd-is-algebraic {R = R} M) =
+    set-mnd-is-algebraic (HomMnd R M)
