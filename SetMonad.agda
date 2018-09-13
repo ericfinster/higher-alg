@@ -80,6 +80,7 @@ module SetMonad where
          ((flatten (↑ R) pd , flatten-frm (↑ R) pd , s) , bd-frame (↑ R) pd)
          ((w , α , r) , β))
 
+    -- Maybe there is a faster way?
     postulate
       hom-is-multip : {f : Ops P} (pd : W HomPoly f) → is-contr (Composite HomPoly HomRel pd)
       
