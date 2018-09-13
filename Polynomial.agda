@@ -137,6 +137,7 @@ module Polynomial where
                                (λ { (j , k , p , l) → idp } )
                                (λ { ((k , p) , (j , l)) → idp })
 
+
     Node-level : ∀ {n} (arity-lvl : {i : I} (f : Op P i) → has-level (S (S n)) (Arity P f))
       → {i : I} (w : W i) → has-level (S (S n)) (Σ (Ops P) (Node w))
     Node-level arity-lvl (lf i) = equiv-preserves-level no-node ⦃ ⊥-level ⦄
@@ -170,7 +171,13 @@ module Polynomial where
                     from-to : (a : A) → from (to a) == a
                     from-to (inl tt) = idp
                     from-to (inr ((k , p) , ((j , g) , n))) = idp
-
+    
+    Frame-level : ∀ {n} (s-lvl : has-level (S n) I)
+      → (a-lvl : {i : I} (f : Op P i) → has-level n (Arity P f))
+      → {i : I} (w : W i) (f : Op P i) → has-level n (Frame w f)
+    Frame-level s-lvl a-lvl w f = Π-level (λ j →
+      ≃-level (n-type-right-cancel (Leaf-level a-lvl w) s-lvl j)
+              (n-type-right-cancel (a-lvl f) s-lvl j))
 
   --
   -- Slicing a polynomial by a relation

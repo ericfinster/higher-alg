@@ -4,6 +4,7 @@ open import HoTT
 open import Util
 open import Polynomial
 open import Substitution
+open import SubstCoh
 
 module Monad where
 

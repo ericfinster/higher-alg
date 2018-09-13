@@ -282,9 +282,4 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
       → (l : Leaf P w j)
       → subst-lf-elim w κ j Q σ (subst-lf-in w κ j l) == σ l
 
-  -- The flatten relation
-  FlattenRel : PolyRel (P // R)
-  FlattenRel {i , f} pd (w , α , r) β = Σ (R (flatten pd) f (flatten-frm pd))
-    (λ s → Path {A = Σ (Op (P // R) (i , f)) (Frame (P // R) pd) }
-      ((flatten pd , flatten-frm pd , s) , bd-frame pd)
-      ((w , α , r) , β))
+

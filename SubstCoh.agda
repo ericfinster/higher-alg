@@ -6,7 +6,14 @@ open import Polynomial
 open import Substitution
 
 module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
-        
+
+  -- The flatten relation
+  FlattenRel : PolyRel (P // R)
+  FlattenRel {i , f} pd (w , α , r) β = Σ (R (flatten R pd) f (flatten-frm R pd))
+    (λ s → Path {A = Σ (Op (P // R) (i , f)) (Frame (P // R) pd) }
+      ((flatten R pd , flatten-frm R pd , s) , bd-frame R pd)
+      ((w , α , r) , β))
+
   -- Substituting a trivial decoration
   -- gives back the tree
   substitute-unit : {i : I} (w : W P i)
@@ -14,6 +21,7 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
   substitute-unit (lf i) = idp
   substitute-unit (nd (f , ϕ)) =
     ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ p → substitute-unit (ϕ j p))))
+
 
   -- -- Substitution is compatible with *horizontal* grafting
   -- -- Hmmm.  Maybe the more general version is a better way to go here ...
@@ -106,16 +114,9 @@ module SubstCoh {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
   -- -- And note that you've been looking for things that are sort of independent
   -- -- of the relation.  Well, I think this is one.
   
-  -- normal : Relator (P // R) → Type ℓ
-  -- normal RR = {jg : Σ I (Op P)} (pd : W (P // R) jg)
-  --   (wt : Op (P // R) jg) (β : Frame (P // R) pd wt)
-  --   → RR pd wt β → flatten R pd == fst wt
-
-
-    -- postulate
-
-    --   flatten-flatten :
-
+  -- normal : PolyRel (P // R) → Type ℓ
+  -- normal F = {f : Ops P} (pd : W (P // R) f) (w : Op (P // R) f) (β : Frame (P // R) pd w)
+  --   (r : F pd w β) → flatten R pd , flatten-frm R pd == fst w , fst (snd w) 
 
   --   -- Yeah, so like, if our relation RR doesn't imply at least that
   --   -- flatten R pd == w, then I don't see how to finish this.
