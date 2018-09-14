@@ -36,5 +36,3 @@ module Globularity where
         → bd-frame R₀ (flatten R₁ coh) == flatten-frm R₁ coh
             [ Frame (P // R₀) (flatten R₁ coh) ↓ pair= (flatten-flatten w α r coh) (↓-Σ-in (flatten-frm-flatten w α r coh) q) ]
 
-  -- Okay, nice.  It's exactly what I thought: the baez-dolan frame turns into the flatten
-  -- frame in the next dimension.

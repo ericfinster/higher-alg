@@ -61,6 +61,9 @@ module Polynomial where
     PolyRel : Type (lsucc ℓ)
     PolyRel = {i : I} (w : W i) (f : Op P i) (α : Frame w f) → Type ℓ
 
+    FrameRel : PolyRel
+    FrameRel w f α = Lift ⊤
+
     Composite : (R : PolyRel) {i : I} (w : W i) → Type ℓ
     Composite R {i} w = Σ (Op P i) (λ f → Σ (Frame w f) (R w f))
 
