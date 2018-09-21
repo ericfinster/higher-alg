@@ -14,13 +14,6 @@ module SetMonad where
   --  Our definition of a set-level monad.
   --
 
-  TRef : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) → Refinement R
-  TRef R _ _ _ _ = Lift ⊤
-
-  infixl 50 ↑_
-  
-  ↑_ : ∀ {ℓ} {I : Type ℓ} {P : Poly I} → PolyRel P → PolyRel P
-  ↑ R = ΣR R (TRef R)
 
   -- easy ...
   postulate
@@ -100,13 +93,12 @@ module SetMonad where
     hom-laws : {f : Ops P} (pd : Op HomPoly f)
       → (coh : W (HomPoly // (↑ HomRel)) (f , pd))
       → (↑ HomRel) (flatten (↑ HomRel) coh) pd (flatten-frm (↑ HomRel) coh)
-    hom-laws {i , f} (w , α , r) coh = 
-      (laws M f (flatten (↑ HomRel) coh) ,
-        pair= (pair= (flatten-flatten R (TRef R) (TRef HomRel) w α r coh)
-        (↓-Σ-in (flatten-frm-flatten R (TRef R) (TRef HomRel) w α r coh) q))
-        (flatten-bd-flatten R (TRef R) (TRef HomRel) w α r coh (laws M f (flatten (↑ HomRel) coh)) q)) , lift tt
+    hom-laws {i , f} (w , α , r) coh =
+      (s , globularity R (TRef R) (TRef HomRel) w α r coh s q) , lift tt
 
-      where q : laws M f (flatten (↑ HomRel) coh) == r [ uncurry (λ a → (↑ R) a f) ↓
+      where s = laws M f (flatten (↑ HomRel) coh)
+
+            q : s == r [ uncurry (λ a → (↑ R) a f) ↓
                   pair= (flatten-flatten R (TRef R) (TRef HomRel) w α r coh)
                   (flatten-frm-flatten R (TRef R) (TRef HomRel) w α r coh) ]
             q = prop-has-all-paths-↓ {B = uncurry (λ a → (↑ R) a f)}
