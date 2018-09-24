@@ -192,11 +192,11 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
   --
 
   bd-frame-to (lf .(j , g)) (j , g) idp = (inl idp)
-  bd-frame-to (nd ((w , r) , κ)) = substitute-nd-to w κ
+  bd-frame-to (nd ((w , α , r) , κ)) = substitute-nd-to w κ
   
   bd-frame-from (lf .(j , g)) (j , g) (inl idp) = idp
   bd-frame-from (lf .(_ , _)) (j , g) (inr (_ , p , ()))
-  bd-frame-from (nd ((w , r) , κ)) = substitute-nd-from w κ 
+  bd-frame-from (nd ((w , α , r) , κ)) = substitute-nd-from w κ 
     
   bd-frame pd jg =
     equiv (bd-frame-to pd jg) (bd-frame-from pd jg)
