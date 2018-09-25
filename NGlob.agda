@@ -42,7 +42,6 @@ module NGlob where
             [ Frame (P // R₀) (flatten Q coh) ↓ pair= (flatten-flatten w α r coh) (↓-Σ-in (flatten-frm-flatten w α r coh) q) ]
 
 
-
   module _ {ℓ} {I : Type ℓ} {P : Poly I} (R₀ : PolyRel P)
     (σ₀ : {i : I} {f : Op P i} (pd : W (P // R₀) (i , f))
       → R₀ (flatten R₀ pd) f (flatten-frm R₀ pd)) where
@@ -57,6 +56,60 @@ module NGlob where
         → (coh : W ((P // R₀) // R₁) ((i , f) , (w , α , r)))
         → σ₀ (flatten R₁ coh) == r
             [ (λ x → R₀ (fst x) f (snd x)) ↓ pair= (flatten-flatten R₀ σ₀ w α r coh) (flatten-frm-flatten R₀ σ₀ w α r coh) ]
+  
+    -- As well as their dependent counterparts...
+
+    -- ↓-=-in : ∀ {i j} {A : Type i} {B : A → Type j} {f g : Π A B}
+    --   {x y : A} {p : x == y} {u : g x == f x} {v : g y == f y}
+    --   → (u ◃ apd f p) == (apd g p ▹ v)
+    --   → (u == v [ (λ x → g x == f x) ↓ p ])
+    -- ↓-=-in {B = B} {p = idp} {u} {v} q = ! (◃idp {B = B} u) ∙ q ∙ idp▹ {B = B} v
+
+    -- Q : PolyRel (P // R₀)
+    -- Q {i , f} pd (w , α , r) β = 
+    --   Path {A = OutFrame (P // R₀) pd} 
+    --     ((flatten R₀ pd , flatten-frm R₀ pd , σ₀ pd) , bd-frame R₀ pd)
+    --     ((w , α , r) , β)
+
+    -- Goal: PathOver
+    --       (λ x →
+    --          R₁ (fst x)
+    --          (flatten (λ {;i} → R₀) pd , (λ j → flatten-frm R₀ pd j) , σ₀ pd)
+    --          (snd x))
+    --       (pair=
+    --        (flatten-flatten (λ {;i} → R₁) (λ {;i} {;f} → σ₁) pd
+    --         (bd-frame (λ {;i} → R₀) pd) idp trp)
+    --        (flatten-frm-flatten (λ {;i} → R₁) (λ {;i} {;f} → σ₁) pd
+    --         (bd-frame (λ {;i} → R₀) pd) idp trp))
+    --       (σ₁ (flatten (λ {;i} → R₂) trp)) idp
+
+
+    -- Okay.  So, ummm. Can you make a formal statement about the invariance property
+    -- of flattening with respect to the choice of σ₀-coh?
+
+    -- It should apply when I have a pasting diagram (pd : W (P // R₀) (i , f)).
+    -- I want it to be the case that the relations in this pasting diagram are
+    -- all obtained somehow from the equality over given above.  But I am not
+    -- sure to completely understand what this means.
+
+    -- But the claim, somehow, is that given a pasting diagram as above populated
+    -- by such path overs, apping the flatten function to the resulting equality
+    -- of trees gives the same path regardless of the choice of σ₀-coh.
+
+    -- I think I am starting to see a way forward.  What seems incredibly bothersome is that
+    -- I appear to be picking a coherence here out of a hat.  And that should never be good.
+    -- And there is clearly no reason why the choice here should be unique in any way.
+
+    -- *But*, what I seem to be claiming is that while not every other choice will be equal to this
+    -- one, since the substitution functions ignore their relation argument, any other choice will
+    -- induce the *same* equality after flattening, etc.
+
+    -- Okay.  There must be something to this.  Or, at least, this clearly seems like
+    -- a property that you have not yet learned to exploit.
+
+    -- And my intuition for why the equality you are trying to prove below may actually
+    -- be true is that it is a fancy version of the fact that ap'ing a constant function
+    -- to *any* path results in the identity.
 
     -- So, from here the question is, can you repeat?  Let's write out
     -- what we need for the section:
@@ -77,139 +130,50 @@ module NGlob where
     -- it can be proven without additional hypotheses on σ₀,
     -- then I claim this implies the monad structure of 𝕌.
 
-    -- If, on the other hand, it *does* require some kind of hypotheses
-    -- on σ₀, then I still don't see that we're sunk.
-
     R₂ : PolyRel ((P // R₀) // R₁)
     R₂ = Q R₁ σ₁
 
-    σ₂ : {w : Ops (P // R₀)} {pd : Op ((P // R₀) // R₁) w} (trp : W (((P // R₀) // R₁) // R₂) (w , pd))
-      → R₂ (flatten R₂ trp) pd (flatten-frm R₂ trp)
-    σ₂ {(i , f) , (w , α , r)} {pd , β , s} trp = pair= (pair= (flatten-flatten R₁ σ₁ pd β s trp)
-      (↓-Σ-in (flatten-frm-flatten R₁ σ₁ pd β s trp) (↓-=-in {!!})))
-        (flatten-bd-flatten R₁ σ₁ pd β s trp (σ₁ (flatten R₂ trp)) {!!})
+    -- σ₂ : {w : Ops (P // R₀)} {pd : Op ((P // R₀) // R₁) w} (trp : W (((P // R₀) // R₁) // R₂) (w , pd))
+    --   → R₂ (flatten R₂ trp) pd (flatten-frm R₂ trp)
+    -- σ₂ {(i , f) , (.(flatten R₀ pd) , .(flatten-frm R₀ pd) , .(σ₀ pd))} {pd , .(bd-frame R₀ pd) , idp} trp =
+    --   pair= (pair= (flatten-flatten R₁ σ₁ pd (bd-frame R₀ pd) idp trp)
+    --     (↓-Σ-in (flatten-frm-flatten R₁ σ₁ pd (bd-frame R₀ pd) idp trp) (↓-=-in {!!})))
+    --       (flatten-bd-flatten R₁ σ₁ pd (bd-frame R₀ pd) idp trp (σ₁ (flatten R₂ trp)) {!!})
 
-    -- Mmm.  Right.  So it is, just as you say, a globular relation of sorts.
-    -- You're being asked to show that the composition of two flatten-flattens
-    -- is the same as "apping" flatten to the guy you had.
+    -- Okay, so I claim that we should be able to reduce, after path induction
+    -- to the following cases:
 
-    -- So this is as you expected ...
+    module _ {i : I} {i : I} {f : Op P i}
+      (pd : W (P // R₀) (i , f))
+      (trp : W (((P // R₀) // R₁) // R₂) (((i , f) , flatten R₀ pd , flatten-frm R₀ pd , σ₀ pd) , pd , bd-frame R₀ pd , idp)) where
+  
+      canon-pth : (flatten R₁ (flatten R₂ trp) , flatten-frm R₁ (flatten R₂ trp)) == (pd , bd-frame R₀ pd)
+      canon-pth = pair= (flatten-flatten R₁ σ₁ pd (bd-frame R₀ pd) idp trp)
+        (flatten-frm-flatten R₁ σ₁ pd (bd-frame R₀ pd) idp trp)
+        
+      goal : σ₁ (flatten R₂ trp) == idp [ (λ x → R₁ (fst x) (flatten R₀ pd , flatten-frm R₀ pd , σ₀ pd) (snd x)) ↓ canon-pth ]
+      goal = ↓-=-in {!!}
 
-    -- And the question is, will this somehow get worse?  But it seems like in the
-    -- next dimension, I will see the exact same problem, as opposed to a three fold
-    -- composite.
+    -- Q : PolyRel (P // R₀)
+    -- Q {i , f} pd (w , α , r) β = 
+    --   Path {A = OutFrame (P // R₀) pd} 
+    --     ((flatten R₀ pd , flatten-frm R₀ pd , σ₀ pd) , bd-frame R₀ pd)
+    --     ((w , α , r) , β)
 
-  --   R₂ : PolyRel ((P // R₀) // R₁)
-  --   R₂ {(i , f) , (w , α , r)} coh (pd , β , s) γ =
-  --     Path {A = OutFrame ((P // R₀) // R₁) coh}
-  --       ((flatten R₁ coh , flatten-frm R₁ coh , globular P R₀ R₁ R₁-regular w α r coh) , bd-frame R₁ coh)
-  --       ((pd , β , s) , γ)
+      -- flatten₂ : ap (flatten R₀) (flatten-flatten R₁ σ₁ pd (bd-frame R₀ pd) idp trp) ==
+      --            flatten-flatten R₀ σ₀ (flatten R₀ pd) (flatten-frm R₀ pd) (σ₀ pd) (flatten R₂ trp)
+      -- flatten₂ = {!!}
 
-  --   R₂-mult : is-multiplicative ((P // R₀) // R₁) R₂
-  --   R₂-mult {(i , f) , (w , α , r)} coh = has-level-in (ctr , pth)
+      -- apd↓ : ∀ {i j k} {A : Type i} {B : A → Type j} {C : (a : A) → B a → Type k}
+      --   (f : {a : A} (b : B a) → C a b) {x y : A} {p : x == y}
+      --   {u : B x} {v : B y} (q : u == v [ B ↓ p ])
+      --   → f u == f v [ (λ xy → C (fst xy) (snd xy)) ↓ pair= p q ]
+      -- apd↓ f {p = idp} idp = idp
 
-  --     where ctr : Composite ((P // R₀) // R₁) R₂ coh
-  --           ctr = (flatten R₁ coh , flatten-frm R₁ coh , globular P R₀ R₁ R₁-regular w α r coh) , bd-frame R₁ coh , idp 
-
-  --           pth : (cmp : Composite ((P // R₀) // R₁) R₂ coh) → ctr == cmp
-  --           pth ((._ , ._ , ._) , ._ , idp) = idp
-
-  --   R₂-regular : is-regular (P // R₀) R₁ R₂
-  --   R₂-regular {i , f} {w , α , r} pd β s coh γ t =
-  --     globular P R₀ R₁ R₁-regular w α r coh , t
-
-  --   R₃ : PolyRel (((P // R₀) // R₁) // R₂)
-  --   R₃ {((i , f) , (w , α , r)) , (pd , β , s)} trpl (coh , γ , t) δ = 
-  --     Path {A = OutFrame (((P // R₀) // R₁) // R₂) trpl}
-  --       ((flatten R₂ trpl , flatten-frm R₂ trpl , pair= (pair= idp (pair= idp {!!})) {!!} ∙
-  --         (snd (globular (P // R₀) R₁ R₂ R₂-regular pd β s trpl))) , bd-frame R₂ trpl)
-  --       ((coh , γ , t) , δ)
-
-  --   -- R₃-regular : is-regular ((P // R₀) // R₁) R₂ R₃
-  --   -- R₃-regular {((i , f) , (w , α , r))} {(pd , β , s)} coh γ t trpl δ u =
-  --   --   (pair= (pair= idp (pair= idp {!!})) {!!} ∙
-  --   --       (snd (globular (P // R₀) R₁ R₂ R₂-regular pd β s trpl))) , u
-
-  --   -- R₄ : PolyRel ((((P // R₀) // R₁) // R₂) // R₃)
-  --   -- R₄ = {!!}
-
-  --   -- So I have an idea: what if you split the globularity statement into two
-  --   -- pieces, one which says that you get this identification and a second which
-  --   -- says, given an appropriate path-over, you get a baez-dolan identification
-  --   -- as well.
-
-  --   -- Because you see over and over again that somehow the natural division
-  --   -- is grouping the tree and frame together and working about the filler
-  --   -- and baez-dolan frame after.  Maybe this would give you more flexibility.
-
-  --   -- Well, well, well.  So now that looks pretty interesting.
-  --   -- Uh, yeah.  This is starting to look completely doable.
-
-  --   -- It very much looks to me like, given this one extra fact about the targets
-  --   -- of iterated applications of globular, that the resulting sequence after
-  --   -- n = 3 stabilizes and becomes provable by induction.
-
-  --   --
-  --   --  Generalizing over n ...
-  --   --
-
-  --   -- RSort : (n : ℕ) → Type ℓ
-  --   -- RPoly : (n : ℕ) → Poly (RSort n)
-  --   -- RRel : (n : ℕ) → PolyRel (RPoly n)
-
-  --   -- RSort O = I
-  --   -- RSort (S n) = Ops (RPoly n)
-
-  --   -- RPoly O = P 
-  --   -- RPoly (S n) = RPoly n // RRel n
-
-  --   -- postulate
-
-  --   --   1-glob : (n : ℕ) {i : RSort n} {f : Op (RPoly n) i}
-  --   --     → (pd : W (RPoly n // RRel n) (i , f))
-  --   --     → (w : W (RPoly n) i) (α : Frame (RPoly n) w f) (r : (RRel n) w f α)
-  --   --     → (β : Frame (RPoly (S n)) pd (w , α , r))
-  --   --     → Σ (RRel n (flatten (RRel n) pd) f (flatten-frm (RRel n) pd))
-  --   --         (λ r₀ → Path {A = OutFrame (RPoly (S n)) pd}
-  --   --                      ((flatten (RRel n) pd , flatten-frm (RRel n) pd , r₀) , bd-frame (RRel n) pd)
-  --   --                      ((w , α , r) , β))
-
-  --   -- n-glob : (n : ℕ) {i : RSort n} {f : Op (RPoly n) i}
-  --   --   → (w : W (RPoly n) i) (α : Frame (RPoly n) w f) (r : (RRel n) w f α)
-  --   --   → (coh : W ((RPoly n // RRel n) // RRel (S n)) ((i , f) , (w , α , r)))
-  --   --   → RRel (S n) (flatten (RRel (S n)) coh) (w , α , r) (flatten-frm (RRel (S n)) coh)
-
-  --   -- RRel O = R₀
-  --   -- RRel (S O) {i , f} pd (w , α , r) β =
-  --   --   Σ (R₀ (flatten R₀ pd) f (flatten-frm R₀ pd))
-  --   --     (λ s → Path {A = OutFrame (P // R₀) pd} 
-  --   --              ((flatten R₀ pd , flatten-frm R₀ pd , s) , bd-frame R₀ pd)
-  --   --              ((w , α , r) , β))
-  --   -- RRel (S (S n)) {(i , f) , (w , α , r)} coh (pd , β , s) γ =
-  --   --   Path {A = OutFrame (RPoly (S n) // RRel (S n)) coh}
-  --   --     ((flatten (RRel (S n)) coh , flatten-frm (RRel (S n)) coh , n-glob n w α r coh) , bd-frame (RRel (S n)) coh)
-  --   --     ((pd , β , s) , γ)
+      -- flatten-frm₂ : apd (flatten-frm R₀) (flatten-flatten R₁ σ₁ pd (bd-frame R₀ pd) idp trp) ==
+      --                {!flatten-frm-flatten R₀ σ₀ (flatten R₀ pd) (flatten-frm R₀ pd) (σ₀ pd) (flatten R₂ trp)!}
+      -- flatten-frm₂ = {!!}
 
 
-  --   -- n-glob = {!!}
-    
-  --   -- -- n-glob O w α r coh = glob₁ w α r coh
-  --   -- -- n-glob (S O) {i , f} {._ , ._ , r} pd ._ (.r , idp) coh = {!!}
-  --   -- -- n-glob (S (S n)) {i , f} {w , α , r} pd β s coh = {!!}
-
-  --   -- -- n-glob O w α r coh = glob₁ w α r coh
-  --   -- -- n-glob (S O) {i , f} {w , α , r} pd β s coh = {!!}
-  --   -- -- n-glob (S (S n)) {i , f} {w , α , r} pd β s coh = {!ih!}
-
-  --   -- --   where ih : RRel (S (S n)) (flatten (RRel (S (S n))) (flatten (RRel (S (S (S n)))) coh)) (w , α , r)
-  --   -- --                         (flatten-frm (RRel (S (S n))) (flatten (RRel (S (S (S n)))) coh))
-  --   -- --         ih = n-glob (S n) w α r (flatten (RRel (S (S (S n)))) coh)
-
-
-  --   -- -- n-glob (S n) {i , f} {w , α , r} pd β s coh = {! !}
-
-  --   -- --   where ih : RRel (S n) (flatten (RRel (S n)) (flatten (RRel (S (S n))) coh)) (w , α , r)
-  --   -- --                         (flatten-frm (RRel (S n)) (flatten (RRel (S (S n))) coh))
-  --   -- --         ih = n-glob n w α r (flatten (RRel (S (S n))) coh)
 
 

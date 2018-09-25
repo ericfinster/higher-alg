@@ -80,7 +80,7 @@ module Substitution {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
   --
 
   flatten (lf (i , f)) = corolla P f
-  flatten (nd ((w , r) , κ)) = substitute w κ
+  flatten (nd ((w , α , r) , κ)) = substitute w κ
 
   flatten-frm-to (lf _) j (_ , p , idp) = p
   flatten-frm-to (nd ((w , α , r) , κ)) j l =
