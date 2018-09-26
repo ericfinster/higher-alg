@@ -1,54 +1,44 @@
-{-# OPTIONS --without-K --rewriting #-}
+{-# OPTIONS --without-K --rewriting --no-positivity #-}
 
 open import HoTT
 open import Util
 open import Polynomial
 open import Substitution
 
-module Indexed where
+-- I have turned off positivity so as to be able to adapt old
+-- code to this setup quickly for testing.  However, the non-
+-- positivity can be avoided by using the three-field variant
+-- of polynomials.  But grafting, substitution and so on would
+-- need to be rewritten ...
 
-  module _ {ℓ} {I : Type ℓ} (P : Poly I) where
-    
-    data Sort : ℕ → Type ℓ
-    data Oper : (n : ℕ) → Sort n → Type ℓ
-    data Tr : (n : ℕ) → Sort n → Type ℓ
+module Indexed {ℓ} {I : Type ℓ} (P : Poly I) where
 
-    Params : (n : ℕ) {i : Sort n} (f : Oper n i) → Type ℓ
-    Leaves : (n : ℕ) {i : Sort n} (w : Tr n i) → Type ℓ
+  Sort : ℕ → Type ℓ
+  SPoly : (n : ℕ) → Poly (Sort n)
 
-    τₚ : (n : ℕ) {i : Sort n} {f : Oper n i} (p : Params n f) → Sort n
-    τₗ : (n : ℕ) {i : Sort n} {w : Tr n i} (l : Leaves n w) → Sort n
-    
-    Frm : (n : ℕ) {i : Sort n} (w : Tr n i) (f : Oper n i) → Type ℓ
-    Frm n w f = Σ (Leaves n w ≃ Params n f) (λ α → (l : Leaves n w) → τₗ n l == τₚ n (–> α l))
+  data Oper : (n : ℕ) → Sort n → Type ℓ
+  Params : (n : ℕ) {i : Sort n} (f : Oper n i) (j : Sort n) → Type ℓ
 
-    data Sort where
-      idx : (i : I) → Sort 0
-      _,_ : {n : ℕ} → (i : Sort n) → Oper n i → Sort (S n)
-      
-    -- The hypothetical multiplication in positive dimensions
-    μ∞ : (n : ℕ) {i : Sort n} {f : Oper n i} 
-      → Tr (S n) (i , f) → Oper (S n) (i , f)
+  Sort 0 = I
+  Sort (S n) = Σ (Sort n) (Oper n)
 
-    -- The dimension indexing here, however, seems somewhat strange ...
-    
-    data Oper where
-      init : {i : I} (f : Op P i) → Oper 0 (idx i) 
-      then : {i : Sort 0} {f : Oper 0 i} (w : Tr 0 i) (α : Frm 0 w f) → Oper 1 (i , f) 
-      smthg : {n : ℕ} {i : Sort n} {f : Oper n i} (w : Tr (S n) (i , f)) → Oper (S (S n)) ((i , f) , μ∞ n w)
+  SPoly O = P
+  Op (SPoly (S n)) = Oper (S n)
+  Param (SPoly (S n)) = Params (S n)
 
-    data Tr where
-      inlf : {n : ℕ} (i : Sort n) → Tr n i
-      innd : {n : ℕ} {i : Sort n} 
-        → (f : Oper n i) (ϕ : (p : Params n f) → Tr n (τₚ n p))
-        → Tr n i
+  -- The hypothetical multiplication in positive dimensions
+  μ∞ : (n : ℕ) {i : Sort n} {f : Oper n i} 
+    → W (SPoly (S n)) (i , f) → Oper (S n) (i , f)
 
-    Params n f = {!!}
-    Leaves n w = {!!}
+  data Oper where
+    op : {i : I} (f : Op P i) → Oper 0 i
+    frm : {i : I} {f : Op P i} (w : W P i) (α : Frame P w f) → Oper 1 (i , op f) 
+    web : {n : ℕ} {i : Sort n} {f : Oper n i} (w : W (SPoly (S n)) (i , f)) → Oper (S (S n)) ((i , f) , μ∞ n w)
 
-    τₚ = {!!}
-    τₗ = {!!}
+  Params O (op f) = Param P f
+  Params (S O) (frm w α) (i , op f) = Node P w (i , f)
+  Params (S (S n)) (web w) = Node (SPoly (S n)) w 
 
-    μ∞ = {!!}
+  μ∞ = {!!}
 
 
