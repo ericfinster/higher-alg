@@ -9,14 +9,8 @@ module Indexed {ℓ} {I : Type ℓ} (P : Poly I) where
   Sort : ℕ → Type ℓ
   SPoly : (n : ℕ) → Poly (Sort n)
 
-  postulate
-  
-    -- The hypothetical multiplication
-    μ : (n : ℕ) {i : Sort (S n)} → W (SPoly (S n)) i → Op (SPoly (S n)) i
-
-    -- It's associated frame ...
-    μ-frm : (n : ℕ) {i : Sort (S n)} (w : W (SPoly (S n)) i) → Frame (SPoly (S n)) w (μ n w)
-
+  μ : (n : ℕ) {i : Sort (S n)} → W (SPoly (S n)) i → Op (SPoly (S n)) i
+  μ-frm : (n : ℕ) {i : Sort (S n)} (w : W (SPoly (S n)) i) → Frame (SPoly (S n)) w (μ n w)
 
   Sort 0 = I
   Sort (S n) = Ops (SPoly n)
@@ -257,5 +251,12 @@ module Indexed {ℓ} {I : Type ℓ} (P : Poly I) where
     in ke , (inr (k , p' , n'')) , l''
     
 
+  --
+  --  Monad multiplication
+  --
 
-
+  μ O w = flatten 0 w , flatten-frm 0 w
+  μ (S n) {(i , f) , o} w = flatten (S n) w , {!!}
+  
+  μ-frm O w = bd-frame 0 w
+  μ-frm (S n) {(i , f) , o} w = bd-frame (S n) w
