@@ -147,5 +147,115 @@ module Indexed {ℓ} {I : Type ℓ} (P : Poly I) where
         Q x = Leaf (SPoly n) (substitute n (ϕ k x) (λ ic n → κ ic (inr (k , x , n)))) j
     in graft-leaf-to (SPoly n) (flatten n pd) ε j (k , l' , transport! Q (flatten-frm-to-from n pd k p') ll')
 
+  --
+  --  The Baez-Dolan Frame
+  --
+  
+  bd-frame-to : (m : ℕ) {i : Sort m} {f : Op (SPoly m) i}
+    → (pd : W (SPoly (S m)) (i , f)) (jg : Ops (SPoly m))
+    → Leaf (SPoly (S m)) pd jg → Node (SPoly m) (flatten m pd) jg
+
+  bd-frame-from : (m : ℕ) {i : Sort m} {f : Op (SPoly m) i}
+    → (pd : W (SPoly (S m)) (i , f)) (jg : Ops (SPoly m))
+    → Node (SPoly m) (flatten m pd) jg → Leaf (SPoly (S m)) pd jg
+  
+  postulate
+  
+    bd-frame-to-from : (m : ℕ) {i : Sort m} {f : Op (SPoly m) i}
+      → (pd : W (SPoly (S m)) (i , f)) (jg : Ops (SPoly m))
+      → (n : Node (SPoly m) (flatten m pd) jg)
+      → bd-frame-to m pd jg (bd-frame-from m pd jg n) == n
+
+    bd-frame-from-to : (m : ℕ) {i : Sort m} {f : Op (SPoly m) i}
+      → (pd : W (SPoly (S m)) (i , f)) (jg : Ops (SPoly m))
+      → (l : Leaf (SPoly (S m)) pd jg)
+      → bd-frame-from m pd jg (bd-frame-to m pd jg l) == l
+
+  bd-frame : (m : ℕ) {i : Sort m} {f : Op (SPoly m) i}
+    → (pd : W (SPoly (S m)) (i , f))
+    → (jg : Ops (SPoly m)) → Leaf (SPoly (S m)) pd jg ≃ Node (SPoly m) (flatten m pd) jg
+  bd-frame m pd jg = equiv (bd-frame-to m pd jg) (bd-frame-from m pd jg)
+    (bd-frame-to-from m pd jg) (bd-frame-from-to m pd jg)
+
+  --
+  --  Nodes in a substituted tree
+  --
+
+  substitute-nd-to : (m : ℕ) {i : Sort m} (w : W (SPoly m) i)
+    → (κ : (g : Ops (SPoly m)) → Node (SPoly m) w g → W (SPoly (S m)) g) (jg : Ops (SPoly m))
+    → Σ (Ops (SPoly m)) (λ ke → Σ (Node (SPoly m) w ke) (λ n → Leaf (SPoly (S m)) (κ ke n) jg))
+    → Node (SPoly m) (substitute m w κ) jg 
+
+  substitute-nd-from : (m : ℕ) {i : Sort m} (w : W (SPoly m) i)
+    → (κ : (g : Ops (SPoly m)) → Node (SPoly m) w g → W (SPoly (S m)) g) (jg : Ops (SPoly m))
+    → Node (SPoly m) (substitute m w κ) jg 
+    → Σ (Ops (SPoly m)) (λ ke → Σ (Node (SPoly m) w ke) (λ n → Leaf (SPoly (S m)) (κ ke n) jg))
+
+  postulate
+  
+    substitute-nd-to-from : (m : ℕ) {i : Sort m} (w : W (SPoly m) i)
+      → (κ : (g : Ops (SPoly m)) → Node (SPoly m) w g → W (SPoly (S m)) g) (jg : Ops (SPoly m))
+      → (n : Node (SPoly m) (substitute m w κ) jg)
+      → substitute-nd-to m w κ jg (substitute-nd-from m w κ jg n) == n
+
+    substitute-nd-from-to : (m : ℕ) {i : Sort m} (w : W (SPoly m) i)
+      → (κ : (g : Ops (SPoly m)) → Node (SPoly m) w g → W (SPoly (S m)) g) (jg : Ops (SPoly m))
+      → (t : Σ (Ops (SPoly m)) (λ ke → Σ (Node (SPoly m) w ke) (λ n → Leaf (SPoly (S m)) (κ ke n) jg)))
+      → substitute-nd-from m w κ jg (substitute-nd-to m w κ jg t) == t
+
+  substitute-nd-eqv : (m : ℕ) {i : Sort m} (w : W (SPoly m) i)
+    → (κ : (g : Ops (SPoly m)) → Node (SPoly m) w g → W (SPoly (S m)) g)
+    → (jg : Ops (SPoly m))
+    → Σ (Ops (SPoly m)) (λ ke → Σ (Node (SPoly m) w ke) (λ n → Leaf (SPoly (S m)) (κ ke n) jg))
+    ≃ Node (SPoly m) (substitute m w κ) jg 
+  substitute-nd-eqv m w κ jg =
+    equiv (substitute-nd-to m w κ jg) (substitute-nd-from m w κ jg)
+          (substitute-nd-to-from m w κ jg) (substitute-nd-from-to m w κ jg)
+  
+  --
+  --  Implementation
+  --
+
+
+  bd-frame-to m (lf .(j , g)) (j , g) idp = (inl idp)
+  bd-frame-to O (nd ((w , α) , κ)) = substitute-nd-to 0 w κ
+  bd-frame-to (S m) (nd ((w , e) , κ)) = substitute-nd-to (S m) w κ
+  
+  bd-frame-from m (lf .(j , g)) (j , g) (inl idp) = idp
+  bd-frame-from m (lf .(_ , _)) (j , g) (inr (_ , p , ()))
+  bd-frame-from 0 (nd ((w , α) , κ)) = substitute-nd-from 0 w κ 
+  bd-frame-from (S m) (nd ((w , e) , κ)) = substitute-nd-from (S m) w κ 
+
+  substitute-nd-to m (lf i) κ (j , g) ((k , e) , () , l)
+  substitute-nd-to m (nd (f , ϕ)) κ (j , g) ((k , .f) , (inl idp) , l) = 
+    let pd = κ (k , f) (inl idp) 
+        p j l = flatten-frm-to m pd j l
+        κ' j l ic n = κ ic (inr (j , p j l , n))
+        ε j l = substitute m (ϕ j (p j l)) (κ' j l) 
+    in graft-node-to (SPoly m) (flatten m pd) ε (j , g) (inl (bd-frame-to m pd (j , g) l))
+  substitute-nd-to m (nd {i} (f , ϕ)) κ (j , g) ((k , e) , (inr (a , p' , n)) , l) = 
+    let pd = κ (i , f) (inl idp) 
+        p j l = flatten-frm-to m pd j l
+        κ' j l ic n = κ ic (inr (j , p j l , n))
+        ε j l = substitute m (ϕ j (p j l)) (κ' j l)
+        l' = flatten-frm-from m pd a p'
+        Q x = Node (SPoly m) (substitute m (ϕ a x) (λ ic n → κ ic (inr (a , x , n)))) (j , g)
+        n' = substitute-nd-to m (ϕ a p') (λ ic n₀ → κ ic (inr (a , p' , n₀))) (j , g) ((k , e) , n , l)
+    in graft-node-to (SPoly m) (flatten m pd) ε (j , g) (inr (a , l' , transport! Q (flatten-frm-to-from m pd a p') n' ))
+
+  substitute-nd-from m (lf i) κ (j , g) ()
+  substitute-nd-from m (nd {i} (f , ϕ)) κ (j , g) n with graft-node-from (SPoly m) (flatten m (κ (i , f) (inl idp))) _ (j , g) n
+  substitute-nd-from m (nd {i} (f , ϕ)) κ (j , g) n | inl n' =
+    (i , f) , (inl idp) , (bd-frame-from m (κ (i , f) (inl idp)) (j , g) n')
+  substitute-nd-from m (nd {i} (f , ϕ)) κ (j , g) n | inr (k , l' , n') = 
+    let pd = κ (i , f) (inl idp) 
+        p j l = flatten-frm-to m pd j l
+        κ' j l ic n = κ ic (inr (j , p j l , n))
+        ε j l = substitute m (ϕ j (p j l)) (κ' j l)
+        p' = flatten-frm-to m pd k l'
+        (ke , n'' , l'') = substitute-nd-from m (ϕ k p') (λ ic n₀ → κ ic (inr (k , p' , n₀))) (j , g) n'
+    in ke , (inr (k , p' , n'')) , l''
+    
+
 
 
