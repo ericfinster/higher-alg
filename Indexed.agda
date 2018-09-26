@@ -19,33 +19,36 @@ module Indexed {ℓ} {I : Type ℓ} (P : Poly I) where
   data Oper : (n : ℕ) → Sort n → Type ℓ
   Params : (n : ℕ) {i : Sort n} (f : Oper n i) (j : Sort n) → Type ℓ
 
-  Sort 0 = I
+  Sort 0 = Ops P
   Sort (S n) = Σ (Sort n) (Oper n)
 
-  SPoly O = P
-  Op (SPoly (S n)) = Oper (S n)
-  Param (SPoly (S n)) = Params (S n)
-
-  -- The hypothetical multiplication in positive dimensions
-  μ∞ : (n : ℕ) {i : Sort n} {f : Oper n i} 
-    → W (SPoly (S n)) (i , f) → Oper (S n) (i , f)
+  Op (SPoly n) = Oper n
+  Param (SPoly n) = Params n
+  
+  -- The hypothetical multiplication 
+  μ∞ : (n : ℕ) {i : Sort n} → W (SPoly n) i → Oper n i
 
   data Oper where
-    op : {i : I} (f : Op P i) → Oper 0 i
-    frm : {i : I} {f : Op P i} (w : W P i) (α : Frame P w f) → Oper 1 (i , op f) 
-    web : {n : ℕ} {i : Sort n} {f : Oper n i} (w : W (SPoly (S n)) (i , f)) → Oper (S (S n)) ((i , f) , μ∞ n w)
+    frm : {i : I} {f : Op P i} (w : W P i) (α : Frame P w f) → Oper 0 (i , f)
+    web : {n : ℕ} {i : Sort n} (w : W (SPoly n) i) → Oper (S n) (i , μ∞ n w)
 
-  Params O (op f) = Param P f
-  Params (S O) (frm w α) (i , op f) = Node P w (i , f)
-  Params (S (S n)) (web w) = Node (SPoly (S n)) w 
+  Params O (frm w α) = Node P w 
+  Params (S n) (web w) = Node (SPoly n) w 
+
+  subst₀ : {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → W (SPoly 0) g)
+    → W P i
+  subst₀ = {!!}
 
   subst : (n : ℕ) {i : Sort n} (w : W (SPoly n) i)
-    → (κ : (g : Sort (S n)) → Node (SPoly n) w (fst g , {!snd g!}) → W (SPoly (S n)) g)
+    → (κ : (g : Sort (S n)) → Node (SPoly n) w g → W (SPoly (S n)) g)
     → W (SPoly n) i
   subst n w = {!!}
 
-  μ∞ O (lf (i , op f)) = frm (corolla P f) (corolla-lf-eqv P f)
-  μ∞ O {i} {op f} (nd (frm w α , κ)) = frm {!!} {!!}
-  μ∞ (S n) w = {!!}
+  μ∞ O (lf (i , f)) = frm (corolla P f) (corolla-lf-eqv P f)
+  μ∞ O (nd (frm w α , κ)) = frm (subst₀ w κ ) {!!}
+  μ∞ (S n) (lf (i , f)) = transport (Oper (S n)) {!!} (web (corolla (SPoly n) f))
+  μ∞ (S n) (nd (web w , κ)) = transport (Oper (S n)) {!!} (web (subst n w κ))
+  
 
 
