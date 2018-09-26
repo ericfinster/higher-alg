@@ -249,14 +249,20 @@ module Indexed {ℓ} {I : Type ℓ} (P : Poly I) where
         p' = flatten-frm-to m pd k l'
         (ke , n'' , l'') = substitute-nd-from m (ϕ k p') (λ ic n₀ → κ ic (inr (k , p' , n₀))) (j , g) n'
     in ke , (inr (k , p' , n'')) , l''
-    
 
   --
   --  Monad multiplication
   --
 
+  μ-laws : (n : ℕ) {i : Sort n} {f : Op (SPoly n) i}
+    → (w : Op (SPoly (S n)) (i , f))
+    → (pd : W (SPoly (S (S n))) ((i , f) , w))
+    → μ n (flatten (S n) pd) == w
+  μ-laws O (w , α) pd = {!!}
+  μ-laws (S n) (w , e) pd = {!!}
+
   μ O w = flatten 0 w , flatten-frm 0 w
-  μ (S n) {(i , f) , o} w = flatten (S n) w , {!!}
+  μ (S n) {(i , f) , o} w = flatten (S n) w , μ-laws n o w
   
   μ-frm O w = bd-frame 0 w
   μ-frm (S n) {(i , f) , o} w = bd-frame (S n) w
