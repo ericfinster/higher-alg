@@ -39,6 +39,13 @@ module Indexed {ℓ} {I : Type ℓ} (P : Poly I) where
   Params (S O) (frm w α) (i , op f) = Node P w (i , f)
   Params (S (S n)) (web w) = Node (SPoly (S n)) w 
 
-  μ∞ = {!!}
+  subst : (n : ℕ) {i : Sort n} (w : W (SPoly n) i)
+    → (κ : (g : Sort (S n)) → Node (SPoly n) w (fst g , {!snd g!}) → W (SPoly (S n)) g)
+    → W (SPoly n) i
+  subst n w = {!!}
+
+  μ∞ O (lf (i , op f)) = frm (corolla P f) (corolla-lf-eqv P f)
+  μ∞ O {i} {op f} (nd (frm w α , κ)) = frm {!!} {!!}
+  μ∞ (S n) w = {!!}
 
 
