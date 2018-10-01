@@ -396,7 +396,7 @@ module Polynomial where
     --
 
     -- grafting is unital
-    graft-unit : {i : I} (w : W P i) → graft w (λ j l → lf j) == w
+    graft-unit : {i : I} (w : W P i) → w == graft w (λ j l → lf j) 
     graft-unit (lf i) = idp
     graft-unit (nd (f , ϕ)) =
       ap (λ x → nd (f , x)) (λ= (λ j → λ= (λ l → graft-unit (ϕ j l))))

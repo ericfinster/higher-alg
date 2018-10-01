@@ -43,12 +43,24 @@ module 2Slice where
     w-bd-to-op : {pd : Ops (Subst P)} → W BD pd → Op (Subst (Subst P)) pd
     w-bd-to-op coh = flatn₁ coh , flatn-frm₁ coh
 
+    -- flattening is compatible with vertical grafting in the substitution
+    -- polynomial ...
+    flatn-graft : {i : I} {f : Op P i} (coh : W (Subst P) (i , f))
+      → (ψ : (g : Ops P) → Leaf (Subst P) coh g → W (Subst P) g)
+      → flatn P (graft (Subst P) coh ψ) ==
+        -- I guess this pair goes by another name, no ???
+        subst P (flatn P coh) (λ g n → flatn P (ψ g (<– (bd-frm P coh g) n)) , flatn-frm P (ψ g (<– (bd-frm P coh g) n)))
+    flatn-graft (lf (i , f)) ψ = graft-unit P (flatn P (ψ (i , f) idp))
+    flatn-graft (nd ((w , α) , κ)) ψ = {!!} -- Associativity of subst?
+
     flatn-subst : {i : I} {f : Op P i} (coh : W (Subst P) (i , f))
       → (θ : (pd : Ops (Subst P)) → Node (Subst P) coh pd → W BD pd)
       → flatn P (subst (Subst P) coh (λ g n → flatn₁ (θ g n) , flatn-frm₁ (θ g n))) == flatn P coh
     flatn-subst (lf .(_ , _)) θ = idp
-    flatn-subst (nd ((w , α) , κ)) θ = {!!}
-
+    flatn-subst {i} {f} (nd ((w , α) , κ)) θ = 
+      let coh' = flatn₁ (θ ((i , f) , w , α) (inl idp))
+      in {!flatn-graft coh'!}
+      
   --   -- Okay, and this path-over looks like just an extra coherence
   --   -- of flatten-flatten.
   --   flatten-subst : (RR : Relator (P // R)) (is-normal : normal RR)
@@ -70,8 +82,8 @@ module 2Slice where
     flatn-flatn : {i : I} {f : Op P i} (w : W P i) (α : Frame P w f)
       → (coh : W BD ((i , f) , w , α))
       → flatn P (flatn₁ coh) == w 
-    flatn-flatn w α (lf ._) = {!!}
-    flatn-flatn ._ ._ (nd ((pd , idp) , θ)) = {!!}
+    flatn-flatn w α (lf ._) = {!!} -- An obvious coherence of the substitution monad ...
+    flatn-flatn ._ ._ (nd ((pd , idp) , θ)) = flatn-subst pd θ
 
   --   -- Yeah, so like, if our relation RR doesn't imply at least that
   --   -- flatten R pd == w, then I don't see how to finish this.
@@ -84,13 +96,15 @@ module 2Slice where
   --   flatten-flatten RR is-n w α r (nd ((pd , β , rr) , κ)) =
   --     flatten-subst RR is-n pd κ ∙ is-n pd (w , α , r) β rr
 
-    bd-coh : {i : I} {f : Op P i} (w : W P i) (α : Frame P w f)
+    flatn-frm-flatn : {i : I} {f : Op P i} (w : W P i) (α : Frame P w f)
       → (coh : W BD ((i , f) , w , α))
-      → μ-subst P (flatn₁ coh) == w , α
-    bd-coh w α coh = pair= (flatn-flatn w α coh) {!!}
+      → flatn-frm P (flatn₁ coh) == α [ (λ w → Frame P w f) ↓ flatn-flatn w α coh ]
+    flatn-frm-flatn w α (lf ._) = {!!}
+    flatn-frm-flatn w α (nd ((pd , idp) , θ)) = {!!}
 
     μ-bd : {pd : Ops (Subst P)} → W BD pd → Op BD pd
-    μ-bd {(i , f) , (w , α)} coh = flatn₁ coh , bd-coh w α coh
+    μ-bd {(i , f) , (w , α)} coh = flatn₁ coh ,
+      pair= (flatn-flatn w α coh) (flatn-frm-flatn w α coh)
 
 
     
