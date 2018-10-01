@@ -27,13 +27,13 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     → (κ : (g : Ops P) → Node P w g → Op Subst g)
     → (j : I) → Leaf P (subst w κ) j → Leaf P w j
   subst-lf-to (lf i) κ j l = l
-  subst-lf-to (nd (f , ϕ)) κ j l = 
+  subst-lf-to (nd (f , ϕ)) κ j = 
     let (w , α) = κ (_ , f) (inl idp)
         κ' j l g n = κ g (inr (j , –> (α j) l , n))
         ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-        (k , l₀ , l₁) = graft-leaf-from P w ψ j l
-    in k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁ 
-    
+    in graft-leaf-rec P w ψ j (λ k l₀ l₁ →
+         k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁) 
+
   subst-lf-from : {i : I} (w : W P i)
     → (κ : (g : Ops P) → Node P w g → Op Subst g)
     → (j : I) → Leaf P w j → Leaf P (subst w κ) j 
@@ -75,10 +75,20 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
     → (Q : Leaf P (subst w κ) j → Type ℓ)
     → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
-    → (l : Leaf P (subst w κ) j) → Q l 
+    → (l : Leaf P (subst w κ) j) → Q l
   subst-lf-elim w κ j Q σ l =
     transport Q (<–-inv-l (subst-lf-eqv w κ j) l)
                 (σ (subst-lf-to w κ j l))
+
+  -- subst-lf-elim (lf i) κ j Q σ l = σ l
+  -- subst-lf-elim (nd (f , ϕ)) κ j Q σ l = 
+  --   let (w , α) = κ (_ , f) (inl idp)
+  --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
+  --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
+  --   in graft-leaf-elim P w ψ j Q (λ k l₀ → subst-lf-elim (ϕ k (–> (α k) l₀)) (κ' k l₀) j
+  --        (λ l₁ → Q (graft-leaf-to P w ψ j (k , l₀ , l₁)))
+  --        (λ lϕ → transport (λ x → Q (graft-leaf-to P w ψ j x)) (pair= idp (pair= (<–-inv-l (α k) l₀) {!!}))
+  --          (σ (k , (–> (α k) l₀) , lϕ)))) l
 
   postulate
 
@@ -89,6 +99,22 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
       → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
       → (l : Leaf P w j)
       → subst-lf-elim w κ j Q σ (subst-lf-in w κ j l) == σ l
+
+  -- The recursor
+  
+  subst-lf-rec : {A : Type ℓ} {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
+    → (σ : Leaf P w j → A)
+    → Leaf P (subst w κ) j → A
+  subst-lf-rec w κ j σ = σ ∘ (–> (subst-lf-eqv w κ j))
+
+  subst-lf-rec-β : {A : Type ℓ} {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
+    → (σ : Leaf P w j → A)
+    → (l : Leaf P w j)
+    → subst-lf-rec w κ j σ (subst-lf-in w κ j l) == σ l
+  subst-lf-rec-β w κ j σ l = ap σ (<–-inv-r (subst-lf-eqv w κ j) l)
+
 
   -- Nodes in a substitution
 

@@ -258,6 +258,23 @@ module Polynomial where
       → graft-leaf-rec w ψ j σ (graft-leaf-in w ψ j k l m) == σ k l m
     graft-leaf-rec-β {A = A} w ψ j σ = graft-leaf-elim-β w ψ j (cst A) σ
 
+    postulate
+    
+      graft-leaf-rec-∘ : ∀ {ℓ'} {A B : Type ℓ'} (f : A → B)
+        → {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
+        → (j : I) (σ : (k : I) (l : Leaf P w k) (m : Leaf P (ψ k l) j) → A)
+        → (l : Leaf P (graft w ψ) j)
+        → graft-leaf-rec w ψ j (λ k l m → f (σ k l m)) l == f (graft-leaf-rec w ψ j σ l)  
+    -- graft-leaf-rec-∘ f w ψ j σ l = {!!}
+
+  -- subst-lf-to (nd (f , ϕ)) κ j = 
+  --   let (w , α) = κ (_ , f) (inl idp)
+  --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
+  --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
+  --   in graft-leaf-rec P w ψ j (λ k l₀ l₁ →
+  --        k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁) 
+
+
     module _ {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (j : I) where
 
       graft-leaf-to : Σ I (λ k → Σ (Leaf P w k) (λ l → Leaf P (ψ k l) j)) → Leaf P (graft w ψ) j

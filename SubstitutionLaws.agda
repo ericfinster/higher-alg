@@ -11,26 +11,29 @@ module SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) where
   subst-graft : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
     → (κ : (g : Ops P) → Node P w g → Op Subst g)
     → (θ : (j : I) (l : Leaf P w j) (g : Ops P) → Node P (ψ j l) g → Op Subst g)
-    -- Both elims turn out to be recs here ...
-    → subst (graft P w ψ) (λ g → graft-node-elim P w ψ g (cst (Op Subst g)) (κ g) (λ j l n → θ j l g n)) ==
-      graft P (subst w κ) (λ j → subst-lf-elim w κ j (cst (W P j)) (λ l → subst (ψ j l) (θ j l)))
-  subst-graft (lf i) ψ κ θ = ! (subst-lf-elim-β (lf i) κ i (cst (W P i)) (λ l → subst (ψ i l) (θ i l)) idp)
-  subst-graft {i} (nd (f , ϕ)) ψ κ θ =
+    → subst (graft P w ψ) (λ g → graft-node-rec P w ψ g (κ g) (λ j l n → θ j l g n)) ==
+      graft P (subst w κ) (λ j → subst-lf-rec w κ j (λ l → subst (ψ j l) (θ j l)))
+  subst-graft (lf i) ψ κ θ = subst-lf-rec-β (lf i) κ i (λ l → subst (ψ i l) (θ i l)) idp
+  subst-graft {i} (nd (f , ϕ)) ψ κ θ = 
     let (w , α) = κ (_ , f) (inl idp)
         p j l₀ = –> (α j) l₀
         ψ' j l₀ k l₁ = ψ k (j , p j l₀ , l₁)
         κ' j l₀ g n = κ g (inr (j , p j l₀ , n))
         θ' j l₀ k l₁ g n = θ k (j , p j l₀ , l₁) g n
         ψ₀ j l₀ = subst (ϕ j (p j l₀)) (κ' j l₀)
-        ψ₁ k j l₀ l₁ = subst-lf-elim (ϕ j (p j l₀)) (κ' j l₀) k (cst (W P k)) (λ l₁ → subst (ψ' j l₀ k l₁) (θ' j l₀ k l₁)) l₁
+        ψ₁ k j l₀ l₁ = subst-lf-rec (ϕ j (p j l₀)) (κ' j l₀) k (λ l₁ → subst (ψ' j l₀ k l₁) (θ' j l₀ k l₁)) l₁
     in graft P w (λ j l₀ → subst (graft P (ϕ j (p j l₀)) (ψ' j l₀))
-                 (λ g → graft-node-elim P (ϕ j (p j l₀)) (ψ' j l₀) g (cst (Op Subst g)) (κ' j l₀ g) (λ k l₁ n → θ' j l₀ k l₁ g n)))
-         =⟨ ap (graft P w) (λ= (λ j → (λ= (λ l₀ → subst-graft (ϕ j (p j l₀)) (ψ' j l₀) (κ' j l₀) (θ' j l₀))))) ⟩ -- By the induction hypothesis ...
-       graft P w (λ j l₀ → graft P (subst (ϕ j (p j l₀)) (κ' j l₀)) (λ k → ψ₁ k j l₀))
-         =⟨ ! (graft-assoc P w ψ₀ ψ₁) ⟩ -- By graft associativity ...
+                 (λ g → graft-node-rec P (ϕ j (p j l₀)) (ψ' j l₀) g (κ' j l₀ g) (λ k l₁ n → θ' j l₀ k l₁ g n))) 
+         -- By the induction hypothesis ...                 
+         =⟨ ap (graft P w) (λ= (λ j → (λ= (λ l₀ → subst-graft (ϕ j (p j l₀)) (ψ' j l₀) (κ' j l₀) (θ' j l₀))))) ⟩ 
+       graft P w (λ j l₀ → graft P (subst (ϕ j (p j l₀)) (κ' j l₀)) (λ k → ψ₁ k j l₀)) 
+         -- By graft associativity ...       
+         =⟨ ! (graft-assoc P w ψ₀ ψ₁) ⟩ 
        graft P (graft P w ψ₀) (λ k → graft-leaf-rec P w ψ₀ k (ψ₁ k))
-         =⟨ {!!} ⟩ -- By magic ? J.k. No, it should be a β-reduction for one of these elims ...
-       graft P (graft P w ψ₀) (λ j → subst-lf-elim (nd (f , ϕ)) κ j (cst (W P j)) (λ l → subst (ψ j l) (θ j l))) ∎
+         -- Because recursion commutes with composition ... (is there an easier way?)
+         =⟨ ap (graft P (graft P w ψ₀)) (λ= (λ j → λ= (λ l → graft-leaf-rec-∘ P (λ l₀ → subst (ψ j l₀) (θ j l₀)) w ψ₀ j
+            (λ k l₀ l₁ → k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁) l ))) ⟩
+       graft P (graft P w ψ₀) (λ j → subst-lf-rec (nd (f , ϕ)) κ j (λ l → subst (ψ j l) (θ j l))) ∎
 
   subst-unit : {i : I} (w : W P i)
     → subst w (λ g n → corolla P (snd g) , corolla-frm P (snd g)) == w
@@ -47,12 +50,5 @@ module SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) where
   subst-assoc (lf i) κ₀ κ₁ = idp
   subst-assoc (nd (f , ϕ)) κ₀ κ₁ = {!!}
 
-  -- Ah, okay, finally.  Now this is an application of the interchange
-  -- between grafting an substitution ....
 
-  -- Substitution and grafting commute
-
-  -- Okay, yep.  First one is just a β redex on the leaf elim, I think.
-  -- Second is graft associativity, induction hypothesis and some compatibility
-  -- between graft nodes and subst leaves (which should be by definition).
   
