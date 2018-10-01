@@ -64,6 +64,21 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   subst-lf-eqv w κ j = equiv (subst-lf-to w κ j) (subst-lf-from w κ j)
     (subst-lf-to-from w κ j) (subst-lf-from-to w κ j)
 
+  -- subst leaf elimination
+  
+  subst-lf-in : {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (j : I) → Leaf P w j → Leaf P (subst w κ) j
+  subst-lf-in = subst-lf-from
+
+  postulate
+  
+    subst-lf-elim : {i : I} (w : W P i)
+      → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
+      → (Q : Leaf P (subst w κ) j → Type ℓ)
+      → (in* : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
+      → (l : Leaf P (subst w κ) j) → Q l 
+
   -- Nodes in a substitution
 
   subst-nd-to : {i : I} (w : W P i)
@@ -119,28 +134,50 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   subst-nd-eqv w κ g = equiv (subst-nd-to w κ g) (subst-nd-from w κ g)
     (subst-nd-to-from w κ g) (subst-nd-from-to w κ g)
 
+  -- Substitution and grafting commute
+
+  -- Okay, yep.  First one is just a β redex on the leaf elim, I think.
+  -- Second is graft associativity, induction hypothesis and some compatibility
+  -- between graft nodes and subst leaves (which should be by definition).
+  postulate
+  
+    subst-graft : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
+      → (κ : (g : Ops P) → Node P w g → Op Subst g)
+      → (θ : (j : I) (l : Leaf P w j) (g : Ops P) → Node P (ψ j l) g → Op Subst g)
+      -- Both elims turn out to be recs here ...
+      → subst (graft P w ψ) (λ g → graft-node-elim P w ψ g (cst (Op Subst g)) (κ g) (λ j l n → θ j l g n)) ==
+        graft P (subst w κ) (λ j → subst-lf-elim w κ j (cst (W P j)) (λ l → subst (ψ j l) (θ j l)))
+
+  -- subst-graft (lf i) ψ κ θ = {!!}
+  -- subst-graft (nd (f , ϕ)) ψ κ θ = {!!}
+
+  --  Substitution monad structure 
+
+  -- Here we split flatten and its frame into two pieces.
+  -- We will have to see what ends up being the most convenient...
+  flatn : {i : I} {f : Op P i} → W Subst (i , f) → W P i
+  flatn-frm : {i : I} {f : Op P i} (w : W Subst (i , f)) → Frame P (flatn w) f
+  
+  flatn (lf (i , f)) = corolla P f
+  flatn (nd ((w , α) , κ)) = subst w (λ g n → flatn (κ g n) , flatn-frm (κ g n))
+    
+  flatn-frm (lf (i , f)) = corolla-lf-eqv P f
+  flatn-frm (nd ((w , α) , κ)) j = α j ∘e
+    subst-lf-eqv w (λ g n → flatn (κ g n) , flatn-frm (κ g n)) j
+
   -- Iterated substitution (what was called flatten ...)
   μ-subst : {f : Ops P} → W Subst f → Op Subst f
-  μ-subst {i , f} (lf .(i , f)) = corolla P f , corolla-lf-eqv P f
-  μ-subst {i , f} (nd ((w , α) , κ)) =
-    let κ' g n = μ-subst (κ g n)
-    in subst w κ' , (λ j → α j ∘e (subst-lf-eqv w κ' j))
-
-  -- Ah, the leaf frame is trivially part of what we did above.
-  -- So we probably dont need this definition, but okay for now ...
-  μ-subst-lf-eqv : {f : Ops P} (w : W Subst f)
-    → (j : I) → Leaf P (fst (μ-subst w)) j ≃ Param P (snd f) j
-  μ-subst-lf-eqv w j = snd (μ-subst w) j
+  μ-subst pd = flatn pd , flatn-frm pd
 
   bd-frame-to : {f : Ops P} (pd : W Subst f)
-    → (g : Ops P) → Leaf Subst pd g → Node P (fst (μ-subst pd)) g
+    → (g : Ops P) → Leaf Subst pd g → Node P (flatn pd) g
   bd-frame-to (lf i) ._ idp = inl idp
   bd-frame-to (nd ((w , α) , κ)) g (h , n , l)=
     subst-nd-from w (λ g n → μ-subst (κ g n)) g
       (h , n , bd-frame-to (κ h n) g l)
 
   bd-frame-from : {f : Ops P} (pd : W Subst f)
-    → (g : Ops P) → Node P (fst (μ-subst pd)) g → Leaf Subst pd g 
+    → (g : Ops P) → Node P (flatn pd) g → Leaf Subst pd g 
   bd-frame-from (lf i) .i (inl idp) = idp
   bd-frame-from (lf i) g (inr (j , p , ())) 
   bd-frame-from (nd ((w , α) , κ)) g n = 
@@ -150,25 +187,17 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   postulate
 
     bd-frame-to-from : {f : Ops P} (pd : W Subst f)
-      → (g : Ops P) (n : Node P (fst (μ-subst pd)) g)
+      → (g : Ops P) (n : Node P (flatn pd) g)
       → bd-frame-to pd g (bd-frame-from pd g n) == n
       
     bd-frame-from-to : {f : Ops P} (pd : W Subst f)
       → (g : Ops P) (l : Leaf Subst pd g)
       → bd-frame-from pd g (bd-frame-to pd g l) == l
 
-  μ-subst-frm : {f : Ops P} (pd : W Subst f)
+  bd-frm : {f : Ops P} (pd : W Subst f)
     → Frame Subst pd (μ-subst pd)
-  μ-subst-frm pd g = equiv (bd-frame-to pd g) (bd-frame-from pd g)
+  bd-frm pd g = equiv (bd-frame-to pd g) (bd-frame-from pd g)
     (bd-frame-to-from pd g) (bd-frame-from-to pd g)
-
-  --
-  --  This guy's on deck!!
-  --
-  
-  BD : Poly (Ops Subst)
-  Op BD ((i , f) , (w , α)) = hfiber μ-subst (w , α)
-  Param BD (pd , e) = Node Subst pd
 
   --   --
   --   --  Elimination Principles
