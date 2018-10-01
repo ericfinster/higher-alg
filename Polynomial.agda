@@ -76,9 +76,9 @@ module Polynomial where
     corolla : {i : I} (f : Op P i) → W i
     corolla {i} f = nd (f , λ j p → lf j)
 
-    corolla-lf-eqv : {i : I} (f : Op P i)
+    corolla-frm : {i : I} (f : Op P i)
       → (j : I) → Leaf (corolla f) j ≃ Param P f j
-    corolla-lf-eqv f j = equiv to from (λ _ → idp) from-to
+    corolla-frm f j = equiv to from (λ _ → idp) from-to
 
       where to : Leaf (corolla f) j → Param P f j
             to (_ , p , idp) = p

@@ -173,23 +173,6 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
       → (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
       → subst-nd-elim w κ g Q σ (subst-nd-in w κ g h n₀ n₁) == σ h n₀ n₁
 
-  -- Substitution and grafting commute
-
-  -- Okay, yep.  First one is just a β redex on the leaf elim, I think.
-  -- Second is graft associativity, induction hypothesis and some compatibility
-  -- between graft nodes and subst leaves (which should be by definition).
-  postulate
-  
-    subst-graft : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
-      → (κ : (g : Ops P) → Node P w g → Op Subst g)
-      → (θ : (j : I) (l : Leaf P w j) (g : Ops P) → Node P (ψ j l) g → Op Subst g)
-      -- Both elims turn out to be recs here ...
-      → subst (graft P w ψ) (λ g → graft-node-elim P w ψ g (cst (Op Subst g)) (κ g) (λ j l n → θ j l g n)) ==
-        graft P (subst w κ) (λ j → subst-lf-elim w κ j (cst (W P j)) (λ l → subst (ψ j l) (θ j l)))
-
-  -- subst-graft (lf i) ψ κ θ = {!!}
-  -- subst-graft (nd (f , ϕ)) ψ κ θ = {!!}
-
   --  Substitution monad structure 
 
   -- Here we split flatten and its frame into two pieces.
@@ -200,7 +183,7 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   flatn (lf (i , f)) = corolla P f
   flatn (nd ((w , α) , κ)) = subst w (λ g n → flatn (κ g n) , flatn-frm (κ g n))
     
-  flatn-frm (lf (i , f)) = corolla-lf-eqv P f
+  flatn-frm (lf (i , f)) = corolla-frm P f
   flatn-frm (nd ((w , α) , κ)) j = α j ∘e
     subst-lf-eqv w (λ g n → flatn (κ g n) , flatn-frm (κ g n)) j
 
