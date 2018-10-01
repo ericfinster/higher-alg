@@ -71,13 +71,24 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     → (j : I) → Leaf P w j → Leaf P (subst w κ) j
   subst-lf-in = subst-lf-from
 
+  subst-lf-elim : {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
+    → (Q : Leaf P (subst w κ) j → Type ℓ)
+    → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
+    → (l : Leaf P (subst w κ) j) → Q l 
+  subst-lf-elim w κ j Q σ l =
+    transport Q (<–-inv-l (subst-lf-eqv w κ j) l)
+                (σ (subst-lf-to w κ j l))
+
   postulate
-  
-    subst-lf-elim : {i : I} (w : W P i)
+
+    -- Should not be hard from the equivalence coherences ...
+    subst-lf-elim-β : {i : I} (w : W P i)
       → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
       → (Q : Leaf P (subst w κ) j → Type ℓ)
-      → (in* : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
-      → (l : Leaf P (subst w κ) j) → Q l 
+      → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
+      → (l : Leaf P w j)
+      → subst-lf-elim w κ j Q σ (subst-lf-in w κ j l) == σ l
 
   -- Nodes in a substitution
 
@@ -133,6 +144,34 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     → (g : Ops P) → Node P (subst w κ) g ≃ Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g))
   subst-nd-eqv w κ g = equiv (subst-nd-to w κ g) (subst-nd-from w κ g)
     (subst-nd-to-from w κ g) (subst-nd-from-to w κ g)
+
+  -- subst node elim
+
+  subst-nd-in : {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (g : Ops P) (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
+    → Node P (subst w κ) g
+  subst-nd-in w κ g h n₀ n₁ = subst-nd-from w κ g (h , n₀ , n₁)
+
+  subst-nd-elim : {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → Op Subst g) (g : Ops P)
+    → (Q : Node P (subst w κ) g → Type ℓ)
+    → (σ : (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
+           → Q (subst-nd-in w κ g h n₀ n₁))
+    → (n : Node P (subst w κ) g) → Q n
+  subst-nd-elim w κ g Q σ n = 
+    let (h , n₀ , n₁) = subst-nd-to w κ g n
+    in transport Q (<–-inv-l (subst-nd-eqv w κ g) n) (σ h n₀ n₁)
+
+  postulate
+  
+    subst-nd-elim-β : {i : I} (w : W P i)
+      → (κ : (g : Ops P) → Node P w g → Op Subst g) (g : Ops P)
+      → (Q : Node P (subst w κ) g → Type ℓ)
+      → (σ : (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
+             → Q (subst-nd-in w κ g h n₀ n₁))
+      → (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
+      → subst-nd-elim w κ g Q σ (subst-nd-in w κ g h n₀ n₁) == σ h n₀ n₁
 
   -- Substitution and grafting commute
 
@@ -198,50 +237,4 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     → Frame Subst pd (μ-subst pd)
   bd-frm pd g = equiv (bd-frame-to pd g) (bd-frame-from pd g)
     (bd-frame-to-from pd g) (bd-frame-from-to pd g)
-
-  --   --
-  --   --  Elimination Principles
-  --   --
-
-  --   flatten-lf-in : {i : I} {f : Op P i} (pd : W Q (i , f))
-  --     → (j : I) → Param P f j → Leaf P (flatten pd) j 
-  --   flatten-lf-in = flatten-frm-from 
-
-  --   flatten-lf-elim : ∀ {ℓ'} {i : I} {f : Op P i}
-  --     → (pd : W Q (i , f)) (j : I)
-  --     → (Q : Leaf P (flatten pd) j → Type ℓ')
-  --     → (σ : (p : Param P f j) → Q (flatten-lf-in pd j p))
-  --     → (l : Leaf P (flatten pd) j) → Q l
-  --   flatten-lf-elim pd j Q σ l = transport Q (<–-inv-l (flatten-frm pd j) l) (σ (flatten-frm-to pd j l))
-
-  --   postulate
-
-  --     flatten-lf-elim-β : ∀ {ℓ'} {i : I} {f : Op P i}
-  --       → (pd : W Q (i , f)) (j : I)
-  --       → (Q : Leaf P (flatten pd) j → Type ℓ')
-  --       → (σ : (p : Param P f j) → Q (flatten-lf-in pd j p))
-  --       → (p : Param P f j)
-  --       → flatten-lf-elim pd j Q σ (flatten-lf-in pd j p) == σ p
-
-  --   subst-lf-in : {i : I} (w : W P i)
-  --     → (κ : (g : Ops P) → Node P w g → W Q g)
-  --     → ∀ j → Leaf P w j → Leaf P (substitute w κ) j
-  --   subst-lf-in = substitute-lf-from
-
-  --   subst-lf-elim : ∀ {ℓ'} {i : I} (w : W P i)
-  --     → (κ : (g : Ops P) → Node P w g → W Q g) (j : I)
-  --     → (Q : Leaf P (substitute w κ) j → Type ℓ')
-  --     → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
-  --     → (l : Leaf P (substitute w κ) j) → Q l
-  --   subst-lf-elim w κ j Q σ l = transport Q (<–-inv-l (substitute-lf-eqv w κ j) l) (σ (substitute-lf-to w κ j l))
-
-  --   postulate
-
-  --     subst-lf-elim-β : ∀ {ℓ'} {i : I} (w : W P i)
-  --       → (κ : (g : Ops P) → Node P w g → W Q g) (j : I)
-  --       → (Q : Leaf P (substitute w κ) j → Type ℓ')
-  --       → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
-  --       → (l : Leaf P w j)
-  --       → subst-lf-elim w κ j Q σ (subst-lf-in w κ j l) == σ l
-
 
