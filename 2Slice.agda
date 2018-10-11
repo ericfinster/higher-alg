@@ -35,7 +35,7 @@ module 2Slice where
     flatn₁ (lf ((i , f) , w , α)) = corolla (Subst P) (w , α)
     flatn₁ (nd ((pd , e) , θ)) = subst (Subst P) pd (λ g n → flatn₁ (θ g n) , flatn-frm₁ (θ g n))
 
-    flatn-frm₁ (lf ((i , f) , w , α)) = corolla-lf-eqv (Subst P) (w , α)
+    flatn-frm₁ (lf ((i , f) , w , α)) = corolla-frm (Subst P) (w , α)
     flatn-frm₁ (nd ((pd , idp) , θ)) j = bd-frm P pd j ∘e
       (subst-lf-eqv (Subst P) pd (λ g n → flatn₁ (θ g n) , flatn-frm₁ (θ g n)) j)
 
@@ -58,8 +58,12 @@ module 2Slice where
       → flatn P (subst (Subst P) coh (λ g n → flatn₁ (θ g n) , flatn-frm₁ (θ g n))) == flatn P coh
     flatn-subst (lf .(_ , _)) θ = idp
     flatn-subst {i} {f} (nd ((w , α) , κ)) θ = 
-      let coh' = flatn₁ (θ ((i , f) , w , α) (inl idp))
-      in {!flatn-graft coh'!}
+      let pd = θ ((i , f) , w , α) (inl idp)
+          coh' = flatn₁ pd
+          θ' j l g n = θ g (inr (j , –> (flatn-frm₁ pd j) l , n))
+          κ' j l g n = flatn₁ (θ' j l g n) , flatn-frm₁ (θ' j l g n)
+          ψ j l = subst (Subst P) (κ j (–> (flatn-frm₁ pd j) l)) (κ' j l)
+      in flatn-graft coh' ψ ∙ {!!}
       
   --   -- Okay, and this path-over looks like just an extra coherence
   --   -- of flatten-flatten.
@@ -106,5 +110,48 @@ module 2Slice where
     μ-bd {(i , f) , (w , α)} coh = flatn₁ coh ,
       pair= (flatn-flatn w α coh) (flatn-frm-flatn w α coh)
 
+    -- So, here is the uniqueness conjecture:
+    -- (Well, part of it. you'll also need the compatibility with the frame ...)
 
+    conj : {w : Ops (Subst P)} (coh : W BD w)
+      → (pd : Op BD w) (β : Frame BD coh pd)
+      → pd == μ-bd coh
+    conj {(i , f) , ._} (lf ._) (lf ._ , idp) β = {!β ((i , f) , nd (f , (λ j p → lf j)) , corolla-frm P f)!}
+      -- Exactly, this case is solvable by contradiction ...
+    conj {(i , f) , ._} (lf ._) (nd ((w , α) , δ) , idp) β = pair= (ap nd {!!}) {!!}
+      -- Wow, okay.  And this in fact looks doable.  You're going to show that
+      -- δ must be the trivial decoration, and then inside the node constructor, 
+      -- you'll use the subst-unit coherence to finish the job.
+    conj {(i , f) , _} (nd ((pd₀ , e₀) , κ)) (pd₁ , idp) β = pair= {!!} {!!}
+    
+    -- And this second one is interesting, since you actually have two possible
+    -- identity elims.  Choose wisely.
+
+    -- Okay, so at this point, pd₁ is the "external" pasting diagram,
+    -- pd₀ is the exposed base tree.  We know that the tree structure
+    -- on both of their leaves is identical and gives the same frame.
+
+    -- So then what's the idea here?  How is the frame going to help you?
+
+    -- This time, I think you should induct on pd₀.  If it's a leaf,
+    -- then I think pd₁ must also be a leaf of the same type no?
+    -- Yes, I think clearly.
+
+    -- On the other hand, suppose it's a node.  The *its* nodes
+    -- decompose into a sum.  And therefore, the leaves of
+    -- the whole coh tree decompose into a sum.  And consequently,
+    -- the nodes of pd₁ decompose into a sum via our equivalence.
+
+    -- That's right.  And so the idea is to try and use this
+    -- decomposition to continue by induction.
+
+    -- The main difficulty, it seems is what to do in the *lower*
+    -- dimensions with those P-trees running around.  So it would
+    -- seem that we need to work recursively from the bottom, as
+    -- opposed to calling induction on the leaves right away.
+
+    -- The point is that, working this way, the lower dimension
+    -- is unaffected.  And anyhow, this is how substitution works,
+    -- which is what we are trying to show and equality with, so
+    -- it would seem to make some sense.
     

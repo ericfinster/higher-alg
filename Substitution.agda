@@ -199,7 +199,15 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
       → (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
       → subst-nd-elim w κ g Q σ (subst-nd-in w κ g h n₀ n₁) == σ h n₀ n₁
 
-  --  Substitution monad structure 
+  -- subst recursor
+
+  subst-nd-rec : {A : Type ℓ} {i : I} (w : W P i)
+    → (κ : (g : Ops P) → Node P w g → Op Subst g) (g : Ops P)
+    → (σ : Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → A)
+    → Node P (subst w κ) g → A
+  subst-nd-rec w κ g σ n = σ (subst-nd-to w κ g n)
+
+  -- Substitution monad structure 
 
   -- Here we split flatten and its frame into two pieces.
   -- We will have to see what ends up being the most convenient...
@@ -247,3 +255,6 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   bd-frm pd g = equiv (bd-frame-to pd g) (bd-frame-from pd g)
     (bd-frame-to-from pd g) (bd-frame-from-to pd g)
 
+  subst-mgm : PolyMagma Subst
+  PolyMagma.μ subst-mgm w = flatn w , flatn-frm w
+  PolyMagma.μ-frm subst-mgm w = bd-frm w

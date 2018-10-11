@@ -191,17 +191,29 @@ module Polynomial where
 
   -- There are some other definitions above where the polynomial
   -- can be inferred ....
-  module _ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
+  -- module _ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
   
-    Refinement : Type (lsucc ℓ)
-    Refinement = {i : I} (w : W P i) (f : Op P i) (α : Frame P w f) (r : R w f α) → Type ℓ
+  --   Refinement : Type (lsucc ℓ)
+  --   Refinement = {i : I} (w : W P i) (f : Op P i) (α : Frame P w f) (r : R w f α) → Type ℓ
 
-    ΣR : Refinement → PolyRel P
-    ΣR X w f α = Σ (R w f α) (X w f α)
+  --   ΣR : Refinement → PolyRel P
+  --   ΣR X w f α = Σ (R w f α) (X w f α)
 
-  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Σ I (Op P))
-  Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
-  Param (P // R) (w , _) g = Node P w g
+  -- _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Σ I (Op P))
+  -- Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
+  -- Param (P // R) (w , _) g = Node P w g
+
+  --
+  --  Polynomial Magmas
+  --
+
+  record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
+    constructor mgm
+    field
+      μ : {i : I} (w : W P i) → Op P i
+      μ-frm : {i : I} (w : W P i) → Frame P w (μ w)
+
+  open PolyMagma public
   
   --
   --  Grafting of trees

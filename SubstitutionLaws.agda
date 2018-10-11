@@ -43,12 +43,22 @@ module SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) where
 
   subst-assoc : {i : I} (w : W P i)
     → (κ₀ : (g : Ops P) → Node P w g → Op Subst g)
-    → (κ₁ : (h : Ops P) (n : Node P w h) (g : Ops P)
-            → Node P (fst (κ₀ h n)) g → Op Subst g)
-    → subst (subst w κ₀) (λ g → subst-nd-elim w κ₀ g (cst (Op Subst g)) (λ h n₀ n₁ → κ₁ h n₀ g n₁)) ==
+    → (κ₁ : (h : Ops P) (n : Node P w h) (g : Ops P) → Node P (fst (κ₀ h n)) g → Op Subst g)
+    → subst (subst w κ₀) (λ g → subst-nd-rec w κ₀ g (λ { (h , n₀ , n₁) → κ₁ h n₀ g n₁ }))  ==
       subst w (λ h n₀ → subst (fst (κ₀ h n₀)) (κ₁ h n₀) , λ j → (snd (κ₀ h n₀)) j ∘e subst-lf-eqv (fst (κ₀ h n₀)) (κ₁ h n₀) j)
   subst-assoc (lf i) κ₀ κ₁ = idp
-  subst-assoc (nd (f , ϕ)) κ₀ κ₁ = {!!}
+  subst-assoc (nd (f , ϕ)) κ₀ κ₁ = 
+    let op = κ₀ (_ , f) (inl idp)
+        p j l = –> (snd op j) l
+        κ₀' j l g n = κ₀ g (inr (j , p j l , n))
+        ψ₀ j l = subst (ϕ j (p j l)) (κ₀' j l)
+    in subst (graft P (fst op) ψ₀) (λ g → subst-nd-rec (nd (f , ϕ)) κ₀ g (λ { (h , n₀ , n₁) → κ₁ h n₀ g n₁ }))
+         =⟨ {!!} ⟩ 
+       subst (nd (f , ϕ)) (λ h n₀ → subst (fst (κ₀ h n₀)) (κ₁ h n₀) , (λ j → snd (κ₀ h n₀) j ∘e subst-lf-eqv (fst (κ₀ h n₀)) (κ₁ h n₀) j)) ∎
 
 
-  
+  -- subst-graft : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
+  --   → (κ : (g : Ops P) → Node P w g → Op Subst g)
+  --   → (θ : (j : I) (l : Leaf P w j) (g : Ops P) → Node P (ψ j l) g → Op Subst g)
+  --   → subst (graft P w ψ) (λ g → graft-node-rec P w ψ g (κ g) (λ j l n → θ j l g n)) ==
+  --     graft P (subst w κ) (λ j → subst-lf-rec w κ j (λ l → subst (ψ j l) (θ j l)))
