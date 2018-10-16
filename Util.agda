@@ -141,3 +141,15 @@ module Util where
       → has-level n (Σ A B)
       → has-level (S n) A
       → (a : A) → has-level n (B a)
+
+  -- Annoying to have to reprove this ...
+  λ=-idp : ∀ {i j} {A : Type i} {P : A → Type j}
+    (f : Π A P) → λ= (λ x → idp {a = f x}) == idp
+  λ=-idp f = ! (λ=-η {f = f} {g = f} idp)
+
+  -- Used for extracting action on nodes
+  ⊔-po-inl : ∀ {i j k} {A : Type i} {P : A → Type j} {Q : A → Type k}
+    → {x y : A} (e : x == y) (p : P x) (q : P y)
+    → inl p == inl q [ (λ a → P a ⊔ Q a) ↓ e ]
+    → p == q [ P ↓ e ]
+  ⊔-po-inl idp p q d = –> (inl=inl-equiv p q) d

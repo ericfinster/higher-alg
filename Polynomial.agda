@@ -442,3 +442,42 @@ module Polynomial where
         (λ j k l m → ψ₁ j k (h , p , l) m))))
 
 
+  --
+  --  Path-overs for Frames in each variable
+  --
+
+  module _ {ℓ} {I : Type ℓ} (P : Poly I) where
+    
+    ↓-Op-Frame-in : {i : I} (w : W P i)
+      → {f g : Op P i} (e : f == g)
+      → (α : Frame P w f) (β : Frame P w g)
+      → (t : (j : I) (l : Leaf P w j) → –> (α j) l == –> (β j) l [ (λ x → Param P x j) ↓ e ])
+      → α == β [ Frame P w ↓ e ]
+    ↓-Op-Frame-in w idp α β t = λ= (λ j → equiv-== (t j))
+
+    ↓-Op-Frame-out : {i : I} (w : W P i)
+      → {f g : Op P i} (e : f == g)
+      → (α : Frame P w f) (β : Frame P w g)
+      → α == β [ Frame P w ↓ e ]
+      → (j : I) (l : Leaf P w j)
+      → –> (α j) l == –> (β j) l [ (λ x → Param P x j) ↓ e ]
+    ↓-Op-Frame-out w idp α .α idp j l = idp
+
+    ↓-W-Frame-in : {i : I} {f : Op P i}
+      → {w₀ w₁ : W P i} (e : w₀ == w₁)
+      → (α : Frame P w₀ f) (β : Frame P w₁ f)
+      → (t : (j : I) (l₀ : Leaf P w₀ j) (l₁ : Leaf P w₁ j)
+             → (r : l₀ == l₁ [ (λ x → Leaf P x j) ↓ e ])
+             → –> (α j) l₀ == –> (β j) l₁)
+      → α == β [ (λ x → Frame P x f) ↓ e ]
+    ↓-W-Frame-in idp α β t = λ= (λ j → equiv-== (λ l → t j l l idp))
+
+    ↓-W-Frame-out : {i : I} {f : Op P i}
+      → {w₀ w₁ : W P i} (e : w₀ == w₁)
+      → (α : Frame P w₀ f) (β : Frame P w₁ f)
+      → α == β [ (λ x → Frame P x f) ↓ e ]
+      → (j : I) (l₀ : Leaf P w₀ j) (l₁ : Leaf P w₁ j)
+      → (r : l₀ == l₁ [ (λ x → Leaf P x j) ↓ e ])
+      → –> (α j) l₀ == –> (β j) l₁
+    ↓-W-Frame-out idp α .α idp j l .l idp = idp
+

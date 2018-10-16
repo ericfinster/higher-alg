@@ -227,15 +227,15 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
 
   bd-frame-to : {f : Ops P} (pd : W Subst f)
     → (g : Ops P) → Leaf Subst pd g → Node P (flatn pd) g
-  bd-frame-to (lf i) ._ idp = inl idp
+  bd-frame-to (lf (i , f)) (j , g) l = inl l
   bd-frame-to (nd ((w , α) , κ)) g (h , n , l)=
     subst-nd-from w (λ g n → μ-subst (κ g n)) g
       (h , n , bd-frame-to (κ h n) g l)
 
   bd-frame-from : {f : Ops P} (pd : W Subst f)
     → (g : Ops P) → Node P (flatn pd) g → Leaf Subst pd g 
-  bd-frame-from (lf i) .i (inl idp) = idp
-  bd-frame-from (lf i) g (inr (j , p , ())) 
+  bd-frame-from (lf (i , f)) g (inl n) = n
+  bd-frame-from (lf (i , f)) g (inr (j , p , ())) 
   bd-frame-from (nd ((w , α) , κ)) g n = 
     let (h , n₀ , n₁) = subst-nd-to w (λ g n → μ-subst (κ g n)) g n
     in h , n₀ , bd-frame-from (κ h n₀) g n₁
