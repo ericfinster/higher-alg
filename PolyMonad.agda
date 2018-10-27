@@ -69,3 +69,10 @@ module PolyMonad where
       H : CohStruct (P // M) (slc-mgm P M Ψ)
 
   open CohStruct
+
+  -- A polynomial monad is a pair of a magma and
+  -- a coherence structure on that magma.
+  record PolyMonad {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
+    field
+      Mgm : PolyMagma P
+      Coh : CohStruct P Mgm
