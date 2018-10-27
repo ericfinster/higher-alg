@@ -26,14 +26,14 @@ module Pullback where
     erase-lf : {i : I} {x : X i} (w : W PbPoly (i , x))
       → (j  : I) (y : X j)
       → Leaf PbPoly w (j , y) → Leaf P (erase w) j
-    erase-lf (lf (i , x)) .i .x idp = idp
+    erase-lf (lf (i , x)) j y l = fst= l
     erase-lf (nd ((f , ρ) , ϕ)) j y ((k , ._) , (p , idp) , l) = 
       k , p , erase-lf (ϕ (k , ρ k p) (p , idp)) j y l
     
     -- retrieve the decoration at the leaves
     erase-dec : {i : I} {x : X i} (w : W PbPoly (i , x))
       → (j : I) (l : Leaf P (erase w) j) → X j
-    erase-dec (lf (i , x)) .i idp = x
+    erase-dec (lf (i , x)) j l = transport X l x
     erase-dec (nd ((f , ρ) , ϕ)) j (k , p , l) =
       erase-dec (ϕ (k , ρ k p) (p , idp)) j l
 
@@ -41,7 +41,7 @@ module Pullback where
     erase-coh : {i : I} {x : X i} (w : W PbPoly (i , x))
       → (j  : I) (y : X j) (l : Leaf PbPoly w (j , y))
       → erase-dec w j (erase-lf w j y l) == y
-    erase-coh (lf (i , x)) .i .x idp = idp
+    erase-coh (lf (i , x)) j y l = to-transp (snd= l)
     erase-coh (nd ((f , ρ) , ϕ)) j y ((k , ._) , (p , idp) , l) =
       erase-coh (ϕ (k , ρ k p) (p , idp)) j y l
 
@@ -78,9 +78,12 @@ module Pullback where
         → Σ (Param P (fst (μ-pb w)) j) (λ p → snd (μ-pb w) j p == y)
         → Leaf PbPoly w (j , y)
       μ-pb-frm-from (lf (i , x)) j ._ (p , idp) =
-        pair= (<– (μ-frm M (lf i) j) p) {!!}
-      μ-pb-frm-from (nd ((f , ρ) , ϕ)) j ._ (p , idp)
-        = {!!}
+        let pth = <– (μ-frm M (lf i) j) p
+        in pair= pth (to-transp-↓ X pth x)
+      μ-pb-frm-from (nd ((f , ρ) , ϕ)) j ._ (p , idp) = 
+        let ϕ' j p = erase (ϕ (j , ρ j p) (p , idp))
+            (k , q , l) = <– (μ-frm M (nd (f , ϕ')) j) p
+        in (k , ρ k q) , (q , idp) , μ-pb-frm-from (ϕ (k , ρ k q) (q , idp)) j _ {!!}
 
       postulate
 
