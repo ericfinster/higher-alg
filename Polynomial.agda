@@ -184,36 +184,6 @@ module Polynomial where
     Frame-level s-lvl a-lvl w f = Π-level (λ j →
       ≃-level (n-type-right-cancel (Leaf-level a-lvl w) s-lvl j)
               (n-type-right-cancel (a-lvl f) s-lvl j))
-
-  --
-  -- Slicing a polynomial by a relation
-  --
-
-  -- There are some other definitions above where the polynomial
-  -- can be inferred ....
-  -- module _ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
-  
-  --   Refinement : Type (lsucc ℓ)
-  --   Refinement = {i : I} (w : W P i) (f : Op P i) (α : Frame P w f) (r : R w f α) → Type ℓ
-
-  --   ΣR : Refinement → PolyRel P
-  --   ΣR X w f α = Σ (R w f α) (X w f α)
-
-  -- _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Σ I (Op P))
-  -- Op (P // R) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (R w f))
-  -- Param (P // R) (w , _) g = Node P w g
-
-  --
-  --  Polynomial Magmas
-  --
-
-  record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
-    constructor mgm
-    field
-      μ : {i : I} (w : W P i) → Op P i
-      μ-frm : {i : I} (w : W P i) → Frame P w (μ w)
-
-  open PolyMagma public
   
   --
   --  Grafting of trees
@@ -441,6 +411,26 @@ module Polynomial where
       (λ= (λ h → λ= (λ p → graft-assoc (ϕ h p) (λ k l → ψ₀ k (h , p , l))
         (λ j k l m → ψ₁ j k (h , p , l) m))))
 
+
+  --
+  --  Polynomial Magmas
+  --
+
+  record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
+    constructor mgm
+    field
+      μ : {i : I} (w : W P i) → Op P i
+      μ-frm : {i : I} (w : W P i) → Frame P w (μ w)
+
+  open PolyMagma public
+
+  --
+  -- The slice of a polynomial by a magma
+  --
+  
+  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P) → Poly (Σ I (Op P))
+  Op (P // M) (i , f) = hfiber (μ M) f 
+  Param (P // M) (w , _) = Node P w
 
   --
   --  Path-overs for Frames in each variable
