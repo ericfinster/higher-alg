@@ -69,29 +69,38 @@ module Pullback where
                    
                    lem = erase-dec {x = x} (nd ((f , ρ) , ϕ)) j (<– (μ-frm M (nd (f , ϕ')) j) (–> (μ-frm M (nd (f , ϕ')) j) (k , p , l')))
                            =⟨ <–-inv-l (μ-frm M (nd (f , ϕ')) j) (k , p , l') |in-ctx (erase-dec {x = x} (nd ((f , ρ) , ϕ)) j) ⟩
-                         erase-dec {x = x} (nd ((f , ρ) , ϕ)) j (k , p , l')
-                           =⟨ idp ⟩
                          erase-dec (ϕ (k , ρ k p) (p , idp)) j l'
                            =⟨ erase-coh (ϕ (k , ρ k p) (p , idp)) j y l ⟩ 
                          y ∎
 
-      -- μ-pb-frm-from : {i : I} {x : X i} (w : W PbPoly (i , x))
-      --   → (j : I) (y : X j)
-      --   → Σ (Param P (fst (μ-pb w)) j) (λ p → snd (μ-pb w) j p == y)
-      --   → Leaf PbPoly w (j , y)
-      -- μ-pb-frm-from (lf (i , x)) j ._ (p , idp) = pair= (<– (μ-frm M (lf i) j) p) {!!}
-      -- μ-pb-frm-from (nd ((f , ρ) , ϕ)) j ._ (p , idp) = {!!}
+      μ-pb-frm-from : {i : I} {x : X i} (w : W PbPoly (i , x))
+        → (j : I) (y : X j)
+        → Σ (Param P (fst (μ-pb w)) j) (λ p → snd (μ-pb w) j p == y)
+        → Leaf PbPoly w (j , y)
+      μ-pb-frm-from (lf (i , x)) j ._ (p , idp) =
+        pair= (<– (μ-frm M (lf i) j) p) {!!}
+      μ-pb-frm-from (nd ((f , ρ) , ϕ)) j ._ (p , idp)
+        = {!!}
 
-      -- μ-pb-frm : {i : I} {x : X i} (w : W PbPoly (i , x))
-      --   → Frame PbPoly w (μ-pb w)
-      -- μ-pb-frm w (j , y) =
-      --   equiv (μ-pb-frm-to w j y) (μ-pb-frm-from w j y)
-      --         {!!} {!!}
+      postulate
 
-      -- -- Right, so this is again going to be a bit
-      -- -- annoying to prove completely. :(
+        μ-pb-frm-to-from : {i : I} {x : X i} (w : W PbPoly (i , x))
+          → (j : I) (y : X j)
+          → (q : Σ (Param P (fst (μ-pb w)) j) (λ p → snd (μ-pb w) j p == y))
+          → μ-pb-frm-to w j y (μ-pb-frm-from w j y q) == q
 
-      -- PbMgm : PolyMagma PbPoly
-      -- μ PbMgm = μ-pb  
-      -- μ-frm PbMgm = μ-pb-frm
+        μ-pb-frm-from-to : {i : I} {x : X i} (w : W PbPoly (i , x))
+          → (j : I) (y : X j)
+          → (l : Leaf PbPoly w (j , y))
+          → μ-pb-frm-from w j y (μ-pb-frm-to w j y l) == l
+
+      μ-pb-frm : {i : I} {x : X i} (w : W PbPoly (i , x))
+        → Frame PbPoly w (μ-pb w)
+      μ-pb-frm w (j , y) =
+        equiv (μ-pb-frm-to w j y) (μ-pb-frm-from w j y)
+              (μ-pb-frm-to-from w j y) (μ-pb-frm-from-to w j y)
+
+      PbMgm : PolyMagma PbPoly
+      μ PbMgm = μ-pb  
+      μ-frm PbMgm = μ-pb-frm
 
