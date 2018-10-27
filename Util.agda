@@ -153,3 +153,4 @@ module Util where
     → inl p == inl q [ (λ a → P a ⊔ Q a) ↓ e ]
     → p == q [ P ↓ e ]
   ⊔-po-inl idp p q d = –> (inl=inl-equiv p q) d
+
