@@ -6,6 +6,7 @@ open import Polynomial
 open import WPaths
 open import Substitution
 open import PolyMonad
+open import TreeLemmas
 
 module SliceProp where
 
@@ -17,7 +18,6 @@ module SliceProp where
   -- is monic which (more or less) implies the coherent
   -- structure on the universe.
   --
-
 
   module _ {ℓ} {I : Type ℓ} (P : Poly I) where
 
@@ -34,30 +34,20 @@ module SliceProp where
     -- of this map are equivalent to the proposition that
     -- the given frame is "everywhere order preserving"
 
+    -- we assign a height to each leaf using the height
+    -- of the node that it lives over
+    leaf-height : {i : I} {f : Op P i}
+      → (pd : W (Subst P) (i , f))
+      → (g : Ops P) (l : Leaf (Subst P) pd g) → ℕ
+    leaf-height (lf (i , f)) g l = 0
+    leaf-height (nd ((w , α) , κ)) g (h , n , l) = height P w h n
+
+    -- Okay.  This was the original idea.  This says that the
+    -- frame β uniformly preserves the ordering.  Will this be enough?
     is-good : {i : Ops (Subst P)} → Op SubstSubst i → Type ℓ
-    is-good (pd , β) = {!!}
+    is-good {(i , f) , w , α} (pd , β) = (v : Ops (Subst P)) (n : Node (Subst P) pd v)
+      → (g : Ops P) (l : Leaf (Subst P) (subtree (Subst P) pd (snd v) n) g)
+      → (leaf-height (subtree (Subst P) pd (snd v) n) g l) ≤
+        (height P w g (–> (β g) (subtree-lf-to (Subst P) pd (snd v) n g l)))
 
-    -- Okay, so this notion will need a bit of preparation....
 
-  -- Right.  Just need a bit of machinery for determining the
-  -- ordering on leaves of the pasting diagram and so on.
-  -- This kind of thing should not be so difficult.
-
-  -- So, looking ahead, how are you going to decompose the
-  -- tree using the information about the preservation of
-  -- order?
-
-  -- Right, this is not hard: given any binary function on
-  -- the nodes of a tree, we should be able to decompose
-  -- it into a subtree of those nodes which are assigned one
-  -- and the rest in such a way that the tree is in fact
-  -- just the graft of the lower with the induced decoration.
-
-  -- So, it seems to me we will be able to recover the tree
-  -- and frame one dimension down.  But then to complete the
-  -- proof, we have to show that we also recover the frame
-  -- β.  This part I do not immediately see how to do.  But okay,
-  -- maybe it will become more clear as you go.
-
-  -- Yeah, just a bit worried about the equivalence with
-  -- the frame.  Will something come to save you?

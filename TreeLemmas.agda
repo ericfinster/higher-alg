@@ -3,9 +3,6 @@
 open import HoTT
 open import Util
 open import Polynomial
-open import WPaths
-open import Substitution
-open import PolyMonad
 
 module TreeLemmas where
 
@@ -67,3 +64,6 @@ module TreeLemmas where
 
             
     ungraft {i} (nd (f , ϕ)) ε | false = lf i , λ { i idp → nd (f , ϕ) }
+
+    -- Exactly.  And now if should be clear that grafting the result
+    -- of this gives back the tree on started with.
