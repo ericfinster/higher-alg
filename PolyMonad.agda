@@ -53,9 +53,12 @@ module PolyMonad where
     slc-bd-frm pd g = equiv (slc-bd-frame-to pd g) (slc-bd-frame-from pd g)
       (slc-bd-frame-to-from pd g) (slc-bd-frame-from-to pd g)
 
+    CohWit : Type ℓ
+    CohWit = {i : I} {f : Op P i} (pd : W (P // M) (i , f))
+      → μ M (slc-flatn pd) == f
+    
     -- We only need a multiplication on the equality now to finish the magma
-    slc-mgm : (Ψ : {i : I} {f : Op P i} (pd : W (P // M) (i , f)) → μ M (slc-flatn pd) == f)
-      → PolyMagma (P // M)
+    slc-mgm : CohWit → PolyMagma (P // M)
     μ (slc-mgm Ψ) pd = slc-flatn pd , Ψ pd 
     μ-frm (slc-mgm Ψ) = slc-bd-frm
   
@@ -63,9 +66,7 @@ module PolyMonad where
     coinductive
     field
     
-      Ψ : {i : I} {f : Op P i} (pd : W (P // M) (i , f))
-        → μ M (slc-flatn P M pd) == f
-        
+      Ψ : CohWit P M
       H : CohStruct (P // M) (slc-mgm P M Ψ)
 
   open CohStruct

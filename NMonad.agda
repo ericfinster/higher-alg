@@ -3,9 +3,13 @@
 open import HoTT
 open import Util
 open import Polynomial
+open import WPaths
 open import Substitution
+open import PolyMonad
 
 module NMonad where
 
-  -- Showing that with appropriate truncation, we have
-  -- a coherence structure.
+  module _ {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P) (Ψ : CohWit P M) where
+
+    TrivWit : CohWit (P // M) (slc-mgm P M Ψ)
+    TrivWit {i , .(μ M w)} {w , idp} pd = pair= {!!} {!!}
