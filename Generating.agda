@@ -18,7 +18,7 @@ module Generating where
 
       γ : {i : I} (f : Op P i) (ϕ : (j : I) → Param P f j → Op P j) → Op P i
       γ-frm : {i : I} (f : Op P i) (ϕ : (j : I) → Param P f j → Op P j)
-        → (j : I) → Param P (γ f ϕ) j ≃ Σ I (λ k → Σ (Param P f k) (λ p → Param P (ϕ k p) j))
+        → (j : I) → Σ I (λ k → Σ (Param P f k) (λ p → Param P (ϕ k p) j)) ≃ Param P (γ f ϕ) j 
 
   record BinaryLaws {ℓ} {I : Type ℓ} (P : Poly I) (B : BinaryOp P) : Type ℓ where
 
@@ -27,13 +27,24 @@ module Generating where
     field
 
       unit-l : {i : I} (f : Op P i) → γ f (λ j _ → η j) == f
-      unit-r : (i : I) (f : Op P i) → f == γ (η i) (λ j p → transport (Op P) (<– (η-frm i j) p) f) 
+      unit-l-frm : {i : I} (f : Op P i) (j : I) (p : Param P f j)
+        → –> (γ-frm f (λ j p → η j) j) (j , p , –> (η-frm j j) idp) == p [ (λ x → Param P x j) ↓ unit-l f ]
+
+      -- Exactly.  And we'll need a coherence for each of the other two
+      -- which does the same thing, allowing us to reconstruct the action
+      -- on of the frames on their multipled composites.
+
+      unit-r : {i : I} (f : Op P i) → f == γ (η i) (λ j p → transport (Op P) (<– (η-frm i j) p) f) 
+      unit-r-frm : (i : I) (f : Op P i) (j : I) (p : Param P f j)
+        → p == –> (γ-frm (η i) (λ j p → transport (Op P) (<– (η-frm i j) p) f) j)
+                  (i , –> (η-frm i i) idp , transport! (λ x → Param P (transport (Op P) x f) j) (<–-inv-l (η-frm i i) idp) p )
+             [ (λ x → Param P x j) ↓ unit-r f ]
 
       assoc : {i : I} (f : Op P i)
         → (ϕ : (j : I) → Param P f j → Op P j)
         → (ψ : (j : I) (p : Param P f j) (k : I) → Param P (ϕ j p) k → Op P k)
         → γ f (λ j p → γ (ϕ j p) (λ k q → ψ j p k q)) == 
-          γ (γ f ϕ) (λ j p → let (k , p₀ , p₁) = –> (γ-frm f ϕ j) p in ψ k p₀ j p₁ ) 
+          γ (γ f ϕ) (λ j p → let (k , p₀ , p₁) = <– (γ-frm f ϕ j) p in ψ k p₀ j p₁ ) 
           
 
   module _ {ℓ} {I : Type ℓ} (P : Poly I) (B : BinaryOp P) where
@@ -47,7 +58,7 @@ module Generating where
     -- Probably the same computational issues here...
     μ-bin-frm : {i : I} (w : W P i) → Frame P w (μ-bin w)
     μ-bin-frm (lf i) = η-frm i
-    μ-bin-frm (nd (f , ϕ)) j = (γ-frm f (λ j p → μ-bin (ϕ j p)) j)⁻¹ ∘e
+    μ-bin-frm (nd (f , ϕ)) j = (γ-frm f (λ j p → μ-bin (ϕ j p)) j) ∘e
       Σ-emap-r (λ k → Σ-emap-r (λ p → μ-bin-frm (ϕ k p) j))
     
     BinMgm : PolyMagma P
@@ -62,54 +73,114 @@ module Generating where
         → (ψ : ∀ j → Leaf P w j → W P j)
         → μ-bin (graft P w ψ) ==
           γ (μ-bin w) (λ j p → μ-bin (ψ j (<– (μ-bin-frm w j) p)))
-      μ-graft-inv (lf i) ψ = unit-r i (μ-bin (ψ i idp)) ∙
-        ap (γ (η i)) (λ= (λ j → λ= (λ p → {!!})))
+      μ-graft-inv (lf i) ψ = unit-r (μ-bin (ψ i idp)) ∙
+        ap (γ (η i)) (λ= (λ j → λ= (λ p → lem (<– (η-frm i j) p))))
+    
+        where lem : {j : I} (q : i == j)
+                → transport (Op P) q (μ-bin (ψ i idp)) ==
+                  μ-bin (ψ j q)
+              lem idp = idp
+        
       μ-graft-inv (nd (f , ϕ)) ψ = {!assoc f (λ j p → μ-bin (ϕ j p))!}
 
+      -- substitution invariance at level 2 now follows easily ...
+      -- (could reorganize a bit to make it cleaner: combine the
+      --  last two steps into a single in context with the induction
+      --  hyp and cancellation as a separate lemma ...)
+      μ-subst-invar : {i : I} (w : W P i)
+        → (κ : (g : Ops P) → Node P w g → Op (P // BinMgm) g)
+        → μ-bin (subst P w (λ g n → to-subst P BinMgm (κ g n))) == μ-bin w
+      μ-subst-invar (lf i) κ = idp
+      μ-subst-invar (nd (f , ϕ)) κ with κ (_ , f) (inl idp)
+      μ-subst-invar (nd (._ , ϕ)) κ | (w , idp) =
+        let κp j p g n = to-subst P BinMgm (κ g (inr (j , p , n)))
+            ψp j p = subst P (ϕ j p) (κp j p)
+            ψ j l = ψp j (–> (μ-bin-frm w j) l)
+        in μ-bin (graft P w ψ)
+             =⟨ μ-graft-inv w ψ ⟩
+           γ (μ-bin w) (λ j p → μ-bin (ψp j (–> (μ-bin-frm w j) (<– (μ-bin-frm w j) p))))
+             =⟨ ap (γ (μ-bin w)) (λ= (λ j → λ= (λ p → ap (λ x → μ-bin (subst P (ϕ j x)
+               (λ g n → to-subst P BinMgm (κ g (inr (j , x , n)))))) (<–-inv-r (μ-bin-frm w j) p)))) ⟩ 
+           γ (μ-bin w) (λ j p → μ-bin (ψp j p))
+             =⟨ ap (γ (μ-bin w)) (λ= (λ j → λ= (λ p → μ-subst-invar (ϕ j p) (λ g n → κ g (inr (j , p , n)))))) ⟩ 
+           γ (μ-bin w) (λ j p → μ-bin (ϕ j p)) ∎
+
+
+      -- Abbreviations ...
       sf = slc-flatn P BinMgm
       sff = slc-flatn-frm P BinMgm
 
       μ-laws : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
         → μ-bin (sf pd) == f
 
-      -- explain how a decoration is transformed under application
-      -- of the laws ...
-      μ-laws-↓ : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
-        → (ϕ : Decor P f (Op P))
-        → (λ j p → ϕ j (–> (sff pd j) (<– (μ-bin-frm (sf pd) j) p))) ==
-          ϕ [ (λ g → Decor P g (Op P)) ↓ μ-laws pd ]
+      μ-laws-frm : {f : Ops P} (pd : W (P // BinMgm) f)
+        → μ-bin-frm (sf pd) == sff pd [ Frame P (sf pd) ↓ μ-laws pd ]
+      μ-laws-frm (lf (i , f)) = {!!}
+      μ-laws-frm (nd ((w , idp) , κ)) = {!!}
 
-      μ-subst-inv : {i : I} (w : W P i)
-        → (κ : (j : Σ I (Op P)) → Node P w j → W (P // BinMgm) j) →
-          μ-bin (subst P w (λ g n → sf (κ g n) , sff (κ g n))) ==
-          μ-bin w
+      -- Right.  So that's much clearer: we have the frame generated by
+      -- substitution from the intermediate frames, and on the other hand,
+      -- we can flatten our pasting diagram and multiply.  The cartesianess
+      -- of multiplication tells us that we get a frame, and we want these
+      -- two guys to coincide.
+
+      -- A perfectly reasonable sounding requirement.
 
       μ-laws (lf (i , f)) = unit-l f
-      μ-laws {i} .{μ-bin w} (nd ((w , idp) , κ)) =
-        μ-subst-inv w κ
+      μ-laws (nd ((w , idp) , κ)) = lem ∙ μ-subst-invar w (λ g n → sf (κ g n) , μ-laws (κ g n))
 
-      μ-laws-↓ (lf (i , f)) ϕ = {!sff (lf (i , f)) !}
-      μ-laws-↓ (nd (f , ϕ₀)) ϕ = {!!}
+        where lem = μ-bin (subst P w (λ g n → sf (κ g n) , sff (κ g n)))
+                      =⟨ ap (λ x → μ-bin (subst P w x))
+                        (λ= (λ g → (λ= (λ n → pair= idp (! (to-transp (μ-laws-frm (κ g n)))))))) ⟩ 
+                    μ-bin (subst P w (λ g n → to-subst P BinMgm (sf (κ g n) , μ-laws (κ g n)))) ∎
 
-      -- Hmmm, well this is disappointing....
-      {-# TERMINATING #-}
-      μ-subst-inv (lf i) κ = idp
-      μ-subst-inv (nd (f , ϕ)) κ = 
-        let pd = κ (_ , f) (inl idp)
-            p j l = –> (sff pd j) l
-            κ' j l g n = κ g (inr (j , p j l , n))
-            ψ j l = subst P (ϕ j (p j l)) (λ g n → sf (κ' j l g n) , sff (κ' j l g n))
-            l' j q = <– (μ-bin-frm (sf pd) j) q
-            ih j q = μ-subst-inv (ϕ j (p j (l' j q))) (λ g n → κ' j (l' j q) g n)
-        in μ-bin (graft P (sf pd) ψ)
-             =⟨ μ-graft-inv (sf pd) ψ ⟩
-           γ (μ-bin (sf pd)) (λ j q → μ-bin (ψ j (l' j q)))
-             =⟨ pair= (μ-laws pd) (λ= (λ j → λ= (λ q → ih j q)) ∙ᵈ μ-laws-↓ pd (λ j p → μ-bin (ϕ j p)))
-                  |in-ctx (λ x → γ (fst x) (snd x)) ⟩ 
-           γ f (λ j p → μ-bin (ϕ j p)) ∎
+      -- -- Abbreviations ...
+      -- sf = slc-flatn P BinMgm
+      -- sff = slc-flatn-frm P BinMgm
 
-      -- Just a renaming ...
-      μ-coh-wit : CohWit P BinMgm
-      μ-coh-wit = μ-laws
+      -- μ-laws : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
+      --   → μ-bin (sf pd) == f
+
+      -- -- explain how a decoration is transformed under application
+      -- -- of the laws ...
+      -- μ-laws-↓ : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
+      --   → (ϕ : Decor P f (Op P))
+      --   → (λ j p → ϕ j (–> (sff pd j) (<– (μ-bin-frm (sf pd) j) p))) ==
+      --     ϕ [ (λ g → Decor P g (Op P)) ↓ μ-laws pd ]
+
+      -- μ-subst-inv : {i : I} (w : W P i)
+      --   → (κ : (j : Σ I (Op P)) → Node P w j → W (P // BinMgm) j) →
+      --     μ-bin (subst P w (λ g n → sf (κ g n) , sff (κ g n))) ==
+      --     μ-bin w
+
+      -- μ-laws (lf (i , f)) = unit-l f
+      -- μ-laws {i} .{μ-bin w} (nd ((w , idp) , κ)) =
+      --   μ-subst-inv w κ
+
+      -- μ-laws-↓ (lf (i , f)) ϕ = ↓-Decor-in P (Op P) (unit-l f) 
+      --   (λ j p q r → ap (ϕ j) {!!})
+      -- μ-laws-↓ (nd (f , ϕ₀)) ϕ = {!!}
+
+      -- -- Hmmm, well this is disappointing....
+      -- {-# TERMINATING #-}
+      -- μ-subst-inv (lf i) κ = idp
+      -- μ-subst-inv (nd (f , ϕ)) κ = 
+      --   let pd = κ (_ , f) (inl idp)
+      --       p j l = –> (sff pd j) l
+      --       κ' j l g n = κ g (inr (j , p j l , n))
+      --       ψ j l = subst P (ϕ j (p j l)) (λ g n → sf (κ' j l g n) , sff (κ' j l g n))
+      --       l' j q = <– (μ-bin-frm (sf pd) j) q
+      --       ih j q = μ-subst-inv (ϕ j (p j (l' j q))) (λ g n → κ' j (l' j q) g n)
+      --   in μ-bin (graft P (sf pd) ψ)
+      --        =⟨ μ-graft-inv (sf pd) ψ ⟩
+      --      γ (μ-bin (sf pd)) (λ j q → μ-bin (ψ j (l' j q)))
+      --        =⟨ pair= (μ-laws pd) (λ= (λ j → λ= (λ q → ih j q)) ∙ᵈ
+      --            ↓-Decor-in P (Op P) (μ-laws pd) (λ j p q r → ap (λ x → μ-bin (ϕ j x)) {!!}))
+      --             |in-ctx (λ x → γ (fst x) (snd x)) ⟩ 
+      --      γ f (λ j p → μ-bin (ϕ j p)) ∎
+
+      -- -- Just a renaming ...
+      -- μ-coh-wit : CohWit P BinMgm
+      -- μ-coh-wit = μ-laws
 
 

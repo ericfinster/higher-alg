@@ -53,17 +53,17 @@ module WPaths {ℓ} {I : Type ℓ} (P : Poly I) where
   
   ↓-Decor-in : (X : I → Type ℓ)
     → {i : I} {f g : Op P i} (e : f == g)
-    → (ϕ : Decor P f X) (ψ : Decor P g X)
+    → {ϕ : Decor P f X} {ψ : Decor P g X}
     → Decor= X e ϕ ψ
     → ϕ == ψ [ (λ x → Decor P x X) ↓ e ]
-  ↓-Decor-in X idp ϕ ψ d = λ= (λ j → λ= (λ p → d j p p idp))
+  ↓-Decor-in X idp d = λ= (λ j → λ= (λ p → d j p p idp))
   
   ↓-Decor-out : (X : I → Type ℓ)
     → {i : I} {f g : Op P i} (e : f == g)
-    → (ϕ : Decor P f X) (ψ : Decor P g X)
+    → {ϕ : Decor P f X} {ψ : Decor P g X}
     → ϕ == ψ [ (λ x → Decor P x X) ↓ e ]
     → Decor= X e ϕ ψ
-  ↓-Decor-out X idp ϕ ψ idp j p .p idp = idp
+  ↓-Decor-out X idp idp j p .p idp = idp
 
   postulate
 
