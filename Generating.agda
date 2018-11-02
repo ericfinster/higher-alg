@@ -69,27 +69,44 @@ module Generating where
       sf = slc-flatn P BinMgm
       sff = slc-flatn-frm P BinMgm
 
+      μ-laws : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
+        → μ-bin (sf pd) == f
+
+      -- explain how a decoration is transformed under application
+      -- of the laws ...
+      μ-laws-↓ : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
+        → (ϕ : Decor P f (Op P))
+        → (λ j p → ϕ j (–> (sff pd j) (<– (μ-bin-frm (sf pd) j) p))) ==
+          ϕ [ (λ g → Decor P g (Op P)) ↓ μ-laws pd ]
+
       μ-subst-inv : {i : I} (w : W P i)
         → (κ : (j : Σ I (Op P)) → Node P w j → W (P // BinMgm) j) →
           μ-bin (subst P w (λ g n → sf (κ g n) , sff (κ g n))) ==
           μ-bin w
+
+      μ-laws (lf (i , f)) = unit-l f
+      μ-laws {i} .{μ-bin w} (nd ((w , idp) , κ)) =
+        μ-subst-inv w κ
+
+      μ-laws-↓ (lf (i , f)) ϕ = {!sff (lf (i , f)) !}
+      μ-laws-↓ (nd (f , ϕ₀)) ϕ = {!!}
+
+      -- Hmmm, well this is disappointing....
+      {-# TERMINATING #-}
       μ-subst-inv (lf i) κ = idp
       μ-subst-inv (nd (f , ϕ)) κ = 
         let pd = κ (_ , f) (inl idp)
             p j l = –> (sff pd j) l
             κ' j l g n = κ g (inr (j , p j l , n))
             ψ j l = subst P (ϕ j (p j l)) (λ g n → sf (κ' j l g n) , sff (κ' j l g n))
+            l' j q = <– (μ-bin-frm (sf pd) j) q
+            ih j q = μ-subst-inv (ϕ j (p j (l' j q))) (λ g n → κ' j (l' j q) g n)
         in μ-bin (graft P (sf pd) ψ)
              =⟨ μ-graft-inv (sf pd) ψ ⟩
-           γ (μ-bin (sf pd)) (λ j q → μ-bin (ψ j (<– (μ-bin-frm (sf pd) j) q)))
-             =⟨ {!!} ⟩ 
+           γ (μ-bin (sf pd)) (λ j q → μ-bin (ψ j (l' j q)))
+             =⟨ pair= (μ-laws pd) (λ= (λ j → λ= (λ q → ih j q)) ∙ᵈ μ-laws-↓ pd (λ j p → μ-bin (ϕ j p)))
+                  |in-ctx (λ x → γ (fst x) (snd x)) ⟩ 
            γ f (λ j p → μ-bin (ϕ j p)) ∎
-
-      μ-laws : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
-        → μ-bin (sf pd) == f
-      μ-laws (lf (i , f)) = unit-l f
-      μ-laws {i} .{μ-bin w} (nd ((w , idp) , κ)) =
-        μ-subst-inv w κ
 
       -- Just a renaming ...
       μ-coh-wit : CohWit P BinMgm
