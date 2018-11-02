@@ -57,21 +57,6 @@ module Polynomial where
 
     Frame : {i : I} (w : W i) (f : Op P i) → Type ℓ
     Frame w f = (j : I) → Leaf w j ≃ Param P f j
-
-    PolyRel : Type (lsucc ℓ)
-    PolyRel = {i : I} (w : W i) (f : Op P i) (α : Frame w f) → Type ℓ
-
-    FrameRel : PolyRel
-    FrameRel w f α = Lift ⊤
-
-    OutFrame : {i : I} (w : W i) → Type ℓ
-    OutFrame {i} w = Σ (Op P i) (Frame w)
-    
-    Composite : (R : PolyRel) {i : I} (w : W i) → Type ℓ
-    Composite R {i} w = Σ (Op P i) (λ f → Σ (Frame w f) (R w f))
-
-    is-multiplicative : PolyRel → Type ℓ
-    is-multiplicative R = {i : I} (w : W i) → is-contr (Composite R w)
     
     corolla : {i : I} (f : Op P i) → W i
     corolla {i} f = nd (f , λ j p → lf j)
