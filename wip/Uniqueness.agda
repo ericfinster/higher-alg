@@ -5,7 +5,7 @@ open import Util
 open import Polynomial
 open import WPaths
 
-module Uniqueness {ℓ} {I : Type ℓ} (P : Poly I) where
+module wip.Uniqueness {ℓ} {I : Type ℓ} (P : Poly I) where
 
   -- Perfect.  This was the main idea all along.
   lemma : {i : I} (f : Op P i) (g : Op P i)
@@ -13,12 +13,12 @@ module Uniqueness {ℓ} {I : Type ℓ} (P : Poly I) where
     → (e : nd (f , ϕ) == nd (g , ψ))
     → (h : Ops P) (l : (i , f) == h) (r : (i , g) == h)
     → inl l == inl r [ (λ x → Node P x h) ↓ e ]
-    → l == ap (λ x → (i , x)) (fst= (–> (W=-eqv P (nd (f , ϕ)) (nd (g , ψ))) e)) ∙ r
+    → l == ap (λ x → (i , x)) (fst= (–> (W=-equiv P) e)) ∙ r
   lemma {i} f g ϕ ψ e h l r d = step₄ ∙
-    ap (λ y → y ∙ r) (ap-∘ (λ x → (i , x)) fst (–> (W=-eqv P (nd (f , ϕ)) (nd (g , ψ))) e))
+    ap (λ y → y ∙ r) (ap-∘ (λ x → (i , x)) fst (–> (W=-equiv P) e))
 
     where weqv : (nd (f , ϕ) == nd (g , ψ)) ≃ (f , ϕ == g , ψ)
-          weqv = W=-eqv P (nd (f , ϕ)) (nd (g , ψ))
+          weqv = W=-equiv P -- (nd (f , ϕ)) (nd (g , ψ))
 
           step₁ : inl l == inl r [ (λ x → Node P x h) ↓ <– weqv (–> weqv e) ]
           step₁ = transport! (λ x → inl l == inl r [ (λ x → Node P x h) ↓ x ])
@@ -60,7 +60,7 @@ module Uniqueness {ℓ} {I : Type ℓ} (P : Poly I) where
                  (snd= e) (i , f) idp
 
           f-loop : f == f
-          f-loop = fst= (–> (W=-eqv P (corolla P f) (corolla P f)) (fst= e))
+          f-loop = fst= (–> (W=-equiv P) (fst= e))
 
           and-so : idp == ap (λ x → (i , x)) f-loop ∙ idp
           and-so = lemma f f (λ j p → lf j) (λ j p → lf j) (fst= e) (i , f) idp idp po

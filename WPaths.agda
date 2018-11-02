@@ -34,13 +34,13 @@ module WPaths {ℓ} {I : Type ℓ} (P : Poly I) where
   encode-decode (nd (f , ϕ)) (lf i) (lift ())
   encode-decode (nd (f , ϕ)) (nd .(f , ϕ)) idp = idp
 
-  W=-equiv : {i : I} (w₀ w₁ : W P i) → (w₀ == w₁) ≃ WCodes w₀ w₁ 
-  W=-equiv w₀ w₁ = equiv (encode w₀ w₁) (decode w₀ w₁)
+  W=-equiv : {i : I} {w₀ w₁ : W P i} → (w₀ == w₁) ≃ WCodes w₀ w₁ 
+  W=-equiv {w₀ = w₀} {w₁ = w₁} = equiv (encode w₀ w₁) (decode w₀ w₁)
     (encode-decode w₀ w₁) (decode-encode w₀ w₁)
 
   -- A consequence is the following:
   lf-eq-contr : (i : I) → is-contr (lf {P = P} i == lf i)
-  lf-eq-contr i = equiv-preserves-level ((W=-equiv (lf i) (lf i))⁻¹)
+  lf-eq-contr i = equiv-preserves-level ((W=-equiv)⁻¹)
 
   Decor= : (X : I → Type ℓ)
     → {i : I} {f g : Op P i} (e : f == g)
@@ -86,10 +86,10 @@ module WPaths {ℓ} {I : Type ℓ} (P : Poly I) where
   W-level-aux op-lvl i (lf .i) (lf .i) =
     contr-has-level (lf-eq-contr i)
   W-level-aux op-lvl i (lf .i) (nd (g , ψ)) =
-    has-level-in (λ p → Empty-rec (lower (–> (W=-equiv (lf i) (nd (g , ψ))) p)))
+    has-level-in (λ p → Empty-rec (lower (–> W=-equiv p)))
   W-level-aux op-lvl i (nd (f , ϕ)) (lf .i) =
-    has-level-in (λ p → Empty-rec (lower (–> (W=-equiv (nd (f , ϕ)) (lf i)) p)))
-  W-level-aux op-lvl i (nd (f , ϕ)) (nd (g , ψ)) = equiv-preserves-level ((W=-equiv (nd (f , ϕ)) (nd (g , ψ)))⁻¹)
+    has-level-in (λ p → Empty-rec (lower (–> W=-equiv p)))
+  W-level-aux op-lvl i (nd (f , ϕ)) (nd (g , ψ)) = equiv-preserves-level ((W=-equiv)⁻¹)
     ⦃ equiv-preserves-level (=Σ-econv (f , ϕ) (g , ψ))
       ⦃ Σ-level (has-level-apply (op-lvl i) f g)
           (λ e → equiv-preserves-level ((Decor=-equiv (W P) e ϕ ψ)⁻¹)
