@@ -343,20 +343,20 @@ module Polynomial where
 
   module _ {ℓ} {I : Type ℓ} (P : Poly I) where
     
-    ↓-Op-Frame-in : {i : I} (w : W P i)
+    ↓-Op-Frame-in : {i : I} {w : W P i}
       → {f g : Op P i} (e : f == g)
-      → (α : Frame P w f) (β : Frame P w g)
+      → {α : Frame P w f} {β : Frame P w g}
       → (t : (j : I) (l : Leaf P w j) → –> (α j) l == –> (β j) l [ (λ x → Param P x j) ↓ e ])
       → α == β [ Frame P w ↓ e ]
-    ↓-Op-Frame-in w idp α β t = λ= (λ j → equiv-== (t j))
+    ↓-Op-Frame-in idp t = λ= (λ j → equiv-== (t j))
 
-    ↓-Op-Frame-out : {i : I} (w : W P i)
+    ↓-Op-Frame-out : {i : I} {w : W P i}
       → {f g : Op P i} (e : f == g)
-      → (α : Frame P w f) (β : Frame P w g)
+      → {α : Frame P w f} {β : Frame P w g}
       → α == β [ Frame P w ↓ e ]
       → (j : I) (l : Leaf P w j)
       → –> (α j) l == –> (β j) l [ (λ x → Param P x j) ↓ e ]
-    ↓-Op-Frame-out w idp α .α idp j l = idp
+    ↓-Op-Frame-out idp idp j l = idp
 
     ↓-W-Frame-in : {i : I} {f : Op P i}
       → {w₀ w₁ : W P i} (e : w₀ == w₁)

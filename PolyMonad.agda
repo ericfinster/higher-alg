@@ -11,7 +11,7 @@ module PolyMonad where
   --  We define the (partial) magma for the slice..
   --
   
-  module _ {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P) where
+  module _ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) where
   
     to-subst : {f : Ops P} → Op (P // M) f → Op (Subst P) f
     to-subst (w , e) = w , transport (λ x → Frame P w x) e (μ-frm M w)
@@ -82,27 +82,30 @@ module PolyMonad where
   --   slc-bd-frm pd g = equiv (slc-bd-frame-to pd g) (slc-bd-frame-from pd g)
   --     (slc-bd-frame-to-from pd g) (slc-bd-frame-from-to pd g)
 
-    CohWit : Type ℓ
-    CohWit = {i : I} {f : Op P i} (pd : W (P // M) (i , f))
-      → μ M (slc-flatn pd) == f
-    
-    -- We only need a multiplication on the equality now to finish the magma
-    slc-mgm : CohWit → PolyMagma (P // M)
-    μ (slc-mgm Ψ) pd = slc-flatn pd , Ψ pd 
-    μ-frm (slc-mgm Ψ) = slc-bd-frm
+
+
+
+  CohWit : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) → Type ℓ
+  CohWit {ℓ} {I} {P} M = {i : I} {f : Op P i} (pd : W (P // M) (i , f))
+    → μ M (slc-flatn M pd) == f
+
+  SlcMgm : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {M : PolyMagma P}
+    → CohWit M → PolyMagma (P // M)
+  μ (SlcMgm {M = M} Ψ) pd = slc-flatn M pd , Ψ pd
+  μ-frm (SlcMgm {M = M} Ψ) = slc-bd-frm M
   
-  record CohStruct {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P) : Type ℓ where
+  record CohStruct {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) : Type ℓ where
     coinductive
     field
     
-      Ψ : CohWit P M
-      H : CohStruct (P // M) (slc-mgm P M Ψ)
+      Ψ : CohWit M
+      H : CohStruct (SlcMgm Ψ)
 
-  open CohStruct
+  -- open CohStruct
 
-  -- A polynomial monad is a pair of a magma and
-  -- a coherence structure on that magma.
-  record PolyMonad {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
-    field
-      Mgm : PolyMagma P
-      Coh : CohStruct P Mgm
+  -- -- A polynomial monad is a pair of a magma and
+  -- -- a coherence structure on that magma.
+  -- record PolyMonad {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
+  --   field
+  --     Mgm : PolyMagma P
+  --     Coh : CohStruct P Mgm
