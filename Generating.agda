@@ -6,7 +6,6 @@ open import Polynomial
 open import WPaths
 open import Substitution
 open import PolyMonad
-open import TreeLemmas
 
 module Generating where
 
@@ -67,6 +66,8 @@ module Generating where
 
     module _ (L : BinaryLaws P B) where
 
+      R = MgmRel BinMgm
+
       open BinaryLaws L
 
       μ-graft-inv : {i : I} (w : W P i)
@@ -88,48 +89,45 @@ module Generating where
       --  last two steps into a single in context with the induction
       --  hyp and cancellation as a separate lemma ...)
       μ-subst-invar : {i : I} (w : W P i)
-        → (κ : (g : Ops P) → Node P w g → Op (P // BinMgm) g)
-        → μ-bin (subst P w (λ g n → to-subst BinMgm (κ g n))) == μ-bin w
+        → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
+        → μ-bin (subst P w (λ g n → fst (κ g n))) == μ-bin w
       μ-subst-invar (lf i) κ = idp
       μ-subst-invar (nd (f , ϕ)) κ with κ (_ , f) (inl idp)
-      μ-subst-invar (nd (._ , ϕ)) κ | (w , idp) =
-        let κp j p g n = to-subst BinMgm (κ g (inr (j , p , n)))
+      μ-subst-invar (nd (._ , ϕ)) κ | ((w , ._) , idp) = 
+        let κp j p g n = fst (κ g (inr (j , p , n)))
             ψp j p = subst P (ϕ j p) (κp j p)
             ψ j l = ψp j (–> (μ-bin-frm w j) l)
-        in μ-bin (graft P w ψ)
+        in μ-bin (graft P w ψ) 
              =⟨ μ-graft-inv w ψ ⟩
-           γ (μ-bin w) (λ j p → μ-bin (ψp j (–> (μ-bin-frm w j) (<– (μ-bin-frm w j) p))))
+           γ (μ-bin w) (λ j p → μ-bin (ψp j (–> (μ-bin-frm w j) (<– (μ-bin-frm w j) p)))) 
              =⟨ ap (γ (μ-bin w)) (λ= (λ j → λ= (λ p → ap (λ x → μ-bin (subst P (ϕ j x)
-               (λ g n → to-subst BinMgm (κ g (inr (j , x , n)))))) (<–-inv-r (μ-bin-frm w j) p)))) ⟩ 
+               (λ g n → fst (κ g (inr (j , x , n)))))) (<–-inv-r (μ-bin-frm w j) p)))) ⟩ 
            γ (μ-bin w) (λ j p → μ-bin (ψp j p))
              =⟨ ap (γ (μ-bin w)) (λ= (λ j → λ= (λ p → μ-subst-invar (ϕ j p) (λ g n → κ g (inr (j , p , n)))))) ⟩ 
            γ (μ-bin w) (λ j p → μ-bin (ϕ j p)) ∎
 
       -- A bit more complicated than I thought, but okay ...
       μ-subst-invar-frm : {i : I} (w : W P i)
-        → (κ : (g : Ops P) → Node P w g → Op (P // BinMgm) g)
-        → (j : I) (l : Leaf P w j)
-        → –> (μ-bin-frm (subst P w (λ g n → to-subst BinMgm (κ g n))) j)
-               (<– (subst-lf-eqv P w (λ g n → to-subst BinMgm (κ g n)) j) l) ==
-          –> (μ-bin-frm w j) l [ (λ x → Param P x j) ↓ μ-subst-invar w κ ]
+        → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
+        → (j : I) (l : Leaf P (subst P w (λ g n → fst (κ g n))) j)
+        → –> (μ-bin-frm (subst P w (λ g n → fst (κ g n))) j) l  == 
+          –> (μ-bin-frm w j ∘e subst-lf-eqv P w (λ g n → fst (κ g n)) j) l
+            [ (λ x → Param P x j) ↓ μ-subst-invar w κ ]
       μ-subst-invar-frm = {!!}
-      
-      -- Abbreviations ...
-      sf = slc-flatn BinMgm
-      sff = slc-flatn-frm BinMgm
 
-      μ-laws : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
-        → μ-bin (sf pd) == f
+      μ-laws : {i : I} {f : Op P i} (pd : W (P // R) (i , f))
+        → μ-bin (flatn R pd) == f
+        
+      μ-laws-frm : {f : Ops P} (pd : W (P // R) f)
+        → μ-bin-frm (flatn R pd) == flatn-frm R pd [ Frame P (flatn R pd) ↓ μ-laws pd ]
 
-      μ-laws-frm : {f : Ops P} (pd : W (P // BinMgm) f)
-        → μ-bin-frm (sf pd) == sff pd [ Frame P (sf pd) ↓ μ-laws pd ]
+      μ-invar : SubInvar R
+      μ-invar pd = pair= (μ-laws pd) (μ-laws-frm pd)
 
       μ-laws (lf (i , f)) = unit-l f
-      μ-laws (nd ((w , idp) , κ)) =
-        let ih g n = μ-laws-frm (κ g n)
-            r = ap (λ x → μ-bin (subst P w x)) (λ= (λ g → (λ= (λ n → pair= idp (! (to-transp (ih g n)))))))
-            s = μ-subst-invar w (λ g n → sf (κ g n) , μ-laws (κ g n))
-        in r ∙ s
+      μ-laws (nd (((w , ._) , idp) , κ)) =
+        let κ' g n = (flatn R (κ g n) , flatn-frm R (κ g n)) , μ-invar (κ g n)
+        in μ-subst-invar w κ'
 
       μ-laws-frm (lf (i , f)) = ↓-Op-Frame-in P (unit-l f) lem
       
@@ -138,18 +136,9 @@ module Generating where
                   –> (corolla-frm P f j) l [ (λ x → Param P x j) ↓ unit-l f ]
               lem j (j , p , idp) = unit-l-frm f j p
 
-      μ-laws-frm (nd ((w , idp) , κ)) = 
-        let ih g n = μ-laws-frm (κ g n)
-            r = ap (λ x → μ-bin (subst P w x)) (λ= (λ g → (λ= (λ n → pair= idp (! (to-transp (ih g n)))))))
-        in {!r!}
+      μ-laws-frm (nd (((w , ._) , idp) , κ)) = ↓-Op-Frame-in P (μ-subst-invar w κ')
+        (μ-subst-invar-frm w κ')
 
-          where s : μ-bin (subst P w (λ g n → to-subst BinMgm (sf (κ g n) , μ-laws (κ g n)))) == μ-bin w
-                s = μ-subst-invar w (λ g n → sf (κ g n) , μ-laws (κ g n))
-
-
-
-      -- Just a renaming ...
-      μ-coh-wit : CohWit BinMgm
-      μ-coh-wit = μ-laws
-
+        where κ' : (g : Ops P) (n : Node P w g) → Σ (InFrame P g) R
+              κ' g n = (flatn R (κ g n) , flatn-frm R (κ g n)) , μ-invar (κ g n)
 
