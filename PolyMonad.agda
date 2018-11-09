@@ -7,94 +7,69 @@ open import Substitution
 
 module PolyMonad where
 
-  --
-  --  Polynomial Magmas
-  --
+  -- A polynomial sliced by a relation
+  module _ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
 
-  record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
-    constructor mgm
-    field
-      μ : {i : I} (w : W P i) → Op P i
-      μ-frm : {i : I} (w : W P i) → Frame P w (μ w)
+    flatn : {i : I} {f : Op P i} → W (P // R) (i , f) → W P i
+    flatn-frm : {i : I} {f : Op P i} (w : W (P // R) (i , f)) → Frame P (flatn w) f
 
-  open PolyMagma public
-
-  --
-  -- The slice of a polynomial by a magma
-  --
-  
-  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P) → Poly (Σ I (Op P))
-  Op (P // M) (i , f) = Σ (W P i) (λ w → Σ (Frame P w f) (λ α → (μ M w , μ-frm M w) == (f , α))) 
-  Param (P // M) (w , _ , _) = Node P w
-  
-  module _ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) where
-
-    slc-flatn : {i : I} {f : Op P i} → W (P // M) (i , f) → W P i
-    slc-flatn-frm : {i : I} {f : Op P i} (pd : W (P // M) (i , f)) → Frame P (slc-flatn pd) f
-
-    slc-flatn (lf (i , f)) = corolla P f
-    slc-flatn (nd ((w , α , e) , κ)) =
-      let κ' g n = slc-flatn (κ g n) , slc-flatn-frm (κ g n)
+    flatn (lf (i , f)) = corolla P f
+    flatn (nd (((w , α) , r) , κ)) = 
+      let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
       in subst P w κ'
 
-    slc-flatn-frm (lf (i , f)) = corolla-frm P f
-    slc-flatn-frm (nd ((w , α , e) , κ)) j =
-      let κ' g n = slc-flatn (κ g n) , slc-flatn-frm (κ g n)
-      in α j ∘e (subst-lf-eqv P w κ' j)
-    
-    slc-bd-frame-to : {f : Ops P} (pd : W (P // M) f)
-      → (g : Ops P) → Leaf (P // M) pd g → Node P (slc-flatn pd) g
-    slc-bd-frame-to (lf i) ._ idp = inl idp
-    slc-bd-frame-to (nd ((w , α , e) , κ)) g (h , n , l) = 
-      subst-nd-from P w (λ g n → slc-flatn (κ g n) , slc-flatn-frm (κ g n)) g
-        (h , n , slc-bd-frame-to (κ h n) g l)
+    flatn-frm (lf (i , f)) = corolla-frm P f
+    flatn-frm (nd (((w , α) , r) , κ)) j =
+      let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
+      in α j ∘e subst-lf-eqv P w κ' j
 
-    slc-bd-frame-from : {f : Ops P} (pd : W (P // M) f)
-      → (g : Ops P) → Node P (slc-flatn pd) g → Leaf (P // M) pd g 
-    slc-bd-frame-from (lf i) .i (inl idp) = idp
-    slc-bd-frame-from (lf i) g (inr (j , p , ())) 
-    slc-bd-frame-from (nd ((w , α , e) , κ)) g n = 
-      let (h , n₀ , n₁) = subst-nd-to P w (λ g n → slc-flatn (κ g n) , slc-flatn-frm (κ g n)) g n
-      in h , n₀ , slc-bd-frame-from (κ h n₀) g n₁
+    bd-frame-to : {f : Ops P} (pd : W (P // R) f)
+      → (g : Ops P) → Leaf (P // R) pd g → Node P (flatn pd) g
+    bd-frame-to (lf (i , f)) (j , g) l = inl l
+    bd-frame-to (nd (((w , α) , r) , κ)) g (h , n , l) =
+      let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
+      in subst-nd-from P w κ' g
+         (h , n , bd-frame-to (κ h n) g l)
+
+    bd-frame-from : {f : Ops P} (pd : W (P // R) f)
+      → (g : Ops P) → Node P (flatn pd) g → Leaf (P // R) pd g 
+    bd-frame-from (lf (i , f)) g (inl n) = n
+    bd-frame-from (lf (i , f)) g (inr (j , p , ())) 
+    bd-frame-from (nd (((w , α) , r) , κ)) g n = 
+      let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
+          (h , n₀ , n₁) = subst-nd-to P w κ' g n
+      in h , n₀ , bd-frame-from (κ h n₀) g n₁
 
     postulate
 
-      slc-bd-frame-to-from : {f : Ops P} (pd : W (P // M) f)
-        → (g : Ops P) (n : Node P (slc-flatn pd) g)
-        → slc-bd-frame-to pd g (slc-bd-frame-from pd g n) == n
+      bd-frame-to-from : {f : Ops P} (pd : W (P // R) f)
+        → (g : Ops P) (n : Node P (flatn pd) g)
+        → bd-frame-to pd g (bd-frame-from pd g n) == n
 
-      slc-bd-frame-from-to : {f : Ops P} (pd : W (P // M) f)
-        → (g : Ops P) (l : Leaf (P // M) pd g)
-        → slc-bd-frame-from pd g (slc-bd-frame-to pd g l) == l
+      bd-frame-from-to : {f : Ops P} (pd : W (P // R) f)
+        → (g : Ops P) (l : Leaf (P // R) pd g)
+        → bd-frame-from pd g (bd-frame-to pd g l) == l
 
-    slc-bd-frm : {f : Ops P} (pd : W (P // M) f) 
-      → (g : Ops P) → Leaf (P // M) pd g ≃ Node P (slc-flatn pd) g
-    slc-bd-frm pd g = equiv (slc-bd-frame-to pd g) (slc-bd-frame-from pd g)
-      (slc-bd-frame-to-from pd g) (slc-bd-frame-from-to pd g)
+    bd-frm : {f : Ops P} (pd : W (P // R) f)
+      → (g : Ops P) → Leaf (P // R) pd g ≃ Node P (flatn pd) g
+    bd-frm pd g = equiv (bd-frame-to pd g) (bd-frame-from pd g)
+      (bd-frame-to-from pd g) (bd-frame-from-to pd g)
 
-  CohWit : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) → Type ℓ
-  CohWit {ℓ} {I} {P} M = {i : I} {f : Op P i} (pd : W (P // M) (i , f))
-    → Path {A = Σ (Op P i) (Frame P (slc-flatn M pd))}
-           (μ M (slc-flatn M pd) , μ-frm M (slc-flatn M pd))
-           (f , slc-flatn-frm M pd)
+    -- A relation is invariant by subdivision if we can
+    -- find an element for the flattened tree and frame
+    SubInvar : Type ℓ
+    SubInvar = {f : Ops P} (pd : W (P // R) f) → R (flatn pd , flatn-frm pd)
 
-  SlcMgm : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {M : PolyMagma P}
-    → CohWit M → PolyMagma (P // M)
-  μ (SlcMgm {M = M} Ψ) pd = slc-flatn M pd , slc-flatn-frm M pd , Ψ pd
-  μ-frm (SlcMgm {M = M} Ψ) = slc-bd-frm M
-  
+  -- An invariant relation induces a magma
+  SlcMgm : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {R : PolyRel P}
+    → SubInvar R → PolyMagma (P // R)
+  μ (SlcMgm {R = R} Ψ) pd = (flatn R pd , flatn-frm R pd) , Ψ pd
+  μ-frm (SlcMgm {R = R} Ψ) pd = bd-frm R pd
+
   record CohStruct {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) : Type ℓ where
     coinductive
     field
     
-      Ψ : CohWit M
+      Ψ : SubInvar (MgmRel M)
       H : CohStruct (SlcMgm Ψ)
 
-  open CohStruct
-
-  -- -- A polynomial monad is a pair of a magma and
-  -- -- a coherence structure on that magma.
-  -- record PolyMonad {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
-  --   field
-  --     Mgm : PolyMagma P
-  --     Coh : CohStruct P Mgm

@@ -333,13 +333,15 @@ module Polynomial where
 
   open PolyMagma public
 
-  --
   -- The slice of a polynomial by a relation
-  --
-  
   _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Ops P)
   Op (P // R) f = Σ (InFrame P f) R
   Param (P // R) ((w , _) , _) = Node P w
+
+  -- The relation induced by a magma
+  MgmRel : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) → PolyRel P
+  MgmRel M {i , f} (w , α) = Path {A = OutFrame _ w}
+    (μ M w , μ-frm M w) (f , α)
 
   --
   --  Path-overs for Frames in each variable
