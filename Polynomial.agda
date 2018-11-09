@@ -325,6 +325,22 @@ module Polynomial where
       (λ= (λ h → λ= (λ p → graft-assoc (ϕ h p) (λ k l → ψ₀ k (h , p , l))
         (λ j k l m → ψ₁ j k (h , p , l) m))))
 
+  record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
+    constructor mgm
+    field
+      μ : {i : I} (w : W P i) → Op P i
+      μ-frm : {i : I} (w : W P i) → Frame P w (μ w)
+
+  open PolyMagma public
+
+  --
+  -- The slice of a polynomial by a relation
+  --
+  
+  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Ops P)
+  Op (P // R) f = Σ (InFrame P f) R
+  Param (P // R) ((w , _) , _) = Node P w
+
   --
   --  Path-overs for Frames in each variable
   --
