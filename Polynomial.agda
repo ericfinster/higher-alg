@@ -57,7 +57,16 @@ module Polynomial where
 
     Frame : {i : I} (w : W i) (f : Op P i) → Type ℓ
     Frame w f = (j : I) → Leaf w j ≃ Param P f j
-    
+
+    InFrame : Ops P → Type ℓ
+    InFrame (i , f) = Σ (W i) (λ w → Frame w f)
+
+    OutFrame : {i : I} → W i → Type ℓ
+    OutFrame {i} w = Σ (Op P i) (Frame w)
+
+    PolyRel : Type (lsucc ℓ)
+    PolyRel = {f : Ops P} → InFrame f → Type ℓ
+
     corolla : {i : I} (f : Op P i) → W i
     corolla {i} f = nd (f , λ j p → lf j)
 
@@ -315,27 +324,6 @@ module Polynomial where
     graft-assoc (nd (f , ϕ)) ψ₀ ψ₁ = ap (λ x → nd (f , x))
       (λ= (λ h → λ= (λ p → graft-assoc (ϕ h p) (λ k l → ψ₀ k (h , p , l))
         (λ j k l m → ψ₁ j k (h , p , l) m))))
-
-
-  --
-  --  Polynomial Magmas
-  --
-
-  record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
-    constructor mgm
-    field
-      μ : {i : I} (w : W P i) → Op P i
-      μ-frm : {i : I} (w : W P i) → Frame P w (μ w)
-
-  open PolyMagma public
-
-  --
-  -- The slice of a polynomial by a magma
-  --
-  
-  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (M : PolyMagma P) → Poly (Σ I (Op P))
-  Op (P // M) (i , f) = hfiber (μ M) f 
-  Param (P // M) (w , _) = Node P w
 
   --
   --  Path-overs for Frames in each variable

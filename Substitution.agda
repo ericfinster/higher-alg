@@ -6,14 +6,9 @@ open import Polynomial
 
 module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
 
-  -- The substitution polynomial
-  Subst : Poly (Ops P)
-  Op Subst (i , f) = Σ (W P i) (λ w → Frame P w f)
-  Param Subst (w , _) = Node P w
-
   -- Elementary substitution.
   subst : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → W P i
   subst (lf i) κ = lf i
   subst (nd (f , ϕ)) κ =
@@ -24,7 +19,7 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
 
   -- Leaves in a substitution
   subst-lf-to : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (j : I) → Leaf P (subst w κ) j → Leaf P w j
   subst-lf-to (lf i) κ j l = l
   subst-lf-to (nd (f , ϕ)) κ j = 
@@ -35,7 +30,7 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
          k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁) 
 
   subst-lf-from : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (j : I) → Leaf P w j → Leaf P (subst w κ) j 
   subst-lf-from (lf i) κ j l = l
   subst-lf-from (nd (f , ϕ)) κ j (k , p , l) = 
@@ -49,30 +44,30 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   postulate
 
     subst-lf-to-from : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → Op Subst g)
+      → (κ : (g : Ops P) → Node P w g → InFrame P g)
       → (j : I) (l : Leaf P w j)
       → subst-lf-to w κ j (subst-lf-from w κ j l) == l
       
     subst-lf-from-to : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → Op Subst g)
+      → (κ : (g : Ops P) → Node P w g → InFrame P g)
       → (j : I) (l : Leaf P (subst w κ) j)
       → subst-lf-from w κ j (subst-lf-to w κ j l) == l
 
   subst-lf-eqv : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (j : I) → Leaf P (subst w κ) j ≃ Leaf P w j
   subst-lf-eqv w κ j = equiv (subst-lf-to w κ j) (subst-lf-from w κ j)
     (subst-lf-to-from w κ j) (subst-lf-from-to w κ j)
 
-  -- subst leaf elimination
+  -- -- subst leaf elimination
   
   subst-lf-in : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (j : I) → Leaf P w j → Leaf P (subst w κ) j
   subst-lf-in = subst-lf-from
 
   subst-lf-elim : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
     → (Q : Leaf P (subst w κ) j → Type ℓ)
     → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
     → (l : Leaf P (subst w κ) j) → Q l
@@ -94,7 +89,7 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
 
     -- Should not be hard from the equivalence coherences ...
     subst-lf-elim-β : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
+      → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
       → (Q : Leaf P (subst w κ) j → Type ℓ)
       → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
       → (l : Leaf P w j)
@@ -103,23 +98,22 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   -- The recursor
   
   subst-lf-rec : {A : Type ℓ} {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
     → (σ : Leaf P w j → A)
     → Leaf P (subst w κ) j → A
   subst-lf-rec w κ j σ = σ ∘ (–> (subst-lf-eqv w κ j))
 
   subst-lf-rec-β : {A : Type ℓ} {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g) (j : I)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
     → (σ : Leaf P w j → A)
     → (l : Leaf P w j)
     → subst-lf-rec w κ j σ (subst-lf-in w κ j l) == σ l
   subst-lf-rec-β w κ j σ l = ap σ (<–-inv-r (subst-lf-eqv w κ j) l)
 
-
   -- Nodes in a substitution
 
   subst-nd-to : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (g : Ops P) → Node P (subst w κ) g
     → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g))
   subst-nd-to (lf i) κ g (lift ())
@@ -136,7 +130,7 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     in h , (inr (k , –> (α k) l , n₀)) , n₁
 
   subst-nd-from : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g))
     → Node P (subst w κ) g
   subst-nd-from (lf i) κ g (h , lift () , n₁)
@@ -156,17 +150,17 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   postulate
 
     subst-nd-to-from : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → Op Subst g)
+      → (κ : (g : Ops P) → Node P w g → InFrame P g)
       → (g : Ops P) (n : Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)))
       → subst-nd-to w κ g (subst-nd-from w κ g n) == n
 
     subst-nd-from-to : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → Op Subst g)
+      → (κ : (g : Ops P) → Node P w g → InFrame P g)
       → (g : Ops P) (n : Node P (subst w κ) g)
       → subst-nd-from w κ g (subst-nd-to w κ g n) == n
 
   subst-nd-eqv : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (g : Ops P) → Node P (subst w κ) g ≃ Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g))
   subst-nd-eqv w κ g = equiv (subst-nd-to w κ g) (subst-nd-from w κ g)
     (subst-nd-to-from w κ g) (subst-nd-from-to w κ g)
@@ -174,13 +168,13 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   -- subst node elim
 
   subst-nd-in : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (g : Ops P) (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
     → Node P (subst w κ) g
   subst-nd-in w κ g h n₀ n₁ = subst-nd-from w κ g (h , n₀ , n₁)
 
   subst-nd-elim : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g) (g : Ops P)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
     → (Q : Node P (subst w κ) g → Type ℓ)
     → (σ : (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
            → Q (subst-nd-in w κ g h n₀ n₁))
@@ -192,7 +186,7 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   postulate
   
     subst-nd-elim-β : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → Op Subst g) (g : Ops P)
+      → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
       → (Q : Node P (subst w κ) g → Type ℓ)
       → (σ : (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
              → Q (subst-nd-in w κ g h n₀ n₁))
@@ -202,59 +196,64 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   -- subst recursor
 
   subst-nd-rec : {A : Type ℓ} {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → Op Subst g) (g : Ops P)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
     → (σ : Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → A)
     → Node P (subst w κ) g → A
   subst-nd-rec w κ g σ n = σ (subst-nd-to w κ g n)
 
-  -- Substitution monad structure 
+  -- A polynomial sliced by a relation
+  module _ (R : PolyRel P) where
 
-  -- Here we split flatten and its frame into two pieces.
-  -- We will have to see what ends up being the most convenient...
-  flatn : {i : I} {f : Op P i} → W Subst (i , f) → W P i
-  flatn-frm : {i : I} {f : Op P i} (w : W Subst (i , f)) → Frame P (flatn w) f
-  
-  flatn (lf (i , f)) = corolla P f
-  flatn (nd ((w , α) , κ)) = subst w (λ g n → flatn (κ g n) , flatn-frm (κ g n))
-    
-  flatn-frm (lf (i , f)) = corolla-frm P f
-  flatn-frm (nd ((w , α) , κ)) j = α j ∘e
-    subst-lf-eqv w (λ g n → flatn (κ g n) , flatn-frm (κ g n)) j
+    Slc : Poly (Ops P)
+    Op Slc f = Σ (InFrame P f) R
+    Param Slc ((w , _), _) = Node P w
 
-  -- Iterated substitution (what was called flatten ...)
-  μ-subst : {f : Ops P} → W Subst f → Op Subst f
-  μ-subst pd = flatn pd , flatn-frm pd
+    flatn : {i : I} {f : Op P i} → W Slc (i , f) → W P i
+    flatn-frm : {i : I} {f : Op P i} (w : W Slc (i , f)) → Frame P (flatn w) f
 
-  bd-frame-to : {f : Ops P} (pd : W Subst f)
-    → (g : Ops P) → Leaf Subst pd g → Node P (flatn pd) g
-  bd-frame-to (lf (i , f)) (j , g) l = inl l
-  bd-frame-to (nd ((w , α) , κ)) g (h , n , l)=
-    subst-nd-from w (λ g n → μ-subst (κ g n)) g
-      (h , n , bd-frame-to (κ h n) g l)
+    flatn (lf (i , f)) = corolla P f
+    flatn (nd (((w , α) , r) , κ)) = 
+      let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
+      in subst w κ'
 
-  bd-frame-from : {f : Ops P} (pd : W Subst f)
-    → (g : Ops P) → Node P (flatn pd) g → Leaf Subst pd g 
-  bd-frame-from (lf (i , f)) g (inl n) = n
-  bd-frame-from (lf (i , f)) g (inr (j , p , ())) 
-  bd-frame-from (nd ((w , α) , κ)) g n = 
-    let (h , n₀ , n₁) = subst-nd-to w (λ g n → μ-subst (κ g n)) g n
-    in h , n₀ , bd-frame-from (κ h n₀) g n₁
-    
-  postulate
+    flatn-frm (lf (i , f)) = corolla-frm P f
+    flatn-frm (nd (((w , α) , r) , κ)) j =
+      let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
+      in α j ∘e subst-lf-eqv w κ' j
 
-    bd-frame-to-from : {f : Ops P} (pd : W Subst f)
-      → (g : Ops P) (n : Node P (flatn pd) g)
-      → bd-frame-to pd g (bd-frame-from pd g n) == n
-      
-    bd-frame-from-to : {f : Ops P} (pd : W Subst f)
-      → (g : Ops P) (l : Leaf Subst pd g)
-      → bd-frame-from pd g (bd-frame-to pd g l) == l
+    bd-frame-to : {f : Ops P} (pd : W Slc f)
+      → (g : Ops P) → Leaf Slc pd g → Node P (flatn pd) g
+    bd-frame-to (lf (i , f)) (j , g) l = inl l
+    bd-frame-to (nd (((w , α) , r) , κ)) g (h , n , l) =
+      let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
+      in subst-nd-from w κ' g
+         (h , n , bd-frame-to (κ h n) g l)
 
-  bd-frm : {f : Ops P} (pd : W Subst f)
-    → Frame Subst pd (μ-subst pd)
-  bd-frm pd g = equiv (bd-frame-to pd g) (bd-frame-from pd g)
-    (bd-frame-to-from pd g) (bd-frame-from-to pd g)
+    bd-frame-from : {f : Ops P} (pd : W Slc f)
+      → (g : Ops P) → Node P (flatn pd) g → Leaf Slc pd g 
+    bd-frame-from (lf (i , f)) g (inl n) = n
+    bd-frame-from (lf (i , f)) g (inr (j , p , ())) 
+    bd-frame-from (nd (((w , α) , r) , κ)) g n = 
+      let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
+          (h , n₀ , n₁) = subst-nd-to w κ' g n
+      in h , n₀ , bd-frame-from (κ h n₀) g n₁
 
-  subst-mgm : PolyMagma Subst
-  PolyMagma.μ subst-mgm w = flatn w , flatn-frm w
-  PolyMagma.μ-frm subst-mgm w = bd-frm w
+    postulate
+
+      bd-frame-to-from : {f : Ops P} (pd : W Slc f)
+        → (g : Ops P) (n : Node P (flatn pd) g)
+        → bd-frame-to pd g (bd-frame-from pd g n) == n
+
+      bd-frame-from-to : {f : Ops P} (pd : W Slc f)
+        → (g : Ops P) (l : Leaf Slc pd g)
+        → bd-frame-from pd g (bd-frame-to pd g l) == l
+
+    bd-frm : {f : Ops P} (pd : W Slc f)
+      → (g : Ops P) → Leaf Slc pd g ≃ Node P (flatn pd) g
+    bd-frm pd g = equiv (bd-frame-to pd g) (bd-frame-from pd g)
+      (bd-frame-to-from pd g) (bd-frame-from-to pd g)
+
+
+
+
+

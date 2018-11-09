@@ -89,18 +89,18 @@ module Generating where
       --  hyp and cancellation as a separate lemma ...)
       μ-subst-invar : {i : I} (w : W P i)
         → (κ : (g : Ops P) → Node P w g → Op (P // BinMgm) g)
-        → μ-bin (subst P w (λ g n → to-subst P BinMgm (κ g n))) == μ-bin w
+        → μ-bin (subst P w (λ g n → to-subst BinMgm (κ g n))) == μ-bin w
       μ-subst-invar (lf i) κ = idp
       μ-subst-invar (nd (f , ϕ)) κ with κ (_ , f) (inl idp)
       μ-subst-invar (nd (._ , ϕ)) κ | (w , idp) =
-        let κp j p g n = to-subst P BinMgm (κ g (inr (j , p , n)))
+        let κp j p g n = to-subst BinMgm (κ g (inr (j , p , n)))
             ψp j p = subst P (ϕ j p) (κp j p)
             ψ j l = ψp j (–> (μ-bin-frm w j) l)
         in μ-bin (graft P w ψ)
              =⟨ μ-graft-inv w ψ ⟩
            γ (μ-bin w) (λ j p → μ-bin (ψp j (–> (μ-bin-frm w j) (<– (μ-bin-frm w j) p))))
              =⟨ ap (γ (μ-bin w)) (λ= (λ j → λ= (λ p → ap (λ x → μ-bin (subst P (ϕ j x)
-               (λ g n → to-subst P BinMgm (κ g (inr (j , x , n)))))) (<–-inv-r (μ-bin-frm w j) p)))) ⟩ 
+               (λ g n → to-subst BinMgm (κ g (inr (j , x , n)))))) (<–-inv-r (μ-bin-frm w j) p)))) ⟩ 
            γ (μ-bin w) (λ j p → μ-bin (ψp j p))
              =⟨ ap (γ (μ-bin w)) (λ= (λ j → λ= (λ p → μ-subst-invar (ϕ j p) (λ g n → κ g (inr (j , p , n)))))) ⟩ 
            γ (μ-bin w) (λ j p → μ-bin (ϕ j p)) ∎
@@ -109,14 +109,14 @@ module Generating where
       μ-subst-invar-frm : {i : I} (w : W P i)
         → (κ : (g : Ops P) → Node P w g → Op (P // BinMgm) g)
         → (j : I) (l : Leaf P w j)
-        → –> (μ-bin-frm (subst P w (λ g n → to-subst P BinMgm (κ g n))) j)
-               (<– (subst-lf-eqv P w (λ g n → to-subst P BinMgm (κ g n)) j) l) ==
+        → –> (μ-bin-frm (subst P w (λ g n → to-subst BinMgm (κ g n))) j)
+               (<– (subst-lf-eqv P w (λ g n → to-subst BinMgm (κ g n)) j) l) ==
           –> (μ-bin-frm w j) l [ (λ x → Param P x j) ↓ μ-subst-invar w κ ]
       μ-subst-invar-frm = {!!}
       
       -- Abbreviations ...
-      sf = slc-flatn P BinMgm
-      sff = slc-flatn-frm P BinMgm
+      sf = slc-flatn BinMgm
+      sff = slc-flatn-frm BinMgm
 
       μ-laws : {i : I} {f : Op P i} (pd : W (P // BinMgm) (i , f))
         → μ-bin (sf pd) == f
@@ -141,11 +141,15 @@ module Generating where
       μ-laws-frm (nd ((w , idp) , κ)) = 
         let ih g n = μ-laws-frm (κ g n)
             r = ap (λ x → μ-bin (subst P w x)) (λ= (λ g → (λ= (λ n → pair= idp (! (to-transp (ih g n)))))))
-            s = μ-subst-invar w (λ g n → sf (κ g n) , μ-laws (κ g n))
-        in {!!}
+        in {!r!}
+
+          where s : μ-bin (subst P w (λ g n → to-subst BinMgm (sf (κ g n) , μ-laws (κ g n)))) == μ-bin w
+                s = μ-subst-invar w (λ g n → sf (κ g n) , μ-laws (κ g n))
+
+
 
       -- Just a renaming ...
-      μ-coh-wit : CohWit P BinMgm
+      μ-coh-wit : CohWit BinMgm
       μ-coh-wit = μ-laws
 
 
