@@ -29,10 +29,6 @@ module Generating where
       unit-l-frm : {i : I} (f : Op P i) (j : I) (p : Param P f j)
         → –> (γ-frm f (λ j p → η j) j) (j , p , –> (η-frm j j) idp) == p [ (λ x → Param P x j) ↓ unit-l f ]
 
-      -- Exactly.  And we'll need a coherence for each of the other two
-      -- which does the same thing, allowing us to reconstruct the action
-      -- on of the frames on their multipled composites.
-
       unit-r : {i : I} (f : Op P i) → f == γ (η i) (λ j p → transport (Op P) (<– (η-frm i j) p) f) 
       unit-r-frm : (i : I) (f : Op P i) (j : I) (p : Param P f j)
         → p == –> (γ-frm (η i) (λ j p → transport (Op P) (<– (η-frm i j) p) f) j)
@@ -54,12 +50,43 @@ module Generating where
     μ-bin (lf i) = η i
     μ-bin (nd (f , ϕ)) = γ f (λ j p → μ-bin (ϕ j p))
 
-    -- Probably the same computational issues here...
+    μ-bin-frm-to : {i : I} (w : W P i) (j : I)
+      → Leaf P w j
+      → Param P (μ-bin w) j
+    μ-bin-frm-to (lf i) j l = –> (η-frm i j) l
+    μ-bin-frm-to (nd (f , ϕ)) j (k , p , l) =
+      let ψ' j p = μ-bin (ϕ j p)
+      in –> (γ-frm f ψ' j) (k , p , μ-bin-frm-to (ϕ k p) j l)
+
+    μ-bin-frm-from : {i : I} (w : W P i) (j : I)
+      → Param P (μ-bin w) j
+      → Leaf P w j
+    μ-bin-frm-from (lf i) j p = <– (η-frm i j) p
+    μ-bin-frm-from (nd (f , ϕ)) j p = 
+      let ψ' j p = μ-bin (ϕ j p)
+          (k , p , q) = <– (γ-frm f ψ' j) p
+      in k , p , μ-bin-frm-from (ϕ k p) j q
+      
+    postulate
+
+      μ-bin-frm-to-from : {i : I} (w : W P i) (j : I)
+        → (p : Param P (μ-bin w) j)
+        → μ-bin-frm-to w j (μ-bin-frm-from w j p) == p
+
+      μ-bin-frm-from-to : {i : I} (w : W P i) (j : I)
+        → (l : Leaf P w j)
+        → μ-bin-frm-from w j (μ-bin-frm-to w j l) == l
+
+    -- Shows the above can be written as a composition ...
+    -- μ-bin-frm : {i : I} (w : W P i) → Frame P w (μ-bin w)
+    -- μ-bin-frm (lf i) = η-frm i
+    -- μ-bin-frm (nd (f , ϕ)) j = (γ-frm f (λ j p → μ-bin (ϕ j p)) j) ∘e
+    --   Σ-emap-r (λ k → Σ-emap-r (λ p → μ-bin-frm (ϕ k p) j))
+
     μ-bin-frm : {i : I} (w : W P i) → Frame P w (μ-bin w)
-    μ-bin-frm (lf i) = η-frm i
-    μ-bin-frm (nd (f , ϕ)) j = (γ-frm f (λ j p → μ-bin (ϕ j p)) j) ∘e
-      Σ-emap-r (λ k → Σ-emap-r (λ p → μ-bin-frm (ϕ k p) j))
-    
+    μ-bin-frm w j = equiv (μ-bin-frm-to w j) (μ-bin-frm-from w j)
+      (μ-bin-frm-to-from w j) (μ-bin-frm-from-to w j)
+
     BinMgm : PolyMagma P
     μ BinMgm = μ-bin
     μ-frm BinMgm = μ-bin-frm
@@ -82,7 +109,16 @@ module Generating where
                   μ-bin (ψ j q)
               lem idp = idp
         
-      μ-graft-inv (nd (f , ϕ)) ψ = {!assoc f (λ j p → μ-bin (ϕ j p))!}
+      μ-graft-inv (nd (f , ϕ)) ψ = 
+        let ih j p = μ-graft-inv (ϕ j p) (λ k l → ψ k (j , p , l))
+            ϕ' j p = μ-bin (ϕ j p)
+            ψ' j p k q = μ-bin (ψ k (j , p , <– (μ-bin-frm (ϕ j p) k) q))
+        in γ f (λ j p → μ-bin (graft P (ϕ j p) (λ k l → ψ k (j , p , l))))
+             =⟨ ap (γ f) (λ= (λ j → λ= (λ p → ih j p ))) ⟩
+           γ f (λ j p → γ (μ-bin (ϕ j p)) (λ k q → μ-bin (ψ k (j , p , <– (μ-bin-frm (ϕ j p) k) q))))
+             =⟨ assoc f ϕ' ψ' ⟩
+           γ (γ f (λ j p → μ-bin (ϕ j p))) (λ j p → μ-bin (ψ j (<– (μ-bin-frm (nd (f , ϕ)) j) p))) ∎
+
 
       -- substitution invariance at level 2 now follows easily ...
       -- (could reorganize a bit to make it cleaner: combine the
@@ -106,14 +142,18 @@ module Generating where
              =⟨ ap (γ (μ-bin w)) (λ= (λ j → λ= (λ p → μ-subst-invar (ϕ j p) (λ g n → κ g (inr (j , p , n)))))) ⟩ 
            γ (μ-bin w) (λ j p → μ-bin (ϕ j p)) ∎
 
-      -- A bit more complicated than I thought, but okay ...
-      μ-subst-invar-frm : {i : I} (w : W P i)
+      μ-lf-invar : {i : I} (w : W P i)
         → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
         → (j : I) (l : Leaf P (subst P w (λ g n → fst (κ g n))) j)
         → –> (μ-bin-frm (subst P w (λ g n → fst (κ g n))) j) l  == 
           –> (μ-bin-frm w j ∘e subst-lf-eqv P w (λ g n → fst (κ g n)) j) l
             [ (λ x → Param P x j) ↓ μ-subst-invar w κ ]
-      μ-subst-invar-frm = {!!}
+      μ-lf-invar (lf i) κ j l = idp
+      μ-lf-invar (nd (f , ϕ)) κ j l = {!!}
+
+      --
+      -- We can now prove the invariance by induction ...
+      --
 
       μ-laws : {i : I} {f : Op P i} (pd : W (P // R) (i , f))
         → μ-bin (flatn R pd) == f
@@ -136,8 +176,9 @@ module Generating where
                   –> (corolla-frm P f j) l [ (λ x → Param P x j) ↓ unit-l f ]
               lem j (j , p , idp) = unit-l-frm f j p
 
-      μ-laws-frm (nd (((w , ._) , idp) , κ)) = ↓-Op-Frame-in P (μ-subst-invar w κ')
-        (μ-subst-invar-frm w κ')
+      μ-laws-frm (nd (((w , ._) , idp) , κ)) =
+        ↓-Op-Frame-in P (μ-subst-invar w κ')
+                        (μ-lf-invar w κ')
 
         where κ' : (g : Ops P) (n : Node P w g) → Σ (InFrame P g) R
               κ' g n = (flatn R (κ g n) , flatn-frm R (κ g n)) , μ-invar (κ g n)
