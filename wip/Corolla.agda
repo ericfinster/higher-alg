@@ -5,7 +5,7 @@ open import Util
 open import Polynomial
 open import WPaths
 
-module Corolla {ℓ} {I : Type ℓ} (P : Poly I) where
+module wip.Corolla {ℓ} {I : Type ℓ} (P : Poly I) where
 
   -- Okay, first we extract the base, not from the witness
   -- of contractibility, but from the tree itself.

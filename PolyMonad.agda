@@ -73,3 +73,4 @@ module PolyMonad where
       Ψ : SubInvar (MgmRel M)
       H : CohStruct (SlcMgm Ψ)
 
+  open CohStruct public
