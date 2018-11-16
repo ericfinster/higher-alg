@@ -58,7 +58,7 @@ module PolyMonad where
     -- A relation is invariant by subdivision if we can
     -- find an element for the flattened tree and frame
     SubInvar : Type ℓ
-    SubInvar = {f : Ops P} (pd : W (P // R) f) → R (flatn pd , flatn-frm pd)
+    SubInvar = {f : Ops P} (pd : W (P // R) f) → R f (flatn pd , flatn-frm pd)
 
   -- An invariant relation induces a magma
   SlcMgm : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {R : PolyRel P}

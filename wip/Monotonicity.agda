@@ -39,7 +39,6 @@ module wip.Monotonicity where
                 ((w , μ-frm M w) , idp) , flatn-frm SR coh
           ctr = {!!}
 
-
   -- Okay, so let's pause here and look at the situation.
   -- Ψ, in this case, takes values in a proposition by assumption.
   -- Hence, this will not be an issue: all path overs will exist.
@@ -57,4 +56,15 @@ module wip.Monotonicity where
   monotonicity {S n} M Ψ lvl {i , ._} {(w , ._) , idp} coh =
     has-level-in (λ x y → {!rel-space (SlcMgm Ψ) coh!})
 
+  -- In summary, it feels like what you are describing as rigidity can be
+  -- similary described in a couple of equivalent ways:
 
+  --
+  -- 1) The uniqueness of the extensions of substitution monads
+  --    (which you expect from the universe and should be equivalent to it ...)
+  --
+  -- 2) The uniqueness of proofs of globularity.
+  --    (because that is what you have called this equality previously)
+  --
+
+  
