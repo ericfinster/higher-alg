@@ -246,6 +246,6 @@ module Generating where
         ↓-Op-Frame-in P (μ-subst-invar w κ')
                         (μ-lf-invar w κ')
 
-        where κ' : (g : Ops P) (n : Node P w g) → Σ (InFrame P g) R
+        where κ' : (g : Ops P) (n : Node P w g) → Σ (InFrame P g) (R g)
               κ' g n = (flatn R (κ g n) , flatn-frm R (κ g n)) , μ-invar (κ g n)
 
