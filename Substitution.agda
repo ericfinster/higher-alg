@@ -4,6 +4,17 @@ open import HoTT
 open import Util
 open import Polynomial
 
+--
+--  The postulates in this file are not really postulates.  In each
+--  case, the equivalence in question can be written as the composite
+--  of more primitive equivalences.  However, writing it in this way
+--  causes serious performance issues with Agda's typechecker later
+--  on.  As such, I have written out the forward and backward
+--  functions but not bothered to expand out the proofs that they are
+--  mutually inverse, as we would make these proofs abstract in any
+--  case.
+--
+
 module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
 
   -- Elementary substitution.
@@ -85,15 +96,15 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   --        (λ lϕ → transport (λ x → Q (graft-leaf-to P w ψ j x)) (pair= idp (pair= (<–-inv-l (α k) l₀) {!!}))
   --          (σ (k , (–> (α k) l₀) , lϕ)))) l
 
-  postulate
+  -- postulate
 
-    -- Should not be hard from the equivalence coherences ...
-    subst-lf-elim-β : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
-      → (Q : Leaf P (subst w κ) j → Type ℓ)
-      → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
-      → (l : Leaf P w j)
-      → subst-lf-elim w κ j Q σ (subst-lf-in w κ j l) == σ l
+  --   -- Should not be hard from the equivalence coherences ...
+  --   subst-lf-elim-β : {i : I} (w : W P i)
+  --     → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
+  --     → (Q : Leaf P (subst w κ) j → Type ℓ)
+  --     → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
+  --     → (l : Leaf P w j)
+  --     → subst-lf-elim w κ j Q σ (subst-lf-in w κ j l) == σ l
 
   -- The recursor
   
@@ -183,15 +194,15 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     let (h , n₀ , n₁) = subst-nd-to w κ g n
     in transport Q (<–-inv-l (subst-nd-eqv w κ g) n) (σ h n₀ n₁)
 
-  postulate
+  -- postulate
   
-    subst-nd-elim-β : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
-      → (Q : Node P (subst w κ) g → Type ℓ)
-      → (σ : (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
-             → Q (subst-nd-in w κ g h n₀ n₁))
-      → (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
-      → subst-nd-elim w κ g Q σ (subst-nd-in w κ g h n₀ n₁) == σ h n₀ n₁
+  --   subst-nd-elim-β : {i : I} (w : W P i)
+  --     → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
+  --     → (Q : Node P (subst w κ) g → Type ℓ)
+  --     → (σ : (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
+  --            → Q (subst-nd-in w κ g h n₀ n₁))
+  --     → (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
+  --     → subst-nd-elim w κ g Q σ (subst-nd-in w κ g h n₀ n₁) == σ h n₀ n₁
 
   -- subst recursor
 

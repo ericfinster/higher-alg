@@ -93,7 +93,8 @@ module Generating where
 
     module _ (L : BinaryLaws P B) where
 
-      R = MgmRel BinMgm
+      private
+        R = ⟪ BinMgm ⟫ 
 
       open BinaryLaws L
 

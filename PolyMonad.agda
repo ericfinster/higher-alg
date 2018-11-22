@@ -7,26 +7,25 @@ open import Substitution
 
 module PolyMonad where
 
-  -- A polynomial sliced by a relation
   module _ {ℓ} {I : Type ℓ} {P : Poly I} (R : PolyRel P) where
 
     flatn : {i : I} {f : Op P i} → W (P // R) (i , f) → W P i
     flatn-frm : {i : I} {f : Op P i} (w : W (P // R) (i , f)) → Frame P (flatn w) f
 
     flatn (lf (i , f)) = corolla P f
-    flatn (nd (((w , α) , r) , κ)) = 
+    flatn (nd (((w , α) , _) , κ)) = 
       let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
       in subst P w κ'
 
     flatn-frm (lf (i , f)) = corolla-frm P f
-    flatn-frm (nd (((w , α) , r) , κ)) j =
+    flatn-frm (nd (((w , α) , _) , κ)) j =
       let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
       in α j ∘e subst-lf-eqv P w κ' j
 
     bd-frame-to : {f : Ops P} (pd : W (P // R) f)
       → (g : Ops P) → Leaf (P // R) pd g → Node P (flatn pd) g
     bd-frame-to (lf (i , f)) (j , g) l = inl l
-    bd-frame-to (nd (((w , α) , r) , κ)) g (h , n , l) =
+    bd-frame-to (nd (((w , α) , _) , κ)) g (h , n , l) =
       let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
       in subst-nd-from P w κ' g
          (h , n , bd-frame-to (κ h n) g l)
@@ -35,7 +34,7 @@ module PolyMonad where
       → (g : Ops P) → Node P (flatn pd) g → Leaf (P // R) pd g 
     bd-frame-from (lf (i , f)) g (inl n) = n
     bd-frame-from (lf (i , f)) g (inr (j , p , ())) 
-    bd-frame-from (nd (((w , α) , r) , κ)) g n = 
+    bd-frame-from (nd (((w , α) , _) , κ)) g n = 
       let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
           (h , n₀ , n₁) = subst-nd-to P w κ' g n
       in h , n₀ , bd-frame-from (κ h n₀) g n₁
@@ -60,17 +59,28 @@ module PolyMonad where
     SubInvar : Type ℓ
     SubInvar = {f : Ops P} (pd : W (P // R) f) → R f (flatn pd , flatn-frm pd)
 
-  -- An invariant relation induces a magma
+  -- An invariant relation induces a magma on its slice
   SlcMgm : ∀ {ℓ} {I : Type ℓ} {P : Poly I} {R : PolyRel P}
     → SubInvar R → PolyMagma (P // R)
   μ (SlcMgm {R = R} Ψ) pd = (flatn R pd , flatn-frm R pd) , Ψ pd
   μ-frm (SlcMgm {R = R} Ψ) pd = bd-frm R pd
 
+  _⇙_ : ∀ {ℓ} {I : Type ℓ} {P : Poly I}
+    → (M : PolyMagma P) (Ψ : SubInvar ⟪ M ⟫)
+    → PolyMagma (P // ⟪ M ⟫)
+  M ⇙ Ψ = SlcMgm Ψ
+
   record CohStruct {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) : Type ℓ where
     coinductive
     field
     
-      Ψ : SubInvar (MgmRel M)
-      H : CohStruct (SlcMgm Ψ)
+      Ψ : SubInvar ⟪ M ⟫ 
+      H : CohStruct (M ⇙ Ψ)
 
   open CohStruct public
+
+  record PolyMonad {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
+    field
+
+      Mgm : PolyMagma P
+      Coh : CohStruct Mgm

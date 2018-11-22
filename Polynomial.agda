@@ -325,6 +325,10 @@ module Polynomial where
       (λ= (λ h → λ= (λ p → graft-assoc (ϕ h p) (λ k l → ψ₀ k (h , p , l))
         (λ j k l m → ψ₁ j k (h , p , l) m))))
 
+  --
+  --  Polynomial Magmas and Slicing
+  --
+
   record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
     constructor mgm
     field
@@ -339,10 +343,10 @@ module Polynomial where
   Param (P // R) ((w , _) , _) = Node P w
 
   -- The relation induced by a magma
-  MgmRel : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) → PolyRel P
-  MgmRel {P = P} M (i , f) (w , α) = Path {A = OutFrame P w}
+  ⟪_⟫ : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) → PolyRel P
+  ⟪_⟫ {P = P} M (i , f) (w , α) = Path {A = OutFrame P w}
     (μ M w , μ-frm M w) (f , α)
-
+  
   --
   --  Path-overs for Frames in each variable
   --

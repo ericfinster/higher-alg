@@ -72,7 +72,6 @@ module WPaths {ℓ} {I : Type ℓ} (P : Poly I) where
       → (ϕ : Decor P f X) (ψ : Decor P g X)
       → (ϕ == ψ [ (λ x → Decor P x X) ↓ e ]) ≃ Decor= X e ϕ ψ
 
-  -- And therefore the space of decoration equivalences is contractible!
   corolla-dec-contr : {i : I} (f : Op P i)
     → is-contr (Decor= (W P) {f = f} idp (λ j p → lf j) (λ j p → lf j))
   corolla-dec-contr f = Π-level (λ j → Π-level (λ p → Π-level (λ q → Π-level (λ x → lf-eq-contr j))))
