@@ -84,3 +84,5 @@ module PolyMonad where
 
       Mgm : PolyMagma P
       Coh : CohStruct Mgm
+
+  open PolyMonad public
