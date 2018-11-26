@@ -44,3 +44,6 @@ module wip.PolyEquiv where
     W≃ : (i : I) → W P i ≃ W Q (–> (Sort≃ e) i)
     W≃ i = equiv (W≃-to i) (W≃-from i)
       (W≃-to-from i) (W≃-from-to i)
+
+  -- Next, you could say what you mean by the idea that two
+  -- relations are equal over an equivalence.
