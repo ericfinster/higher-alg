@@ -98,10 +98,38 @@ module wip.PolyOver where
 
               from-to : (x : Ops (ΣPoly P Q)) → from (to x) == x
               from-to ((i , j) , (f , g)) = idp
-              
+
+      RelOp≃-to : (fg : Ops (ΣPoly P Q))
+        → Op (ΣPoly P Q // Rel↑) fg
+        → Op (ΣPoly (P // R) RelOver) (–> RelSort≃ fg)
+      RelOp≃-to ((i , j) , (f , g)) ((w , α) , r) =
+        ((W↓ w , Frame↓ α) , r) , (w , α , idp)
+
+      RelOp≃-from : (fg : Ops (ΣPoly P Q))
+        → Op (ΣPoly (P // R) RelOver) (–> RelSort≃ fg)
+        → Op (ΣPoly P Q // Rel↑) fg
+      RelOp≃-from ((i , j) , (f , g)) (((._ , ._) , r) , w , α , idp)
+        = (w , α) , r
+
+      RelOp≃-to-from : (fg : Ops (ΣPoly P Q))
+        → (w : Op (ΣPoly (P // R) RelOver) (–> RelSort≃ fg))
+        → RelOp≃-to fg (RelOp≃-from fg w) == w
+      RelOp≃-to-from ((i , j) , (f , g)) (((._ , ._) , r) , w , α , idp) = idp
+
+      RelOp≃-from-to : (fg : Ops (ΣPoly P Q))
+        → (w : Op (ΣPoly P Q // Rel↑) fg)
+        → RelOp≃-from fg (RelOp≃-to fg w) == w
+      RelOp≃-from-to ((i , j) , (f , g)) ((w , α) , r) = idp
+
+      RelOp≃ : (fg : Ops (ΣPoly P Q))
+        → Op (ΣPoly P Q // Rel↑) fg
+        ≃ Op (ΣPoly (P // R) RelOver) (–> RelSort≃ fg)
+      RelOp≃ fg = equiv (RelOp≃-to fg) (RelOp≃-from fg)
+        (RelOp≃-to-from fg) (RelOp≃-from-to fg)
+
       Rel≃ : (ΣPoly P Q // Rel↑) ≃ₚ (ΣPoly (P // R) RelOver)
       Sort≃ Rel≃ = RelSort≃
-      Op≃ Rel≃ = {!!}
+      Op≃ Rel≃ = RelOp≃
       Param≃ Rel≃ = {!!}
 
       postulate
@@ -136,7 +164,7 @@ module wip.PolyOver where
     -- So *this* finally feels like what you've been looking for all along in
     -- terms of the "equivalence" or "globular" structure of the face maps.
 
-    -- Presumably this will play a role in the proof of "idea" below.
+    -- Presumably this will play a role in the proof of the pathover below.
 
     -- Easy, peasy!
     SubInvar↑ : SubInvar R → SubInvar (Rel↑ Q R)
@@ -156,24 +184,20 @@ module wip.PolyOver where
       SlcRel= : (Ψ₀ : SubInvar R)
         → ⟪ SlcMgm (SubInvar↑ Ψ₀) ⟫ == Rel↑ (RelOver Q R) ⟪ SlcMgm Ψ₀ ⟫ [ RelType ↓ Rel= Q R ]
 
-    -- Okay.  That's your idea.  In a certain sense, I feel this
-    -- sort of has to be true.
-
-    -- And now.  I feel that this actually suffices to complete
-    -- the proof.  Why?  Well, because from here we have the
-    -- following chain of facts:
-
-    -- 1) we obtain a proof that the slice magma relation is
-    --    subdivision invariant by transporting along this
-    --    equality
-    -- 2) therefore, the subdivision invariance on both sides
-    --    is connected by a path over
-    -- 3) therefore, the magmas obtained by slicing these proofs
-    --    are themselves connected by a path over
-    -- 4) hence we have a coherence structure on one if and only
-    --    if we have one on the other, and this is the coinductive step
-    --
-
+  --
+  -- The final proof goes as follows:
+  --
+  -- 1) we obtain a proof that the slice magma relation is
+  --    subdivision invariant by transporting along the
+  --    equality above
+  -- 2) therefore, the subdivision invariance on both sides
+  --    is connected by a path over
+  -- 3) therefore, the magmas obtained by slicing these proofs
+  --    are themselves connected by a path over
+  -- 4) hence we have a coherence structure on one if and only
+  --    if we have one on the other, and this is the coinductive step
+  --
+  
   {-# TERMINATING #-}
   CohStruct↑ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (Q : PolyOver P)
     → (M : PolyMagma P) (C : CohStruct M)
@@ -182,7 +206,14 @@ module wip.PolyOver where
     SubInvar-transp! (Rel= Q ⟪ M ⟫)
                      (SlcRel= Q ⟪ M ⟫ (Ψ C))
                      (SubInvar↑ (RelOver Q ⟪ M ⟫) ⟪ M ⇙ (Ψ C) ⟫ (Ψ (H C)))
-  H (CohStruct↑ P Q M C) = CohStruct-transp! (Rel= Q ⟪ M ⟫) (SlcRel= Q ⟪ M ⟫ (Ψ C))
-    (SubInvar-po! (Rel= Q ⟪ M ⟫) (SlcRel= Q ⟪ M ⟫ (Ψ C)) (SubInvar↑ (RelOver Q ⟪ M ⟫) ⟪ M ⇙ (Ψ C) ⟫ (Ψ (H C))))
-    (CohStruct↑ (P // ⟪ M ⟫) (RelOver Q ⟪ M ⟫) (M ⇙ Ψ C) (H C))
+  H (CohStruct↑ P Q M C) =
+    CohStruct-transp! (Rel= Q ⟪ M ⟫)
+                      (SlcRel= Q ⟪ M ⟫ (Ψ C))
+                      (SubInvar-po! (Rel= Q ⟪ M ⟫)
+                                    (SlcRel= Q ⟪ M ⟫ (Ψ C))
+                                    (SubInvar↑ (RelOver Q ⟪ M ⟫) ⟪ M ⇙ (Ψ C) ⟫ (Ψ (H C))))
+                      (CohStruct↑ (P // ⟪ M ⟫)
+                                  (RelOver Q ⟪ M ⟫)
+                                  (M ⇙ Ψ C)
+                                  (H C))
 
