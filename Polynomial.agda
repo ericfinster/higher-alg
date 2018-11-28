@@ -386,3 +386,20 @@ module Polynomial where
       → –> (α j) l₀ == –> (β j) l₁
     ↓-W-Frame-out idp α .α idp j l .l idp = idp
 
+    Decor-== : {X : I → Type ℓ} {i : I} {f : Op P i}
+      → {δ₀ δ₁ : Decor P f X}
+      → (ϕ : (j : I) (p : Param P f j) → δ₀ j p == δ₁ j p)
+      → δ₀ == δ₁
+    Decor-== ϕ = λ= (λ j → λ= (λ p → ϕ j p))
+
+    -- Okay, now I want a dependent extension of this idea.
+    -- How does that work?
+
+    -- Decor-↓ : {X : I → Type ℓ} {i : I} {f : Op P i}
+    --   → (Q : Decor P f X → Type ℓ)
+    --   → {δ₀ δ₁ : Decor P f X}
+    --   → {x : Q δ₀} {y : Q δ₁}
+    --   → (ϕ : (j : I) (p : Param P f j) → δ₀ j p == δ₁ j p)
+    --   → x == y [ Q ↓ Decor-== ϕ ]
+    -- Decor-↓ = {!!}
+
