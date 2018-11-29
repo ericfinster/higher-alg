@@ -38,14 +38,14 @@ module wip.Biased where
     -- This is now a simple consequence of the previous...
     ↓-γ-param' : {i j : I} {f : Op P i}
       → {ϕ₀ ϕ₁ : Decor P f (Op P)}
-      → (ψ : (j : I) (p : Param P f j) → ϕ₀ j p == ϕ₁ j p)
+      → {ψ : (j : I) (p : Param P f j) → ϕ₀ j p == ϕ₁ j p}
       → {k : I} {p : Param P f k}
       → {q₀ : Param P (ϕ₀ k p) j} {q₁ : Param P (ϕ₁ k p) j}
       → (c : q₀ == q₁ [ (λ x → Param P x j) ↓ ψ k p ])
       → –> (γ-frm f ϕ₀ j) (k , p , q₀) ==
         –> (γ-frm f ϕ₁ j) (k , p , q₁)
           [ (λ x → Param P x j) ↓ ap (γ f) (Decor-== P ψ) ]
-    ↓-γ-param' ψ {k} {p} {q₀} {q₁} c =
+    ↓-γ-param' {ψ = ψ} {k} {p} {q₀} {q₁} c =
       ↓-γ-param (Decor-== P ψ) (transport (λ y → q₀ == q₁ [ (λ x → Param P x _) ↓ y ]) lem c)
 
       where lem : ψ k p == app= (app= (λ= (λ j → λ= (ψ j))) k) p
@@ -164,18 +164,59 @@ module wip.Biased where
 
       open BiasedLaws L
 
+      μ-graft-inv-lem₀ : {i : I} 
+        → (ψ : ∀ j → Leaf P (lf i) j → W P j)
+        → {j : I} (q : i == j)
+        → transport (Op P) q (μ-bsd (ψ i idp)) == μ-bsd (ψ j q)
+      μ-graft-inv-lem₀ ψ idp = idp
+
+        -- ap (γ (η i)) (Decor-== P (λ j p → μ-graft-inv-lem₀ ψ (<– (η-frm i j) p)))
+
+
+      μ-graft-inv-lem₁ : {i : I} 
+        → (ψ : ∀ j → Leaf P (lf i) j → W P j)
+        → {j : I} (q : i == j)
+        → (l : Leaf P (ψ i idp) j)
+        → {!(<–-inv-l (η-frm i i) idp)!} == {!!} [ (λ x → Param P x j) ↓ μ-graft-inv-lem₀ ψ q ]
+      μ-graft-inv-lem₁ = {!!}
+
+
+            -- a = transport! (λ x → Param P (transport (Op P) x (μ-bsd (ψ i idp))) j) (<–-inv-l (η-frm i i) idp) (–> (μ-bsd-frm (ψ i idp) j) l)
+            -- b = transport! (λ x → Param P (μ-bsd (ψ k x)) j) (<–-inv-l (μ-bsd-frm (lf i) k) p) (–> (μ-bsd-frm (ψ k p) j) l₀)
+
+
+-- Goal: PathOver (λ x → Param P x j)
+--       (μ-graft-inv-lem₀ ψ
+--        (is-equiv.g (snd (η-frm i i)) (–> (η-frm i i) idp)))
+--       (transport!
+--        (λ x → Param P (transport (Op P) x (μ-bsd (ψ i idp))) j)
+--        (<–-inv-l (η-frm i i) idp) (fst (μ-bsd-frm (ψ i idp) j) l))
+--       (transport!
+--        (λ x →
+--           Param P
+--           (μ-bsd
+--            (ψ (fst (is-equiv.g (snd (graft-leaf-eqv P (lf i) ψ j)) l)) x))
+--           j)
+--        (is-equiv.g-f
+--         (snd
+--          (μ-bsd-frm (lf i)
+--           (fst (is-equiv.g (snd (graft-leaf-eqv P (lf i) ψ j)) l))))
+--         (fst (snd (is-equiv.g (snd (graft-leaf-eqv P (lf i) ψ j)) l))))
+--        (fst
+--         (μ-bsd-frm
+--          (ψ (fst (is-equiv.g (snd (graft-leaf-eqv P (lf i) ψ j)) l))
+--           (fst (snd (is-equiv.g (snd (graft-leaf-eqv P (lf i) ψ j)) l))))
+--          j)
+--         (snd (snd (is-equiv.g (snd (graft-leaf-eqv P (lf i) ψ j)) l)))))
+
+
+
       μ-graft-inv : {i : I} (w : W P i)
         → (ψ : ∀ j → Leaf P w j → W P j)
         → μ-bsd (graft P w ψ) ==
           γ (μ-bsd w) (λ j p → μ-bsd (ψ j (<– (μ-bsd-frm w j) p)))
       μ-graft-inv (lf i) ψ = unit-r (μ-bsd (ψ i idp)) ∙
-        ap (γ (η i)) (Decor-== P (λ j p → lem (<– (η-frm i j) p)))
-    
-        where lem : {j : I} (q : i == j)
-                → transport (Op P) q (μ-bsd (ψ i idp)) ==
-                  μ-bsd (ψ j q)
-              lem idp = idp
-        
+        ap (γ (η i)) (Decor-== P (λ j p → μ-graft-inv-lem₀ ψ (<– (η-frm i j) p)))
       μ-graft-inv (nd (f , ϕ)) ψ = 
         let ih j p = μ-graft-inv (ϕ j p) (λ k l → ψ k (j , p , l))
             ϕ' j p = μ-bsd (ϕ j p)
@@ -203,8 +244,12 @@ module wip.Biased where
         → –> (μ-bsd-frm (graft P w ψ) j) l == μ-graft-lf-param w ψ j l
             [ (λ x → Param P x j) ↓ μ-graft-inv w ψ ]
       μ-graft-lf-inv (lf i) ψ j l =
-        unit-r-frm i (μ-bsd (ψ i idp)) j (–> (μ-bsd-frm (ψ i idp) j) l) ∙ᵈ
-        ↓-γ-param' B {!!} {!!}
+        let (k , p , l₀) = <– (graft-leaf-eqv P (lf i) ψ j) l
+            a = transport! (λ x → Param P (transport (Op P) x (μ-bsd (ψ i idp))) j) (<–-inv-l (η-frm i i) idp) (–> (μ-bsd-frm (ψ i idp) j) l)
+            b = transport! (λ x → Param P (μ-bsd (ψ k x)) j)                        (<–-inv-l (η-frm i k) p)   (–> (μ-bsd-frm (ψ k p) j) l₀)
+        in unit-r-frm i (μ-bsd (ψ i idp)) j (–> (μ-bsd-frm (ψ i idp) j) l) ∙ᵈ
+           ↓-γ-param' B {!!}
+
       μ-graft-lf-inv (nd (f , ϕ)) ψ j (k , p , l) =
         let ih-inv j p = μ-graft-inv (ϕ j p) (λ k l → ψ k (j , p , l))
             ih = μ-graft-lf-inv (ϕ k p) (λ k' l → ψ k' (k , p , l)) j l
@@ -218,7 +263,7 @@ module wip.Biased where
             right-fix : assoc-r-param f ϕ' ψ' k p k₀ p₀ j p₁' == μ-graft-lf-param (nd (f , ϕ)) ψ j (k , p , l)
             right-fix = {!!}
             
-        in ↓-γ-param' B ih-inv ih ∙ᵈ assoc-frm f ϕ' ψ' k p k₀ p₀ j p₁' ∙'ᵈ right-fix  
+        in ↓-γ-param' B ih ∙ᵈ assoc-frm f ϕ' ψ' k p k₀ p₀ j p₁' ∙'ᵈ right-fix  
 
       -- assoc-r-param : {i : I} (f : Op P i)
       --     → (ϕ : (j : I) → Param P f j → Op P j)
@@ -254,70 +299,39 @@ module wip.Biased where
             ψp j p = subst P (ϕ j p) (λ g n → fst (κp j p g n))
             ψ j l = ψp j (–> (μ-bsd-frm w j) l)
             ih j p = ap (λ x → μ-bsd (ψp j x)) (<–-inv-r (μ-bsd-frm w j) p) ∙ μ-subst-invar (ϕ j p) (κp j p)
-        in μ-bsd (graft P w ψ) 
-             =⟨ μ-graft-inv w ψ ⟩
-           γ (μ-bsd w) (λ j p → μ-bsd (ψp j (–> (μ-bsd-frm w j) (<– (μ-bsd-frm w j) p))))
-             =⟨ λ= (λ j → λ= (λ p → ih j p)) |in-ctx (λ x → γ (μ-bsd w) x) ⟩ 
-           γ (μ-bsd w) (λ j p → μ-bsd (ϕ j p)) ∎
+         in μ-graft-inv w ψ ∙ ap (γ (μ-bsd w)) (Decor-== P ih)
+        -- in μ-bsd (graft P w ψ) 
+        --      =⟨ μ-graft-inv w ψ ⟩
+        --    γ (μ-bsd w) (λ j p → μ-bsd (ψp j (–> (μ-bsd-frm w j) (<– (μ-bsd-frm w j) p))))
+        --      =⟨ λ= (λ j → λ= (λ p → ih j p)) |in-ctx (λ x → γ (μ-bsd w) x) ⟩ 
+        --    γ (μ-bsd w) (λ j p → μ-bsd (ϕ j p)) ∎
 
-      postulate
-      
-        μ-lf-invar : {i : I} (w : W P i)
-          → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
-          → (j : I) (l : Leaf P (subst P w (λ g n → fst (κ g n))) j)
-          → –> (μ-bsd-frm (subst P w (λ g n → fst (κ g n))) j) l  == 
-            –> (μ-bsd-frm w j ∘e subst-lf-eqv P w (λ g n → fst (κ g n)) j) l
-              [ (λ x → Param P x j) ↓ μ-subst-invar w κ ]
-      -- μ-lf-invar (lf i) κ j l = idp
-      -- μ-lf-invar (nd (f , ϕ)) κ j l = {!!}
 
-      -- module _ {i : I} (f : Op P i) (ϕ : Decor P f (W P))
-      --   (w : Op (P // R) (i , f))
-      --   (κ : (g : Ops P) → Node P (nd (f , ϕ)) g → Op (P // R) g) where
+      μ-lf-invar : {i : I} (w : W P i)
+        → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
+        → (j : I) (l : Leaf P (subst P w (λ g n → fst (κ g n))) j)
+        → –> (μ-bsd-frm (subst P w (λ g n → fst (κ g n))) j) l  == 
+          –> (μ-bsd-frm w j ∘e subst-lf-eqv P w (λ g n → fst (κ g n)) j) l
+            [ (λ x → Param P x j) ↓ μ-subst-invar w κ ]
 
-      --   w' = fst (fst w)
-      --   α' = snd (fst w)
+      μ-subst-lf-inv-lem : {i j : I} (f : Op P i) (ϕ : Decor P f (W P))
+        → (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
+        → (κ : (g : Ops P) → Node P (nd (f , ϕ)) g → Op (P // R) g)
+        → (l : Leaf P (graft P w (λ j' l' → subst P (ϕ j' (–> (α j') l')) (λ g n → fst (κ g (inr (j' , (–> (α j') l') , n))) ))) j)
+        → –> (μ-bsd-frm (graft P w (λ j' l' → subst P (ϕ j' (–> (α j') l')) (λ g n → fst (κ g (inr (j' , (–> (α j') l') , n))) ))) j) l ==
+          –> (γ-frm f (λ k p → μ-bsd (ϕ k p)) j) (graft-leaf-rec P w (λ j l → subst P (ϕ j (–> (α j) l))
+                  (λ g n → fst (κ g (inr (j , –> (α j) l , n))))) j
+                  (λ k l₀ l₁ → k , (–> (α k) l₀) ,
+                  (–> (μ-bsd-frm (ϕ k (–> (α k) l₀)) j)
+                  (subst-lf-to P (ϕ k (–> (α k) l₀)) (λ g n → fst (κ g (inr (k , (–> (α k) l₀) , n)))) j l₁))) l) 
+            [ (λ x → Param P x j) ↓ μ-subst-inv-lem f ϕ ((w , α) , r) κ ]
 
-      --   κ'' : (j : I) (l : Leaf P w' j) (g : Ops P) → Node P (ϕ j (–> (α' j) l)) g → InFrame P g
-      --   κ'' j l g n = fst (κ g (inr (j , –> (snd (fst w) j) l , n)))
-        
-      --   ψ' : Decor (Fr P) w' (W P)
-      --   ψ' j l = subst P (ϕ j (–> (α' j) l)) (κ'' j l)
+      μ-lf-invar (lf i) κ j l = idp
+      μ-lf-invar (nd (f , ϕ)) κ j l =
+        let ((w , α) , r) = κ (_ , f) (inl idp)
+        in μ-subst-lf-inv-lem f ϕ w α r κ l ∙'ᵈ {!!}
 
-      --   grft : W P i
-      --   grft = graft P w' ψ'
-
-      -- μ-subst-lf-inv-lem₀ : {i : I} (f : Op P i) (ϕ : Decor P f (W P))
-      --   → (w : Op (P // R) (i , f))
-      --   → (κ : (g : Ops P) → Node P (nd (f , ϕ)) g → Op (P // R) g)
-      --   → (j : I) (l :  Leaf P (grft f ϕ w κ) j)
-      --   → Type ℓ
-      -- μ-subst-lf-inv-lem₀ = {!!}
-
-      -- μ-subst-lf-inv-lem : {i : I} (f : Op P i) (ϕ : Decor P f (W P))
-      --   → (w : Op (P // R) (i , f))
-      --   → (κ : (g : Ops P) → Node P (nd (f , ϕ)) g → Op (P // R) g)
-      --   → (j : I) (l :  Leaf P (grft f ϕ w κ) j)
-      --   → –> (μ-bsd-frm (grft f ϕ w κ) j) l ==
-      --     –> (γ-frm f (λ k p → μ-bsd (ϕ k p)) j) (graft-leaf-rec P (fst (fst w)) (λ j l → subst P (ϕ j (–> (snd (fst w) j) l))
-      --             (λ g n → fst (κ g (inr (j , –> (snd (fst w) j) l , n))))) j
-      --             (λ k l₀ l₁ → k , (–> (snd (fst w) k) l₀) ,
-      --             (–> (μ-bsd-frm (ϕ k (–> (snd (fst w) k) l₀)) j)
-      --             (subst-lf-to P (ϕ k (–> (snd (fst w) k) l₀)) (λ g n → fst (κ g (inr (k , (–> (snd (fst w) k) l₀) , n)))) j l₁))) l) [ (λ x → Param P x j) ↓ μ-subst-inv-lem f ϕ w κ ]
-                  
-      -- μ-subst-lf-inv-lem ._ ϕ ((w , ._) , idp) κ j l = {!!}
-
-      -- subst-lf-to : {i : I} (w : W P i)
-      --   → (κ : (g : Ops P) → Node P w g → InFrame P g)
-      --   → (j : I) → Leaf P (subst w κ) j → Leaf P w j
-      -- subst-lf-to (lf i) κ j l = l
-      -- subst-lf-to (nd (f , ϕ)) κ j = 
-      --   let (w , α) = κ (_ , f) (inl idp)
-      --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
-      --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-      --   in graft-leaf-rec P w ψ j (λ k l₀ l₁ →
-      --        k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁) 
-
+      μ-subst-lf-inv-lem ._ ϕ w ._ idp κ l = {!!}
 
       --
       --  Full substitution invariance

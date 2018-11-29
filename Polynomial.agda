@@ -161,15 +161,6 @@ module Polynomial where
         → (j : I) (σ : (k : I) (l : Leaf P w k) (m : Leaf P (ψ k l) j) → A)
         → (l : Leaf P (graft w ψ) j)
         → graft-leaf-rec w ψ j (λ k l m → f (σ k l m)) l == f (graft-leaf-rec w ψ j σ l)  
-    -- graft-leaf-rec-∘ f w ψ j σ l = {!!}
-
-  -- subst-lf-to (nd (f , ϕ)) κ j = 
-  --   let (w , α) = κ (_ , f) (inl idp)
-  --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
-  --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-  --   in graft-leaf-rec P w ψ j (λ k l₀ l₁ →
-  --        k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁) 
-
 
     module _ {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (j : I) where
 
@@ -392,14 +383,4 @@ module Polynomial where
       → δ₀ == δ₁
     Decor-== ϕ = λ= (λ j → λ= (λ p → ϕ j p))
 
-    -- Okay, now I want a dependent extension of this idea.
-    -- How does that work?
-
-    -- Decor-↓ : {X : I → Type ℓ} {i : I} {f : Op P i}
-    --   → (Q : Decor P f X → Type ℓ)
-    --   → {δ₀ δ₁ : Decor P f X}
-    --   → {x : Q δ₀} {y : Q δ₁}
-    --   → (ϕ : (j : I) (p : Param P f j) → δ₀ j p == δ₁ j p)
-    --   → x == y [ Q ↓ Decor-== ϕ ]
-    -- Decor-↓ = {!!}
 
