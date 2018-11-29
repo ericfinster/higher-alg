@@ -3,6 +3,7 @@
 open import HoTT
 open import Util
 open import Polynomial
+open import Grafting
 
 --
 --  The postulates in this file are not really postulates.  In each
@@ -33,12 +34,12 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (j : I) → Leaf P (subst w κ) j → Leaf P w j
   subst-lf-to (lf i) κ j l = l
-  subst-lf-to (nd (f , ϕ)) κ j = 
+  subst-lf-to (nd (f , ϕ)) κ j l = 
     let (w , α) = κ (_ , f) (inl idp)
         κ' j l g n = κ g (inr (j , –> (α j) l , n))
         ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-    in graft-leaf-rec P w ψ j (λ k l₀ l₁ →
-         k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁) 
+        (k , l₀ , l₁) = graft-leaf-to P w ψ j l
+    in k , –> (α k) l₀ , subst-lf-to (ϕ k (–> (α k) l₀)) (κ' k l₀) j l₁
 
   subst-lf-from : {i : I} (w : W P i)
     → (κ : (g : Ops P) → Node P w g → InFrame P g)
@@ -50,8 +51,8 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
         ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
         l' = subst-lf-from (ϕ k p) (λ g n → κ g (inr (k , p , n))) j l
         Q x = Leaf P (subst (ϕ k x) (λ g n → κ g (inr (k , x , n)))) j
-    in graft-leaf-to P w ψ j (k , <– (α k) p , transport! Q (<–-inv-r (α k) p) l')
-
+    in graft-leaf-from P w ψ j (k , <– (α k) p , transport! Q (<–-inv-r (α k) p) l')
+    
   postulate
 
     subst-lf-to-from : {i : I} (w : W P i)
@@ -86,40 +87,20 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     transport Q (<–-inv-l (subst-lf-eqv w κ j) l)
                 (σ (subst-lf-to w κ j l))
 
-  -- subst-lf-elim (lf i) κ j Q σ l = σ l
-  -- subst-lf-elim (nd (f , ϕ)) κ j Q σ l = 
-  --   let (w , α) = κ (_ , f) (inl idp)
-  --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
-  --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-  --   in graft-leaf-elim P w ψ j Q (λ k l₀ → subst-lf-elim (ϕ k (–> (α k) l₀)) (κ' k l₀) j
-  --        (λ l₁ → Q (graft-leaf-to P w ψ j (k , l₀ , l₁)))
-  --        (λ lϕ → transport (λ x → Q (graft-leaf-to P w ψ j x)) (pair= idp (pair= (<–-inv-l (α k) l₀) {!!}))
-  --          (σ (k , (–> (α k) l₀) , lϕ)))) l
-
-  -- postulate
-
-  --   -- Should not be hard from the equivalence coherences ...
-  --   subst-lf-elim-β : {i : I} (w : W P i)
-  --     → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
-  --     → (Q : Leaf P (subst w κ) j → Type ℓ)
-  --     → (σ : (l : Leaf P w j) → Q (subst-lf-in w κ j l))
-  --     → (l : Leaf P w j)
-  --     → subst-lf-elim w κ j Q σ (subst-lf-in w κ j l) == σ l
-
   -- The recursor
   
-  subst-lf-rec : {A : Type ℓ} {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
-    → (σ : Leaf P w j → A)
-    → Leaf P (subst w κ) j → A
-  subst-lf-rec w κ j σ = σ ∘ (–> (subst-lf-eqv w κ j))
+  -- subst-lf-rec : {A : Type ℓ} {i : I} (w : W P i)
+  --   → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
+  --   → (σ : Leaf P w j → A)
+  --   → Leaf P (subst w κ) j → A
+  -- subst-lf-rec w κ j σ = σ ∘ (–> (subst-lf-eqv w κ j))
 
-  subst-lf-rec-β : {A : Type ℓ} {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
-    → (σ : Leaf P w j → A)
-    → (l : Leaf P w j)
-    → subst-lf-rec w κ j σ (subst-lf-in w κ j l) == σ l
-  subst-lf-rec-β w κ j σ l = ap σ (<–-inv-r (subst-lf-eqv w κ j) l)
+  -- subst-lf-rec-β : {A : Type ℓ} {i : I} (w : W P i)
+  --   → (κ : (g : Ops P) → Node P w g → InFrame P g) (j : I)
+  --   → (σ : Leaf P w j → A)
+  --   → (l : Leaf P w j)
+  --   → subst-lf-rec w κ j σ (subst-lf-in w κ j l) == σ l
+  -- subst-lf-rec-β w κ j σ l = ap σ (<–-inv-r (subst-lf-eqv w κ j) l)
 
   -- Nodes in a substitution
 
@@ -178,21 +159,21 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
 
   -- subst node elim
 
-  subst-nd-in : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
-    → (g : Ops P) (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
-    → Node P (subst w κ) g
-  subst-nd-in w κ g h n₀ n₁ = subst-nd-from w κ g (h , n₀ , n₁)
+  -- subst-nd-in : {i : I} (w : W P i)
+  --   → (κ : (g : Ops P) → Node P w g → InFrame P g)
+  --   → (g : Ops P) (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
+  --   → Node P (subst w κ) g
+  -- subst-nd-in w κ g h n₀ n₁ = subst-nd-from w κ g (h , n₀ , n₁)
 
-  subst-nd-elim : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
-    → (Q : Node P (subst w κ) g → Type ℓ)
-    → (σ : (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
-           → Q (subst-nd-in w κ g h n₀ n₁))
-    → (n : Node P (subst w κ) g) → Q n
-  subst-nd-elim w κ g Q σ n = 
-    let (h , n₀ , n₁) = subst-nd-to w κ g n
-    in transport Q (<–-inv-l (subst-nd-eqv w κ g) n) (σ h n₀ n₁)
+  -- subst-nd-elim : {i : I} (w : W P i)
+  --   → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
+  --   → (Q : Node P (subst w κ) g → Type ℓ)
+  --   → (σ : (h : Ops P) (n₀ : Node P w h) (n₁ : Node P (fst (κ h n₀)) g)
+  --          → Q (subst-nd-in w κ g h n₀ n₁))
+  --   → (n : Node P (subst w κ) g) → Q n
+  -- subst-nd-elim w κ g Q σ n = 
+  --   let (h , n₀ , n₁) = subst-nd-to w κ g n
+  --   in transport Q (<–-inv-l (subst-nd-eqv w κ g) n) (σ h n₀ n₁)
 
   -- postulate
   
@@ -206,9 +187,9 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
 
   -- subst recursor
 
-  subst-nd-rec : {A : Type ℓ} {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
-    → (σ : Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → A)
-    → Node P (subst w κ) g → A
-  subst-nd-rec w κ g σ n = σ (subst-nd-to w κ g n)
+  -- subst-nd-rec : {A : Type ℓ} {i : I} (w : W P i)
+  --   → (κ : (g : Ops P) → Node P w g → InFrame P g) (g : Ops P)
+  --   → (σ : Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → A)
+  --   → Node P (subst w κ) g → A
+  -- subst-nd-rec w κ g σ n = σ (subst-nd-to w κ g n)
 
