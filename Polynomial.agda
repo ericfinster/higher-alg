@@ -104,7 +104,7 @@ module Polynomial where
   ⟪_⟫ : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) → PolyRel P
   ⟪_⟫ {P = P} M (i , f) (w , α) = Path {A = OutFrame P w}
     (μ M w , μ-frm M w) (f , α)
-  
+
   --
   --  Path-overs for Frames in each variable
   --
