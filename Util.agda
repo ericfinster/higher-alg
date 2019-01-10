@@ -4,6 +4,11 @@ open import HoTT
 
 module Util where
 
+  _>>_ : ∀ {ℓ} {A : Type ℓ} {B : A → Type ℓ} (a : A) (f : (a : A) → B a) → B a
+  a >> ff = ff a
+
+  infixl 40 _>>_
+
   -- Used for the "inspect idiom" in proofs below
   
   data Graph {ℓ : ULevel} {X : Type ℓ} {Y : X → Type ℓ} (f : ∀ x → Y x) (x : X) (y : Y x) : Type ℓ where
@@ -194,4 +199,3 @@ module Util where
     → inl p == inl q [ (λ a → P a ⊔ Q a) ↓ e ]
     → p == q [ P ↓ e ]
   ⊔-po-inl idp p q d = –> (inl=inl-equiv p q) d
-
