@@ -235,18 +235,19 @@ module Biased where
 
             Q x = Param P (μ-bsd (ψ k₀ (fst x , fst (snd x) , snd (snd x)))) j
             t x = fst x , fst (snd x) , <– (μ-bsd-frm (ϕ (fst x) (fst (snd x))) k₀) (snd (snd x))
-
-            p₁' = transport! (λ x → Param P (μ-bsd (ψ k₀ (k , p , x))) j) pth₀ p₁
+            s x = k , p , x
+            
+            p₁' = transport! (Q ∘ s) pth₀ p₁
 
             -- With the above definitions, this is just transport based path algebra ....
-            lem = transport! (λ x → Param P (μ-bsd (ψ k₀ (t x))) j) pth₁  
-                    (transport! (λ x → Param P (μ-bsd (ψ k₀ (k , p , x))) j) pth₀ p₁)
+            lem = transport! (Q ∘ t) pth₁  
+                    (transport! (Q ∘ s) pth₀ p₁)
                     =⟨ transp!-ap Q t pth₁ p₁' ⟩ 
                   transport! Q (ap t pth₁) p₁'
-                    =⟨ transp!-ap Q (λ x → (k , p , x)) pth₀ p₁ |in-ctx (λ z → transport! Q (ap t pth₁) z) ⟩ 
-                  transport! Q (ap t pth₁) (transport! Q (ap (λ x → (k , p , x)) pth₀) p₁)
-                    =⟨ ! (transp!-∙ Q (ap t pth₁) (ap (λ x → (k , p , x)) pth₀) p₁) ⟩
-                  transport! Q (ap t pth₁ ∙ ap (λ x → (k , p , x)) pth₀) p₁ ∎ 
+                    =⟨ transp!-ap Q s pth₀ p₁ |in-ctx (λ z → transport! Q (ap t pth₁) z) ⟩ 
+                  transport! Q (ap t pth₁) (transport! Q (ap s pth₀) p₁)
+                    =⟨ ! (transp!-∙ Q (ap t pth₁) (ap s pth₀) p₁) ⟩
+                  transport! Q (ap t pth₁ ∙ ap s pth₀) p₁ ∎ 
     
         in ↓-γ-param' B ih ∙ᵈ assoc-frm f ϕ' ψ' j k p k₀ p₀ p₁' ∙'ᵈ
              ap (λ x → γ-frm-to B (k₀ , γ-frm-to B (k , p , p₀) , x)) lem

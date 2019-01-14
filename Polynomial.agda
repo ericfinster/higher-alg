@@ -83,6 +83,7 @@ module Polynomial where
             from-to : (l : Leaf (corolla f) j) → from (to l) == l
             from-to (_ , p , idp) = idp
 
+
   --
   --  Polynomial Magmas and Slicing
   --
