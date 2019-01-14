@@ -12,6 +12,26 @@ module Util where
   inspect : ∀ {ℓ} {X : Type ℓ} {Y : X → Type ℓ} (f : ∀ x → Y x) (x : X) → Graph f x (f x)
   inspect f x = ingraph idp
 
+  -- These 4 transp lemmas are used in Biased
+  to-transp!-↓ : ∀ {i j} {A : Type i} (P : A → Type j) {a₁ a₂ : A}
+    (p : a₁ == a₂) (y : P a₂) → y == transport! P p y [ P ↓ ! p ]
+  to-transp!-↓ P idp y = idp
+
+  to-transp!!-↓ : ∀ {i j} {A : Type i} (P : A → Type j) {a₁ a₂ : A}
+    (p : a₁ == a₂) (y : P a₂) → transport! P p y == y [ P ↓ p ]
+  to-transp!!-↓ P idp y = idp
+
+  transp!-ap : ∀ {i j k} {A : Type i} {B : Type j} (C : B → Type k) (f : A → B)
+    → {x y : A} (p : x == y) (c : C (f y))
+    → transport! (C ∘ f) p c == transport! C (ap f p) c 
+  transp!-ap C f idp c = idp
+
+  transp!-∙ : ∀ {i j} {A : Type i} (B : A → Type j) 
+    → {x y z : A} (p : x == y) (q : y == z) (c : B z)
+    → transport! B (p ∙ q) c == transport! B p (transport! B q c)
+  transp!-∙ B idp idp c = idp
+
+
   -- Needed for a lemma.
 
   apd↓-cst :  ∀ {i j} {A : Type i} {B C : A → Type j} (f : {a : A} → B a → C a)

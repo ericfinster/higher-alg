@@ -8,30 +8,7 @@ open import Substitution
 open import PolyMonad
 open import WPaths
 
-module wip.Biased where
-
-  -- An ap↓ lemma needed below ...
-  apd↓= :  ∀ {i j} {A : Type i} {B C : A → Type j}
-    {x y : A} {p : x == y} {u : B x} {v : B y}
-    {f : B x → C x}
-    {g : B y → C y}
-    → f == g [ (λ a → B a → C a) ↓ p ] 
-    → u == v [ B ↓ p ]
-    → f u == g v [ C ↓ p ]
-  apd↓= {p = idp} idp idp = idp
-
-  to-transp!-↓ : ∀ {i j} {A : Type i} (P : A → Type j) {a₁ a₂ : A}
-    (p : a₁ == a₂) (y : P a₂) → y == transport! P p y [ P ↓ ! p ]
-  to-transp!-↓ P idp y = idp
-
-  to-transp!!-↓ : ∀ {i j} {A : Type i} (P : A → Type j) {a₁ a₂ : A}
-    (p : a₁ == a₂) (y : P a₂) → transport! P p y == y [ P ↓ p ]
-  to-transp!!-↓ P idp y = idp
-
-  transp!-ap : ∀ {i j k} {A : Type i} {B : Type j} (C : B → Type k) (f : A → B)
-    → {x y : A} {p : x == y} (c : C (f y))
-    → transport! (C ∘ f) p c == transport! C (ap f p) c 
-  transp!-ap C f {p = idp} c = idp
+module Biased where
 
   record BiasedMgm {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
     field
@@ -153,16 +130,16 @@ module wip.Biased where
       → Param P (μ-bsd w) j
     μ-bsd-frm-to (lf i) j l = –> (η-frm i j) l
     μ-bsd-frm-to (nd (f , ϕ)) j (k , p , l) =
-      let ψ' j p = μ-bsd (ϕ j p)
-      in –> (γ-frm f ψ' j) (k , p , μ-bsd-frm-to (ϕ k p) j l)
+      let ϕ' j p = μ-bsd (ϕ j p)
+      in –> (γ-frm f ϕ' j) (k , p , μ-bsd-frm-to (ϕ k p) j l)
 
     μ-bsd-frm-from : {i : I} (w : W P i) (j : I)
       → Param P (μ-bsd w) j
       → Leaf P w j
     μ-bsd-frm-from (lf i) j p = <– (η-frm i j) p
     μ-bsd-frm-from (nd (f , ϕ)) j p₀ = 
-      let ψ' j p = μ-bsd (ϕ j p)
-          (k , p , q) = <– (γ-frm f ψ' j) p₀
+      let ϕ' j p = μ-bsd (ϕ j p)
+          (k , p , q) = <– (γ-frm f ϕ' j) p₀
       in k , p , μ-bsd-frm-from (ϕ k p) j q
       
     μ-bsd-frm-to-from : {i : I} (w : W P i) (j : I)
@@ -170,21 +147,20 @@ module wip.Biased where
       → μ-bsd-frm-to w j (μ-bsd-frm-from w j p) == p
     μ-bsd-frm-to-from (lf i) j p = <–-inv-r (η-frm i j) p
     μ-bsd-frm-to-from (nd (f , ϕ)) j p₀ = 
-      let ψ' j p = μ-bsd (ϕ j p)
-          (k , p , q) = <– (γ-frm f ψ' j) p₀
-      in ap (λ x → –> (γ-frm f ψ' j) (k , p , x)) (μ-bsd-frm-to-from (ϕ k p) j q) ∙
-         <–-inv-r (γ-frm f ψ' j) p₀
+      let ϕ' j p = μ-bsd (ϕ j p)
+          (k , p , q) = <– (γ-frm f ϕ' j) p₀
+      in ap (λ x → –> (γ-frm f ϕ' j) (k , p , x)) (μ-bsd-frm-to-from (ϕ k p) j q) ∙
+         <–-inv-r (γ-frm f ϕ' j) p₀
 
     μ-bsd-frm-from-to : {i : I} (w : W P i) (j : I)
       → (l : Leaf P w j)
       → μ-bsd-frm-from w j (μ-bsd-frm-to w j l) == l
     μ-bsd-frm-from-to (lf i) j l = <–-inv-l (η-frm i j) l
     μ-bsd-frm-from-to (nd (f , ϕ)) j (k , p , l) =
-      let ψ' j p = μ-bsd (ϕ j p)
-          trpl-eq = <–-inv-l (γ-frm f ψ' j) (k , p , μ-bsd-frm-to (ϕ k p) j l)
-          funovr = apd (λ x → μ-bsd-frm-from (ϕ (fst x) (snd x)) j) (pair= (fst= trpl-eq) (↓-Σ-fst (snd= trpl-eq)))
-      in pair= (fst= trpl-eq) (↓-Σ-in (↓-Σ-fst (snd= trpl-eq))
-           (apd↓= funovr (↓-Σ-snd (snd= trpl-eq)) ∙'ᵈ μ-bsd-frm-from-to (ϕ k p) j l)) 
+      let ϕ' j p = μ-bsd (ϕ j p)
+      in ap (λ x → (fst x , fst (snd x) , μ-bsd-frm-from (ϕ (fst x) (fst (snd x))) j (snd (snd x))))
+            (<–-inv-l (γ-frm f ϕ' j) (k , p , μ-bsd-frm-to (ϕ k p) j l)) ∙
+         ap (λ x → (k , p , x)) (μ-bsd-frm-from-to (ϕ k p) j l)
 
     μ-bsd-frm : {i : I} (w : W P i) → Frame P w (μ-bsd w)
     μ-bsd-frm w j = equiv (μ-bsd-frm-to w j) (μ-bsd-frm-from w j)
@@ -253,14 +229,28 @@ module wip.Biased where
             (k₀ , l₀ , l₁) = –> (graft-leaf-eqv P (ϕ k p) (λ k' l' → ψ k' (k , p , l')) j) l
             p₀ = –> (μ-bsd-frm (ϕ k p) k₀) l₀
             p₁ = –> (μ-bsd-frm (ψ k₀ (k , p , l₀)) j) l₁
-            p₁' = transport! (λ x → Param P (μ-bsd (ψ k₀ (k , p , x))) j) (<–-inv-l (μ-bsd-frm (ϕ k p) k₀) l₀) p₁
 
-            lem = transport! (λ x → Param P (ψ' k₀ x) j) (<–-inv-l (γ-frm f ϕ' k₀) (k , p , p₀)) p₁'
-                    =⟨ {!(<–-inv-l (μ-bsd-frm (nd (f , ϕ)) k₀) (k , p , l₀))!} ⟩
-                  transport! (λ x → Param P (μ-bsd (ψ k₀ x)) j) (<–-inv-l (μ-bsd-frm (nd (f , ϕ)) k₀) (k , p , l₀)) p₁ ∎ 
+            pth₀ = μ-bsd-frm-from-to (ϕ k p) k₀ l₀
+            pth₁ = <–-inv-l (γ-frm f ϕ' k₀) (k , p , p₀)
 
+            Q x = Param P (μ-bsd (ψ k₀ (fst x , fst (snd x) , snd (snd x)))) j
+            t x = fst x , fst (snd x) , <– (μ-bsd-frm (ϕ (fst x) (fst (snd x))) k₀) (snd (snd x))
+
+            p₁' = transport! (λ x → Param P (μ-bsd (ψ k₀ (k , p , x))) j) pth₀ p₁
+
+            -- With the above definitions, this is just transport based path algebra ....
+            lem = transport! (λ x → Param P (μ-bsd (ψ k₀ (t x))) j) pth₁  
+                    (transport! (λ x → Param P (μ-bsd (ψ k₀ (k , p , x))) j) pth₀ p₁)
+                    =⟨ transp!-ap Q t pth₁ p₁' ⟩ 
+                  transport! Q (ap t pth₁) p₁'
+                    =⟨ transp!-ap Q (λ x → (k , p , x)) pth₀ p₁ |in-ctx (λ z → transport! Q (ap t pth₁) z) ⟩ 
+                  transport! Q (ap t pth₁) (transport! Q (ap (λ x → (k , p , x)) pth₀) p₁)
+                    =⟨ ! (transp!-∙ Q (ap t pth₁) (ap (λ x → (k , p , x)) pth₀) p₁) ⟩
+                  transport! Q (ap t pth₁ ∙ ap (λ x → (k , p , x)) pth₀) p₁ ∎ 
+    
         in ↓-γ-param' B ih ∙ᵈ assoc-frm f ϕ' ψ' j k p k₀ p₀ p₁' ∙'ᵈ
              ap (λ x → γ-frm-to B (k₀ , γ-frm-to B (k , p , p₀) , x)) lem
+
 
       --
       --  2-level substitution invariance
@@ -329,7 +319,7 @@ module wip.Biased where
             Q' x = Param P (μ-bsd (ψp k (–> (μ-bsd-frm w k) x))) _
 
             lem₀ = transport! Q' (<–-inv-l (μ-bsd-frm w k) l₀) p₁
-                     =⟨ transp!-ap Q (–> (μ-bsd-frm w k)) p₁ ⟩
+                     =⟨ transp!-ap Q (–> (μ-bsd-frm w k)) (<–-inv-l (μ-bsd-frm w k) l₀) p₁ ⟩
                    transport! Q (ap (–> (μ-bsd-frm w k)) (<–-inv-l (μ-bsd-frm w k) l₀)) p₁
                      =⟨ <–-inv-adj (μ-bsd-frm w k) l₀ |in-ctx (λ x → transport! Q x p₁) ⟩ 
                    transport! Q (<–-inv-r (μ-bsd-frm w k) p₀) p₁ ∎
