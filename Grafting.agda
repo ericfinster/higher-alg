@@ -18,44 +18,43 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
   --
 
   graft-leaf-to : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (k : I)
-    → Leaf P (graft w ψ) k
     → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k))
-  graft-leaf-to (lf i) ψ k l = i , idp , l
-  graft-leaf-to (nd (f ,  ϕ)) ψ k (j , p , l) = 
-    let (s , t , u) = graft-leaf-to (ϕ j p) (λ k l → ψ k (j , p , l)) k l
-    in s , (j , p , t) , u
+    → Leaf P (graft w ψ) k
+  graft-leaf-to (lf i) ψ k (.i , idp , l) = l
+  graft-leaf-to (nd (f ,  ϕ)) ψ k (j₁ , (j₀ , p , l₀) , l₁) = 
+    let ψ' j p k l = ψ k (j , p , l)
+    in (j₀ , p , graft-leaf-to (ϕ j₀ p) (ψ' j₀ p) k (j₁ , l₀ , l₁))
 
   graft-leaf-from : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (k : I)
-    → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k))
     → Leaf P (graft w ψ) k
-  graft-leaf-from (lf i) ψ k (.i , idp , l) = l
-  graft-leaf-from (nd (f ,  ϕ)) ψ k (j₁ , (j₀ , p , l₀) , l₁) = 
-    let ψ' j p k l = ψ k (j , p , l)
-    in (j₀ , p , graft-leaf-from (ϕ j₀ p) (ψ' j₀ p) k (j₁ , l₀ , l₁))
+    → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k))
+  graft-leaf-from (lf i) ψ k l = i , idp , l
+  graft-leaf-from (nd (f ,  ϕ)) ψ k (j , p , l) = 
+    let (s , t , u) = graft-leaf-from (ϕ j p) (λ k l → ψ k (j , p , l)) k l
+    in s , (j , p , t) , u
 
   abstract
 
-    -- Actually, I highly suspect this one can be simplified...
-    graft-leaf-to-from : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (k : I)
-      → (l : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k)))
+
+    graft-leaf-to-from : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
+      → (k : I) (l : Leaf P (graft w ψ) k)
       → graft-leaf-to w ψ k (graft-leaf-from w ψ k l) == l
-    graft-leaf-to-from (lf i) ψ k (.i , idp , l₁) = idp
-    graft-leaf-to-from (nd (f ,  ϕ)) ψ k (j₁ , (j₀ , p , l₀) , l₁) =
+    graft-leaf-to-from (lf i) ψ k l = idp
+    graft-leaf-to-from (nd (f ,  ϕ)) ψ k (j , p , l) =
       let ψ' j p k l = ψ k (j , p , l)
-          ih = graft-leaf-to-from (ϕ j₀ p) (ψ' j₀ p) k (j₁ , l₀ , l₁)
+      in ap (λ x → (j , p , x)) (graft-leaf-to-from (ϕ j p) (ψ' j p) k l) 
+
+    graft-leaf-from-to : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (k : I)
+      → (l : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k)))
+      → graft-leaf-from w ψ k (graft-leaf-to w ψ k l) == l
+    graft-leaf-from-to (lf i) ψ k (.i , idp , l₁) = idp
+    graft-leaf-from-to (nd (f ,  ϕ)) ψ k (j₁ , (j₀ , p , l₀) , l₁) =
+      let ψ' j p k l = ψ k (j , p , l)
+          ih = graft-leaf-from-to (ϕ j₀ p) (ψ' j₀ p) k (j₁ , l₀ , l₁)
       in ap (λ x → (fst x , (j₀ , p , fst (snd x)) , snd (snd x))) ih
 
-    graft-leaf-from-to : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j)
-      → (k : I) (l : Leaf P (graft w ψ) k)
-      → graft-leaf-from w ψ k (graft-leaf-to w ψ k l) == l
-    graft-leaf-from-to (lf i) ψ k l = idp
-    graft-leaf-from-to (nd (f ,  ϕ)) ψ k (j , p , l) =
-      let ψ' j p k l = ψ k (j , p , l)
-      in ap (λ x → (j , p , x)) (graft-leaf-from-to (ϕ j p) (ψ' j p) k l) 
-
   graft-leaf-eqv : {i : I} (w : W P i) (ψ : ∀ j → Leaf P w j → W P j) (k : I)
-    → Leaf P (graft w ψ) k
-      ≃ Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k))
+    → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k)) ≃ Leaf P (graft w ψ) k
   graft-leaf-eqv w ψ k =
     equiv (graft-leaf-to w ψ k) (graft-leaf-from w ψ k)
           (graft-leaf-to-from w ψ k) (graft-leaf-from-to w ψ k)
@@ -65,8 +64,7 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
   --
 
   graft-node-to : {i : I} (w : W P i)
-    → (ψ : ∀ j → Leaf P w j → W P j)
-    → (g : Ops P)
+    → (ψ : ∀ j → Leaf P w j → W P j) (g : Ops P)
     → Node P w g ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ψ k l) g))
     → Node P (graft w ψ) g
   graft-node-to (lf i) ψ g (inl ())
@@ -199,7 +197,7 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
   graft-assoc : {i : I} (w : W P i)
     → (ψ₀ : ∀ j → Leaf P w j → W P j)
     → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
-    → graft (graft w ψ₀) (λ j l → ψ₁ j (graft-leaf-to w ψ₀ j l)) ==
+    → graft (graft w ψ₀) (λ j l → ψ₁ j (graft-leaf-from w ψ₀ j l)) ==
       graft w (λ j l₀ → graft (ψ₀ j l₀) (λ k l₁ → ψ₁ k (j , l₀ , l₁)))
   graft-assoc (lf i) ψ₀ ψ₁ = idp
   graft-assoc (nd (f , ϕ)) ψ₀ ψ₁ = ap (λ x → nd (f , x))
