@@ -128,22 +128,22 @@ module Polynomial where
     ↓-Op-Frame-out idp idp j l = idp
 
     ↓-W-Frame-in : {i : I} {f : Op P i}
-      → {w₀ w₁ : W P i} (e : w₀ == w₁)
-      → (α : Frame P w₀ f) (β : Frame P w₁ f)
+      → {w₀ w₁ : W P i} {e : w₀ == w₁}
+      → {α : Frame P w₀ f} {β : Frame P w₁ f}
       → (t : (j : I) (l₀ : Leaf P w₀ j) (l₁ : Leaf P w₁ j)
              → (r : l₀ == l₁ [ (λ x → Leaf P x j) ↓ e ])
              → –> (α j) l₀ == –> (β j) l₁)
       → α == β [ (λ x → Frame P x f) ↓ e ]
-    ↓-W-Frame-in idp α β t = λ= (λ j → equiv-== (λ l → t j l l idp))
+    ↓-W-Frame-in {e = idp} t = λ= (λ j → equiv-== (λ l → t j l l idp))
 
     ↓-W-Frame-out : {i : I} {f : Op P i}
-      → {w₀ w₁ : W P i} (e : w₀ == w₁)
-      → (α : Frame P w₀ f) (β : Frame P w₁ f)
+      → {w₀ w₁ : W P i} {e : w₀ == w₁}
+      → {α : Frame P w₀ f} {β : Frame P w₁ f}
       → α == β [ (λ x → Frame P x f) ↓ e ]
       → (j : I) (l₀ : Leaf P w₀ j) (l₁ : Leaf P w₁ j)
       → (r : l₀ == l₁ [ (λ x → Leaf P x j) ↓ e ])
       → –> (α j) l₀ == –> (β j) l₁
-    ↓-W-Frame-out idp α .α idp j l .l idp = idp
+    ↓-W-Frame-out {e = idp} idp j l .l idp = idp
 
     Decor-== : {X : I → Type ℓ} {i : I} {f : Op P i}
       → {δ₀ δ₁ : Decor P f X}
