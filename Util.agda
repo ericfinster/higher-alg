@@ -102,6 +102,27 @@ module Util where
           from-to : (a : A) → from (to a) == a
           from-to a = contr-has-all-paths ⦃ a-ct ⦄ (from (to a)) a
 
+  -- Used in SubstitutionLaws
+  ⊔-rec-∘ : ∀ {i j k} {A A' : Type i} {B B' : Type j} {C : Type k}
+    → (f : A → C) (g : B → C)
+    → (h : A' → A) (k : B' → B) (x : A' ⊔ B')
+    → ⊔-rec (f ∘ h) (g ∘ k) x  == ⊔-rec f g (⊔-rec (inl ∘ h) (inr ∘ k) x)
+  ⊔-rec-∘ f g h k (inl a') = idp
+  ⊔-rec-∘ f g h k (inr b') = idp
+
+  -- ⊔-codiag : ∀ {i j k} {A A' : Type i} {B : Type j} {C : Type k}
+  --   → (f : A → B) (g : A' → B) (h : B → C) (x : A ⊔ A')
+  --   → ⊔-rec h h (⊔-rec (inl ∘ f) (inr ∘ g) x) == h (⊔-rec f g x)
+  -- ⊔-codiag f g h (inl a) = idp
+  -- ⊔-codiag f g h (inr a') = idp
+
+
+  ⊔-codiag : ∀ {i j k} {A A' : Type i} {B : Type j} {C : Type k}
+    → (f : A → B) (g : A' → B) (h : B → C) (x : A ⊔ A')
+    → ⊔-rec (h ∘ f) (h ∘ g) x == h (⊔-rec f g x)
+  ⊔-codiag f g h (inl a') = idp
+  ⊔-codiag f g h (inr a) = idp
+
   ⊔-emap : ∀ {i i' j j'} {A : Type i} {A' : Type i'}
     → {B : Type j} {B' : Type j'}
     → A ≃ B → A' ≃ B' → A ⊔ A' ≃ B ⊔ B'

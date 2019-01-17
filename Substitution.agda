@@ -112,13 +112,31 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
         ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
     in  subst-nd-from-lcl f ϕ κ g (graft-node-from P w ψ g n) 
 
-  subst-nd-from-lcl f ϕ κ g (inl n) = (_ , f) , inl idp , n
-  subst-nd-from-lcl f ϕ κ g (inr (j , l , n)) =
-    let (w , α) = κ (_ , f) (inl idp)
-        κ' j l g n = κ g (inr (j , –> (α j) l , n))
-        ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-        (h , n₀ , n₁) = subst-nd-from (ϕ j (–> (α j) l)) (κ' j l) g n
-    in h , inr (j , –> (α j) l , n₀) , n₁
+  -- subst-nd-from-lcl f ϕ κ g (inl n) = (_ , f) , inl idp , n
+  -- subst-nd-from-lcl f ϕ κ g (inr (j , l , n)) =
+  --   let (w , α) = κ (_ , f) (inl idp)
+  --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
+  --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
+  --       (h , n₀ , n₁) = subst-nd-from (ϕ j (–> (α j) l)) (κ' j l) g n
+  --   in h , inr (j , –> (α j) l , n₀) , n₁
+
+
+  -- subst-nd-from-lcl : {i : I} (f : Op P i)
+  --   → (ϕ : (j : I) → Param P f j → W P j) 
+  --   → (κ : (h : Ops P) → Node P (nd (f , ϕ)) h → InFrame P h) (g : Ops P)
+  --   → (n : let (w , α) = κ (_ , f) (inl idp)
+  --              κ' j l h n = κ h (inr (j , –> (α j) l , n))
+  --              ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
+  --          in Node P w g ⊔ Σ I (λ j → Σ (Leaf P w j) (λ l → Node P (ψ j l) g)))
+  --   → Σ (Ops P) (λ h → Σ (Node P (nd (f , ϕ)) h) (λ n' → Node P (fst (κ h n')) g))
+  subst-nd-from-lcl f ϕ κ g =
+    ⊔-rec (λ n → (_ , f) , inl idp , n)
+          (λ t → let (j , l , n) = t
+                     (w , α) = κ (_ , f) (inl idp)
+                     κ' j l g n = κ g (inr (j , –> (α j) l , n))
+                     ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
+                     (h , n₀ , n₁) = subst-nd-from (ϕ j (–> (α j) l)) (κ' j l) g n
+                  in h , inr (j , –> (α j) l , n₀) , n₁)
 
   postulate
 

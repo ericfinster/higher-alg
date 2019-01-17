@@ -91,10 +91,12 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
   graft-node-from (nd (f ,  ϕ)) ψ ._ (inl idp) = inl (inl idp)
   graft-node-from (nd (f ,  ϕ)) ψ g (inr (j , p , n)) =
     graft-node-from-lcl f ϕ ψ g j p
-      (graft-node-from (ϕ j p) (λ k l → ψ k (j , p , l)) g n )
+      (graft-node-from (ϕ j p) (λ k l → ψ k (j , p , l)) g n)
 
-  graft-node-from-lcl f ϕ ψ g j p (inl n) = inl (inr (j , p , n))
-  graft-node-from-lcl f ϕ ψ g j p (inr (k , l , n)) = inr (k , (j , p , l) , n)
+  graft-node-from-lcl f ϕ ψ g j p =
+    -- This can also be written as a map ...
+    ⊔-rec (λ n → inl (inr (j , p , n)))
+          (λ t → let (k , l , n) = t in inr ((k , (j , p , l) , n)))
 
   abstract
 
