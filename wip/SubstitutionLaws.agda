@@ -12,9 +12,13 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   open BiasedMgm
   open BiasedLaws
 
-  subst-η : {i : I} (f : Op P i) → InFrame P (i , f)
-  subst-η f = corolla P f , corolla-frm P f
+  subst-η : (f : Ops P) → InFrame P f
+  subst-η (_ , f) = corolla P f , corolla-frm P f
 
+  subst-η-dec : {i : I} (w : W P i) →
+    (g : Ops P) (n : Node P w g) → InFrame P g
+  subst-η-dec w g n = subst-η g
+    
   subst-γ : {i : I} (f : Op P i)
     → (w : W P i) (α : Frame P w f) 
     → (κ : (g : Ops P) → Node P w g → InFrame P g) 
@@ -40,7 +44,7 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   record SubstRel : Type ℓ where
     field
 
-      η-rel : {i : I} (f : Op P i) → R (i , f) (subst-η f)
+      η-rel : {i : I} (f : Op P i) → R (i , f) (subst-η (i , f))
       γ-rel : {i : I} (f : Op P i) (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
                 → (κ : (g : Ops P) → Node P w g → InFrame P g) 
                 → R (i , f) (subst-γ f w α κ)
@@ -48,16 +52,14 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   open SubstRel
   
   SubstBiasedMgm : SubstRel → BiasedMgm (P // R)
-  η (SubstBiasedMgm SRel) (i , f) =
-    subst-η f , η-rel SRel f
+  η (SubstBiasedMgm SRel) f =
+    subst-η f , η-rel SRel (snd f)
   η-frm (SubstBiasedMgm SRel) =
     subst-η-frm
   γ (SubstBiasedMgm SRel) {i , f} ((w , α) , r) κ =
     let κ' g n = fst (κ g n)
     in subst-γ f w α κ' , γ-rel SRel f w α r κ'
   γ-frm (SubstBiasedMgm SRel) ((w , α) , r) κ g =
-    -- This might indicate that you have not chosen the
-    -- most natural direction for the subst-nd equivalence...
     subst-nd-eqv  w (λ g n → fst (κ g n)) g
 
   --
@@ -65,20 +67,34 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   --
 
   subst-unit-l : {i : I} (w : W P i)
-    → subst w (λ g n → corolla P (snd g) , corolla-frm P (snd g)) == w
+    →  subst w (subst-η-dec w) == w
   subst-unit-l (lf i) = idp
   subst-unit-l (nd (f , ϕ)) = ap (λ x → nd (f , x))
     (Decor-== P (λ j p → subst-unit-l (ϕ j p)))
 
+  subst-unit-l-lem : {i : I} (w : W P i)
+    → (j : I) (l : Leaf P (subst w (subst-η-dec w)) j)
+    → l == subst-lf-from w (subst-η-dec w) j l [ (λ x → Leaf P x j) ↓ subst-unit-l w ]
+  subst-unit-l-lem (lf i) j l = idp
+  subst-unit-l-lem (nd (f , ϕ)) j (k , p , l) =
+    ↓-ap-in (λ x → Leaf P x j)
+            (λ x → nd (f , x))
+            (↓-nd-Leaf-ih P (λ j₁ p₁ → subst-unit-l (ϕ j₁ p₁)) k p
+                            (subst-unit-l-lem (ϕ k p) j l))
+
+  subst-unit-l-frm : {i : I} {f : Op P i}
+    → (w : W P i) (α : Frame P w f)
+    → (λ j → α j ∘e (subst-lf-eqv w (λ g n → subst-η g) j) ⁻¹)
+        == α [ (λ x → Frame P x f) ↓ subst-unit-l w ]
+  subst-unit-l-frm w α =
+    let lem j l₀ l₁ q = –> (α j) (subst-lf-from w (subst-η-dec w) j l₀)
+                          =⟨ ! (to-transp (subst-unit-l-lem w j l₀)) |in-ctx (–> (α j)) ⟩
+                        –> (α j) (transport (λ x → Leaf P x j) (subst-unit-l w) l₀)
+                          =⟨ to-transp q |in-ctx (–> (α j)) ⟩ 
+                        –> (α j) l₁ ∎
+    in ↓-W-Frame-in P lem
+
   postulate
-  
-    subst-unit-l-frm : {i : I} {f : Op P i}
-      → (w : W P i) (α : Frame P w f)
-      → (λ j → α j ∘e (subst-lf-eqv w (λ g n → subst-η (snd g)) j) ⁻¹)
-          == α [ (λ x → Frame P x f) ↓ subst-unit-l w ]
-    -- subst-unit-l-frm (lf i) α = λ= (λ j → equiv-== (λ _ → idp))
-    -- subst-unit-l-frm (nd (f₀ , ϕ)) α =
-    --   ↓-W-Frame-in P (λ j l₀ l₁ r → ap (–> (α j)) {!SubstRelMgm!})
 
     subst-unit-r-frm : {i : I} {f : Op P i}
       → (κ : (g : Ops P) → Node P (corolla P f) g → InFrame P g)
@@ -159,15 +175,14 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
          =⟨ λ= (λ g → λ= (λ n → ⊔-codiag (λ n → (_ , f) , inl idp , n) (test g) (ν g) (graft-node-from P w ψ-sg g n))) |in-ctx subst (graft P w ψ-sg) ⟩ 
        subst (graft P w ψ-sg) κ-right ∎
 
-  -- subst-assoc-frm : {i : I} {f : Op P i}
-  --   → (w : W P i) (α : Frame P w f)
-  --   → (κ : (g : Ops P) → Node P w g → Σ (InFrame P g) (R g))
-  --   → (ν : (j : Ops P) → Σ (Ops P) (λ k → Σ (Node P w k) (λ p → Node P (fst (fst (κ k p))) j)) →
-  --                        Σ (InFrame P j) (R j))
-  --   → (λ j → α j ∘e subst-lf-eqv w (λ g n → subst-γ (snd g) (fst (fst (κ g n))) (snd (fst (κ g n))) (λ g' n' → ν g' (g , n , n'))) j) ==
-  --     (λ j → α j ∘e subst-lf-eqv w (λ g n → fst (κ g n)) j ∘e subst-lf-eqv (subst w (λ g n → fst (κ g n))) (λ g' n' → fst (ν g' (subst-nd-to w (λ g n → fst (κ g n)) g' n'))) j)
-  --       [ (λ x → Frame P x f) ↓ subst-assoc w κ ν ]                          
-  -- subst-assoc-frm = {!!}
+  subst-assoc-frm : {i : I} {f : Op P i}
+    → (w : W P i) (α : Frame P w f)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
+    → (ν : (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → InFrame P g)
+    → (λ j → α j ∘e subst-lf-eqv w (λ g n → subst-γ (snd g) (fst (κ g n)) (snd (κ g n)) (λ g₁ n₁ → ν g₁ (g , n , n₁))) j ⁻¹) == 
+      (λ j → snd (subst-γ _ w α κ) j ∘e subst-lf-eqv (fst (subst-γ _ w α κ)) (λ g n → ν g (<– (subst-nd-eqv w κ g) n)) j ⁻¹)
+        [ (λ x → Frame P x f) ↓ subst-assoc w κ ν ]                          
+  subst-assoc-frm = {!!}
 
   record SubstRelLaws (SRel : SubstRel) : Type ℓ where
     field
@@ -183,6 +198,10 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
             [ R (i , f) ↓ pair= (graft-unit P (fst (fst ((κ (i , f) (inl idp)))))) (subst-unit-r-frm (λ g n → fst (κ g n))) ]
 
   open SubstRelLaws
+
+  -- Okay, here what you should do is rephrase the frames theorems
+  -- in such as way as to only mention the places, as you do in
+  -- the section on biased multiplications.
   
   SubstBiasedLaws : (SRel : SubstRel) (SLaws : SubstRelLaws SRel)
     → BiasedLaws (P // R) (SubstBiasedMgm SRel)
@@ -191,11 +210,14 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
           (subst-unit-l-rel SLaws w α r)
   unit-r (SubstBiasedLaws SRel SLaws) {i , f} κ =
     let ((w , α) , r) = κ (i , f) (inl idp)
-    in pair= (pair= (graft-unit P w) (subst-unit-r-frm (λ g n → fst (κ g n))))
+        κ' g n = fst (κ g n)
+    in pair= (pair= (graft-unit P w) (subst-unit-r-frm κ'))
              (subst-unit-r-rel SLaws κ)
-  assoc (SubstBiasedLaws SRel SLaws) ((w , α) , r) κ ν = {!!}
-    -- pair= (pair= (subst-assoc w {!!} {!!}) {!!})
-    --       {!!}
+  assoc (SubstBiasedLaws SRel SLaws) ((w , α) , r) κ ν =
+    let κ' g n = fst (κ g n)
+        ν' g t = fst (ν g t)
+    in pair= (pair= (subst-assoc w κ' ν') (subst-assoc-frm w α κ' ν'))
+          {!!}
   unit-l-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) g n = {!!}
   unit-r-frm (SubstBiasedLaws SRel SLaws) κ g n = {!!}
   assoc-frm (SubstBiasedLaws SRel SLaws) = {!!}

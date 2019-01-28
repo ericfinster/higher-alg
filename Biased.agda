@@ -71,13 +71,9 @@ module Biased where
         –> (γ-frm f ϕ₁ j) (k , p , q₁)
           [ (λ x → Param P x j) ↓ ap (γ f) (Decor-== P ψ) ]
     ↓-γ-param' {ψ = ψ} {k} {p} {q₀} {q₁} c =
-      ↓-γ-param (Decor-== P ψ) (transport (λ y → q₀ == q₁ [ (λ x → Param P x _) ↓ y ]) lem c)
-
-      where lem : ψ k p == app= (app= (λ= (λ j → λ= (ψ j))) k) p
-            lem = ψ k p =⟨ ! (app=-β (ψ k) p) ⟩
-                  app= (λ= (ψ k)) p =⟨ ap (λ g → app= g p) (! (app=-β (λ j → λ= (ψ j)) k)) ⟩ 
-                  app= (app= (λ= (λ j → λ= (ψ j))) k) p ∎
-
+      ↓-γ-param (Decor-== P ψ)
+        (transport (λ y → q₀ == q₁ [ (λ x → Param P x _) ↓ y ])
+                   (Decor-==-β P ψ k p) c)
 
   --
   --  Laws for a Biased Magma
