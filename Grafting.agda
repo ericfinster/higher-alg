@@ -157,17 +157,32 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
     ap (λ x → nd (f , x))
        (Decor-== P (λ j p → graft-unit (ϕ j p)))
 
+  -- graft-unit-lf-to : {i : I} (w : W P i) (j : I)
+  --   → Leaf P (graft w (λ k _ → lf k)) j
+  --   → Leaf P w j
+  -- graft-unit-lf-to w j l =
+  --   let (k , l₀ , l₁) = graft-leaf-from w (λ k _ → lf k) j l
+  --   in transport (Leaf P w) l₁ l₀
+
+  -- graft-unit-lf-from : {i : I} (w : W P i) (j : I)
+  --   → Leaf P w j
+  --   → Leaf P (graft w (λ k _ → lf k)) j
+  -- graft-unit-lf-from w j l =
+  --   graft-leaf-to w (λ k _ → lf k) j (j , l , idp)
+
   graft-unit-lf-to : {i : I} (w : W P i) (j : I)
     → Leaf P (graft w (λ k _ → lf k)) j
     → Leaf P w j
   graft-unit-lf-to (lf i) j l = l
-  graft-unit-lf-to (nd (f , ϕ)) j (k , p , l) = k , p , graft-unit-lf-to (ϕ k p) j l
+  graft-unit-lf-to (nd (f , ϕ)) j (k , p , l) =
+    k , p , graft-unit-lf-to (ϕ k p) j l
 
   graft-unit-lf-from : {i : I} (w : W P i) (j : I)
     → Leaf P w j
     → Leaf P (graft w (λ k _ → lf k)) j
   graft-unit-lf-from (lf i) j l = l
-  graft-unit-lf-from (nd (f , ϕ)) j (k , p , l) = k , p , graft-unit-lf-from (ϕ k p) j l
+  graft-unit-lf-from (nd (f , ϕ)) j (k , p , l) =
+    k , p , graft-unit-lf-from (ϕ k p) j l
 
   graft-unit-lf-to-from : {i : I} (w : W P i) (j : I)
     → (l : Leaf P w j)
@@ -190,10 +205,25 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
     equiv (graft-unit-lf-to w j) (graft-unit-lf-from w j)
           (graft-unit-lf-to-from w j) (graft-unit-lf-from-to w j)
 
-  postulate
-    graft-unit-frm : {i : I} {f : Op P i}
-      → (w : W P i) (α : Frame P w f)
-      → α == (λ j → α j ∘e graft-unit-lf-eqv w j) [ (λ x → Frame P x f) ↓ graft-unit w ]
+  graft-unit-lem : {i : I} (w : W P i)
+    → (j : I) (l : Leaf P (graft w (λ j l → lf j)) j)
+    → graft-unit-lf-to w j l == l [ (λ x → Leaf P x j) ↓ graft-unit w ]
+  graft-unit-lem (lf i) j idp = idp
+  graft-unit-lem (nd (f , ϕ)) j (k , p , l) = 
+    ↓-ap-in (λ x → Leaf P x j) (λ x → nd (f , x)) 
+            (↓-nd-Leaf-ih P (λ j p → graft-unit (ϕ j p)) k p
+                            (graft-unit-lem (ϕ k p) j l))
+
+  graft-unit-frm : {i : I} {f : Op P i}
+    → (w : W P i) (α : Frame P w f)
+    → α == (λ j → α j ∘e graft-unit-lf-eqv w j) [ (λ x → Frame P x f) ↓ graft-unit w ]
+  graft-unit-frm w α =
+    let lem j l₀ l₁ q = –> (α j) l₀
+                          =⟨ to-transp! q |in-ctx (–> (α j)) ⟩
+                        –> (α j) (transport! (λ x → Leaf P x j) (graft-unit w) l₁)
+                          =⟨ ! (to-transp! (graft-unit-lem w j l₁)) |in-ctx (–> (α j)) ⟩
+                        –> (α j) (graft-unit-lf-to w j l₁) ∎ 
+    in ↓-W-Frame-in P lem
 
   -- grafting is associative
   graft-assoc : {i : I} (w : W P i)

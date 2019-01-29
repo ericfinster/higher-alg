@@ -75,7 +75,7 @@ module Polynomial where
     corolla-frm f j = equiv to from (λ _ → idp) from-to
 
       where to : Leaf (corolla f) j → Param P f j
-            to (_ , p , idp) = p
+            to (_ , p , l) = transport (Param P f) l p
 
             from : Param P f j → Leaf (corolla f) j
             from p = (j , p , idp) 
@@ -83,6 +83,11 @@ module Polynomial where
             from-to : (l : Leaf (corolla f) j) → from (to l) == l
             from-to (_ , p , idp) = idp
 
+    -- corolla-frm-compat : {i : I} (f : Op P i)
+    --   → (w : W i) (α : Frame w f)
+    --   → (j : I) (l : Leaf w j)
+    --   → –> (α j) l == –> (corolla-frm f j) (j , –> (α j) l , idp)
+    -- corolla-frm-compat f w α j l = {!!}
 
   --
   --  Polynomial Magmas and Slicing
