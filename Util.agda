@@ -31,6 +31,14 @@ module Util where
     → transport! B (p ∙ q) c == transport! B p (transport! B q c)
   transp!-∙ B idp idp c = idp
 
+  -- Used in SustitutionLaws
+  ↓-Σ-weaken : ∀ {i j k} {A : Type i} {B : A → Type j}
+    → (C : A → Type k)
+    → {a₀ a₁ : A} {p : a₀ == a₁}
+    → {b₀ : B a₀} {b₁ : B a₁} {q : b₀ == b₁ [ B ↓ p ]}
+    → {c₀ : C a₀} {c₁ : C a₁} (r : c₀ == c₁ [ C ↓ p ])
+    → c₀ == c₁ [ (λ x → C (fst x)) ↓ pair= p q ]
+  ↓-Σ-weaken C {p = idp} {q = idp} idp = idp
 
   -- Needed for a lemma.
 

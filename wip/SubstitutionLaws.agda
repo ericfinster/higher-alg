@@ -94,6 +94,14 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
                         –> (α j) l₁ ∎
     in ↓-W-Frame-in P lem
 
+  subst-nd-unit-l : {i : I} (w : W P i)
+    → (g : Ops P) (n : Node P w g)
+    → subst-nd-to w (subst-η-dec w) g (g , n , inl idp)
+      == n [ (λ x → Node P x g) ↓ subst-unit-l w ]
+  subst-nd-unit-l (lf i) g (lift ())
+  subst-nd-unit-l (nd (f , ϕ)) ._ (inl idp) = {!!}
+  subst-nd-unit-l (nd (f , ϕ)) g (inr (k , p , n)) = {!!}
+
   --
   --  Yikes, this is horrendous and needs to be cleaned up...
   --
@@ -136,6 +144,12 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
     in graft-unit-frm P w α ∙'ᵈ
        (λ= λ j → equiv-== (λ l → subst-unit-r-lem f w α j l))
 
+  subst-nd-unit-r : {i : I} (f : Op P i)
+    → (κ : (g : Ops P) → Node P (corolla P f) g → InFrame P g)
+    → (g : Ops P) (n : Node P (fst (κ (i , f) (inl idp))) g)
+    → n == subst-nd-to (corolla P f) κ g ((i , f) , inl idp , n)
+        [ (λ x → Node P x g) ↓ graft-unit P (fst (κ (i , f) (inl idp))) ]
+  subst-nd-unit-r f κ = {!!}
 
   -- -- Substitution and grafting commute with each other
   -- subst-graft : {i : I} (w : W P i) (ψ : (j : I) → Leaf P w j → W P j)
@@ -164,57 +178,70 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   --                 (graft-node-from P (ϕ j (p j l₀)) (ψ' j l₀) g n))))))) ⟩ 
   --      subst (graft P (nd (f , ϕ)) ψ) (λ g n → ⊔-rec (κ g) (θ g) (graft-node-from P (nd (f , ϕ)) ψ g n)) ∎
 
-  -- subst-assoc : {i : I} (w : W P i) 
-  --   → (κ : (g : Ops P) → Node P w g → InFrame P g) 
-  --   → (ν : (g : Ops P) → Σ (Ops P) (λ k → Σ (Node P w k) (λ p → Node P (fst (κ k p)) g)) → InFrame P g)
-  --   → subst w (λ g n → subst-γ _ (fst (κ g n)) (snd (κ g n)) (λ g' n' → ν g' (g , n , n')))
-  --     == subst (subst w κ) (λ g n → ν g (subst-nd-from w κ g n))
-  -- subst-assoc (lf i) κ ν = idp
-  -- subst-assoc (nd (f , ϕ)) κ ν = 
-  --   let (w , α) = κ (_ , f) (inl idp)
-  --       ν-here g n = ν g ((_ , f) , inl idp , n)
-  --       κ' j p g n = κ g (inr (j , p , n))
-  --       ν' j p g t = ν g (fst t , (inr (j , p , fst (snd t))) , snd (snd t))
+  postulate
+  
+    subst-assoc : {i : I} (w : W P i) 
+      → (κ : (g : Ops P) → Node P w g → InFrame P g) 
+      → (ν : (g : Ops P) → Σ (Ops P) (λ k → Σ (Node P w k) (λ p → Node P (fst (κ k p)) g)) → InFrame P g)
+      → subst w (λ g n → subst-γ _ (fst (κ g n)) (snd (κ g n)) (λ g' n' → ν g' (g , n , n')))
+        == subst (subst w κ) (λ g n → ν g (subst-nd-from w κ g n))
+    -- subst-assoc (lf i) κ ν = idp
+    -- subst-assoc (nd (f , ϕ)) κ ν = 
+    --   let (w , α) = κ (_ , f) (inl idp)
+    --       ν-here g n = ν g ((_ , f) , inl idp , n)
+    --       κ' j p g n = κ g (inr (j , p , n))
+    --       ν' j p g t = ν g (fst t , (inr (j , p , fst (snd t))) , snd (snd t))
 
-  --       κ-left g n = subst-γ _ (fst (κ g n)) (snd (κ g n)) (λ g' n' → ν g' (g , n , n'))
+    --       κ-left g n = subst-γ _ (fst (κ g n)) (snd (κ g n)) (λ g' n' → ν g' (g , n , n'))
 
-  --       α-left j = α j ∘e (subst-lf-eqv w (λ g' n' → ν g' ((_ , f) , inl idp , n')) j) ⁻¹
-  --       κ-left' j l g n = κ-left g (inr (j , –> (α-left j) l , n))
-  --       ψ-left j l = subst (ϕ j (–> (α-left j) l)) (κ-left' j l)
+    --       α-left j = α j ∘e (subst-lf-eqv w (λ g' n' → ν g' ((_ , f) , inl idp , n')) j) ⁻¹
+    --       κ-left' j l g n = κ-left g (inr (j , –> (α-left j) l , n))
+    --       ψ-left j l = subst (ϕ j (–> (α-left j) l)) (κ-left' j l)
 
-  --       ψ-right j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
-  --       κ-right g n = ν g (subst-nd-from-lcl f ϕ κ g (graft-node-from P w ψ-right g n))
+    --       ψ-right j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
+    --       κ-right g n = ν g (subst-nd-from-lcl f ϕ κ g (graft-node-from P w ψ-right g n))
 
-        
-  --       ih j p = subst-assoc (ϕ j p) (κ' j p) (ν' j p)
 
-  --       ψ-mid j l = subst (subst (ϕ j (–> (α-left j) l)) (κ' j (–> (α-left j) l)))
-  --                         (λ g n → ν' j (–> (α-left j) l) g (subst-nd-from (ϕ j (–> (α-left j) l)) (κ' j (–> (α-left j) l)) g n))
+    --       ih j p = subst-assoc (ϕ j p) (κ' j p) (ν' j p)
 
-  --       ψ-sg j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
-  --       θ g t = let (j , l , n) = t
-  --               in ν' j (–> (α j) l) g (subst-nd-from (ϕ j (–> (α j) l)) (κ' j (–> (α j) l)) g n)
+    --       ψ-mid j l = subst (subst (ϕ j (–> (α-left j) l)) (κ' j (–> (α-left j) l)))
+    --                         (λ g n → ν' j (–> (α-left j) l) g (subst-nd-from (ϕ j (–> (α-left j) l)) (κ' j (–> (α-left j) l)) g n))
 
-  --       test g t = let (j , l₀ , n) = t
-  --                      (k , l₁ , n') = subst-nd-from (ϕ j (–> (α j) l₀)) (κ' j (–> (α j) l₀)) g n
-  --                  in k , inr (j , –> (α j) l₀ , l₁) , n'
+    --       ψ-sg j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
+    --       θ g t = let (j , l , n) = t
+    --               in ν' j (–> (α j) l) g (subst-nd-from (ϕ j (–> (α j) l)) (κ' j (–> (α j) l)) g n)
 
-  --   in graft P (subst w ν-here) ψ-left 
-  --        =⟨ λ= (λ j → λ= (λ l → ih j (–> (α-left j) l))) |in-ctx (λ x → graft P (subst w ν-here) x) ⟩
-  --      graft P (subst w ν-here) (λ j l → subst (ψ-sg j (subst-lf-from w ν-here j l)) (λ g n → θ g (j , subst-lf-from w ν-here j l , n)))
-  --        =⟨ subst-graft w ψ-sg ν-here θ ⟩
-  --      subst (graft P w ψ-sg) (λ g n → ⊔-rec (ν-here g) (θ g) (graft-node-from P w ψ-sg g n))
-  --        =⟨ λ= (λ g → λ= (λ n → ⊔-codiag (λ n → (_ , f) , inl idp , n) (test g) (ν g) (graft-node-from P w ψ-sg g n))) |in-ctx subst (graft P w ψ-sg) ⟩ 
-  --      subst (graft P w ψ-sg) κ-right ∎
+    --       test g t = let (j , l₀ , n) = t
+    --                      (k , l₁ , n') = subst-nd-from (ϕ j (–> (α j) l₀)) (κ' j (–> (α j) l₀)) g n
+    --                  in k , inr (j , –> (α j) l₀ , l₁) , n'
 
-  -- subst-assoc-frm : {i : I} {f : Op P i}
-  --   → (w : W P i) (α : Frame P w f)
-  --   → (κ : (g : Ops P) → Node P w g → InFrame P g)
-  --   → (ν : (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → InFrame P g)
-  --   → (λ j → α j ∘e subst-lf-eqv w (λ g n → subst-γ (snd g) (fst (κ g n)) (snd (κ g n)) (λ g₁ n₁ → ν g₁ (g , n , n₁))) j ⁻¹) == 
-  --     (λ j → snd (subst-γ _ w α κ) j ∘e subst-lf-eqv (fst (subst-γ _ w α κ)) (λ g n → ν g (<– (subst-nd-eqv w κ g) n)) j ⁻¹)
-  --       [ (λ x → Frame P x f) ↓ subst-assoc w κ ν ]                          
-  -- subst-assoc-frm = {!!}
+    --   in graft P (subst w ν-here) ψ-left 
+    --        =⟨ λ= (λ j → λ= (λ l → ih j (–> (α-left j) l))) |in-ctx (λ x → graft P (subst w ν-here) x) ⟩
+    --      graft P (subst w ν-here) (λ j l → subst (ψ-sg j (subst-lf-from w ν-here j l)) (λ g n → θ g (j , subst-lf-from w ν-here j l , n)))
+    --        =⟨ subst-graft w ψ-sg ν-here θ ⟩
+    --      subst (graft P w ψ-sg) (λ g n → ⊔-rec (ν-here g) (θ g) (graft-node-from P w ψ-sg g n))
+    --        =⟨ λ= (λ g → λ= (λ n → ⊔-codiag (λ n → (_ , f) , inl idp , n) (test g) (ν g) (graft-node-from P w ψ-sg g n))) |in-ctx subst (graft P w ψ-sg) ⟩ 
+    --      subst (graft P w ψ-sg) κ-right ∎
+
+    subst-assoc-frm : {i : I} {f : Op P i}
+      → (w : W P i) (α : Frame P w f)
+      → (κ : (g : Ops P) → Node P w g → InFrame P g)
+      → (ν : (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → InFrame P g)
+      → (λ j → α j ∘e subst-lf-eqv w (λ g n → subst-γ (snd g) (fst (κ g n)) (snd (κ g n)) (λ g₁ n₁ → ν g₁ (g , n , n₁))) j ⁻¹) == 
+        (λ j → snd (subst-γ _ w α κ) j ∘e subst-lf-eqv (fst (subst-γ _ w α κ)) (λ g n → ν g (<– (subst-nd-eqv w κ g) n)) j ⁻¹)
+          [ (λ x → Frame P x f) ↓ subst-assoc w κ ν ]                          
+    -- subst-assoc-frm = {!!}
+
+    subst-nd-assoc : {i : I} {f : Op P i}
+      → (w : W P i) (α : Frame P w f)
+      → (κ : (g : Ops P) → Node P w g → InFrame P g)
+      → (ν : (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → InFrame P g)
+      → (g h : Ops P) (m : Node P w h) (k : Ops P) (n : Node P (fst (κ h m)) k) (o : Node P (fst (ν k (h , m , n))) g)
+      → subst-nd-to w (λ g₁ n₁ → subst-γ (snd g₁) (fst (κ g₁ n₁)) (snd (κ g₁ n₁)) (λ g' n' → ν g' (g₁ , n₁ , n')))
+                    g (h , m , subst-nd-to (fst (κ h m)) (λ g' n' → ν g' (h , m , n')) g (k , n , o))
+          == subst-nd-to (subst w κ) (λ g₁ n₁ → ν g₁ (subst-nd-from w κ g₁ n₁))
+               g (k , subst-nd-to w κ k (h , m , n) , transport! (λ x → Node P (fst (ν k x)) g) (<–-inv-l (subst-nd-eqv w κ k) (h , m , n)) o)
+            [ (λ x → Node P x g) ↓ subst-assoc w κ ν ]
 
   record SubstRelLaws (SRel : SubstRel) : Type ℓ where
     field
@@ -229,12 +256,20 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
         → snd (κ (i , f) (inl idp)) == γ-rel SRel f (corolla P f) (corolla-frm P f) (η-rel SRel f) (λ g n → fst (κ g n))
             [ R (i , f) ↓ pair= (graft-unit P (fst (fst ((κ (i , f) (inl idp)))))) (subst-unit-r-frm (λ g n → fst (κ g n))) ]
 
+      subst-assoc-rel : {i : I} {f : Op P i}
+        → (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
+        → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
+        → (ν : (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (fst (κ h n))) g)) → Op (P // R) g)
+        → (γ-rel SRel f w α r (λ g n → subst-γ (snd g) (fst (fst (κ g n))) (snd (fst (κ g n))) (λ g₁ n₁ → fst (ν g₁ (g , n , n₁)))))
+          == (γ-rel SRel f (fst (subst-γ f w α (λ g n → fst (κ g n))))
+                           (snd (subst-γ f w α (λ g n → fst (κ g n))))
+                           (γ-rel SRel f w α r (λ g n → fst (κ g n)))
+                           (λ g n → fst (ν g (<– (subst-nd-eqv w (λ g₁ n₁ → fst (κ g₁ n₁)) g) n)))) 
+               [ R (i , f) ↓ pair= (subst-assoc w (λ g n → fst (κ g n)) (λ g t → fst (ν g t)))
+                                   (subst-assoc-frm w α (λ g n → fst (κ g n)) (λ g t → fst (ν g t))) ]
+
   open SubstRelLaws
 
-  -- Okay, here what you should do is rephrase the frames theorems
-  -- in such as way as to only mention the places, as you do in
-  -- the section on biased multiplications.
-  
   SubstBiasedLaws : (SRel : SubstRel) (SLaws : SubstRelLaws SRel)
     → BiasedLaws (P // R) (SubstBiasedMgm SRel)
   unit-l (SubstBiasedLaws SRel SLaws) ((w , α) , r) =
@@ -245,14 +280,23 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
         κ' g n = fst (κ g n)
     in pair= (pair= (graft-unit P w) (subst-unit-r-frm κ'))
              (subst-unit-r-rel SLaws κ)
-  assoc (SubstBiasedLaws SRel SLaws) ((w , α) , r) κ ν = {!!}
-    -- let κ' g n = fst (κ g n)
-    --     ν' g t = fst (ν g t)
-    -- in pair= (pair= (subst-assoc w κ' ν') (subst-assoc-frm w α κ' ν')) ?
-  unit-l-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) g n = {!!}
-  unit-r-frm (SubstBiasedLaws SRel SLaws) κ g n = {!!}
-  assoc-frm (SubstBiasedLaws SRel SLaws) = {!!}
-
-
-
+  assoc (SubstBiasedLaws SRel SLaws) {i , f} ((w , α) , r) κ ν = 
+    let κ' g n = fst (κ g n)
+        ν' g t = fst (ν g t)
+    in pair= (pair= (subst-assoc w κ' ν') (subst-assoc-frm w α κ' ν'))
+             (subst-assoc-rel SLaws w α r κ ν)
+  unit-l-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) g n =
+    ↓-Σ-weaken (λ x → Node P (fst x) g)
+      (↓-Σ-weaken (λ x → Node P x g)
+                  (subst-nd-unit-l w g n))
+  unit-r-frm (SubstBiasedLaws SRel SLaws) {i , f} κ g n =
+    ↓-Σ-weaken (λ x → Node P (fst x) g)
+      (↓-Σ-weaken (λ x → Node P x g)
+                  (subst-nd-unit-r f (λ g n → fst (κ g n)) g n))
+  assoc-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) κ ν g h m k n o =
+    let κ' g n = fst (κ g n)
+        ν' g t = fst (ν g t)
+    in ↓-Σ-weaken (λ x → Node P (fst x) g)
+         (↓-Σ-weaken (λ x → Node P x g)
+                     (subst-nd-assoc w α κ' ν' g h m k n o))
 
