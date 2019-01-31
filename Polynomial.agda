@@ -70,9 +70,16 @@ module Polynomial where
     corolla : {i : I} (f : Op P i) → W i
     corolla {i} f = nd (f , λ j p → lf j)
 
+    -- Defining the adjoint for this equivalence directly
+    -- gives better definitional behavior for the substitution
+    -- laws, which is why we take the trouble.
     corolla-frm : {i : I} (f : Op P i)
       → (j : I) → Leaf (corolla f) j ≃ Param P f j
-    corolla-frm f j = equiv to from (λ _ → idp) from-to
+    corolla-frm f j = to ,
+      record { g = from ;
+               f-g = (λ x → idp) ;
+               g-f = from-to ;
+               adj = adj }
 
       where to : Leaf (corolla f) j → Param P f j
             to (_ , p , l) = transport (Param P f) l p
@@ -83,11 +90,8 @@ module Polynomial where
             from-to : (l : Leaf (corolla f) j) → from (to l) == l
             from-to (_ , p , idp) = idp
 
-    -- corolla-frm-compat : {i : I} (f : Op P i)
-    --   → (w : W i) (α : Frame w f)
-    --   → (j : I) (l : Leaf w j)
-    --   → –> (α j) l == –> (corolla-frm f j) (j , –> (α j) l , idp)
-    -- corolla-frm-compat f w α j l = {!!}
+            adj : (l : Leaf (corolla f) j) → ap to (from-to l) == idp
+            adj (j , p , idp) = idp
 
   --
   --  Polynomial Magmas and Slicing
@@ -166,8 +170,9 @@ module Polynomial where
                        app= (app= (Decor-== H) j) p ∎ 
 
 
-    -- Path-overs for inductions relating leaves across trees
-    -- with inductively equal decorations...
+    -- Path-overs for inductions relating leaves and nodes
+    -- for the node constructor with equal decorations
+    
     ↓-nd-Leaf-ih₀ : {i j : I} {f : Op P i}
       → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
       → (k : I) (p : Param P f k)
@@ -186,62 +191,84 @@ module Polynomial where
     ↓-nd-Leaf-ih H k p {l₀} {l₁} q = ↓-nd-Leaf-ih₀ (Decor-== H) k p
       (transport (λ y → l₀ == l₁ [ (λ x → Leaf P x _) ↓ y ]) (Decor-==-β H k p) q )
 
-
-    -- Not sure we are using the following.
-
-    -- The next two path-overs are useful in inductive
-    -- arguments about frames.
-    ↓-nd-Frame-in₀ : {i : I} {f g : Op P i}
-      → {ϕ₀ ϕ₁ : Decor P g (W P)} (e : ϕ₀ == ϕ₁)
-      → {α : Frame P (nd (g , ϕ₀)) f} {β : Frame P (nd (g , ϕ₁)) f}
-      → (F : (j k : I) (p : Param P g j)
-             → (l₀ : Leaf P (ϕ₀ j p) k) (l₁ : Leaf P (ϕ₁ j p) k)
-             → (r : l₀ == l₁ [ (λ x → Leaf P x k) ↓ app= (app= e j) p ])
-             → –> (α k) (j , p , l₀) == –> (β k) (j , p , l₁))
-      → α == β [ (λ x → Frame P (nd (g , x)) f) ↓ e ]
-    ↓-nd-Frame-in₀ idp F = λ= (λ k → equiv-== λ { (j , p , l) → F j k p l l idp })
-
-    ↓-nd-Frame-in : {i : I} {f g : Op P i}
-      → {ϕ₀ ϕ₁ : Decor P g (W P)}
-      → (E : (j : I) (p : Param P g j) → ϕ₀ j p == ϕ₁ j p)
-      → {α : Frame P (nd (g , ϕ₀)) f} {β : Frame P (nd (g , ϕ₁)) f}
-      → (F : (j k : I) (p : Param P g j)
-             → (l₀ : Leaf P (ϕ₀ j p) k) (l₁ : Leaf P (ϕ₁ j p) k)
-             → (r : l₀ == l₁ [ (λ x → Leaf P x k) ↓ E j p ])
-             → –> (α k) (j , p , l₀) == –> (β k) (j , p , l₁))
-      → α == β [ (λ x → Frame P (nd (g , x)) f) ↓ Decor-== E ]
-    ↓-nd-Frame-in E F = ↓-nd-Frame-in₀ (Decor-== E)
-      (λ j k p l₀ l₁ r → F j k p l₀ l₁
-        (transport! (λ y → l₀ == l₁ [ (λ x → Leaf P x k) ↓ y ])
-                    (Decor-==-β E j p) r))
-
-    -- Some helper path overs for decomposing leaves
-    ↓-nd-Leaf-fst : {i j : I} {f : Op P i}
+    ↓-Node-here-in : {i : I} {f : Op P i}
       → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
-      → {l₀ : Leaf P (nd (f , ϕ₀)) j} {l₁ : Leaf P (nd (f , ϕ₁)) j}
-      → (q : l₀ == l₁ [ (λ x → Leaf P (nd (f , x)) j) ↓ e ])
-      → fst l₀ == fst l₁
-    ↓-nd-Leaf-fst idp idp = idp
+      → inl idp == inl idp [ (λ x → Node P (nd (f , x)) (i , f)) ↓ e ]
+    ↓-Node-here-in idp = idp
 
-    ↓-nd-Leaf-snd : {i j : I} {f : Op P i}
+    ↓-Node-there-in₀ : {i : I} {f : Op P i}
       → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
-      → {l₀ : Leaf P (nd (f , ϕ₀)) j} {l₁ : Leaf P (nd (f , ϕ₁)) j}
-      → (q : l₀ == l₁ [ (λ x → Leaf P (nd (f , x)) j) ↓ e ])
-      → fst (snd l₀) == fst (snd l₁) [ (λ x → Param P f x) ↓ ↓-nd-Leaf-fst e q ]
-    ↓-nd-Leaf-snd idp idp = idp
+      → {g : Ops P} (j : I) (p : Param P f j)
+      → {n₀ : Node P (ϕ₀ j p) g} {n₁ : Node P (ϕ₁ j p) g}
+      → (q : n₀ == n₁ [ (λ x → Node P x g) ↓ app= (app= e j) p ])
+      → inr (j , p , n₀) == inr (j , p , n₁) [ (λ x → Node P (nd (f , x)) g) ↓ e ]
+    ↓-Node-there-in₀ idp j p idp = idp
 
-    ↓-nd-Leaf-thd : {i j : I} {f : Op P i}
-      → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
-      → {l₀ : Leaf P (nd (f , ϕ₀)) j} {l₁ : Leaf P (nd (f , ϕ₁)) j}
-      → (q : l₀ == l₁ [ (λ x → Leaf P (nd (f , x)) j) ↓ e ])
-      → snd (snd l₀) == snd (snd l₁) [ (λ { (ϕ , k , l) → Leaf P (ϕ k l) j }) ↓ pair×= e (pair= (↓-nd-Leaf-fst e q) (↓-nd-Leaf-snd e q)) ]
-    ↓-nd-Leaf-thd idp idp = idp
+    ↓-Node-there-in : {i : I} {f : Op P i}
+      → {ϕ₀ ϕ₁ : Decor P f (W P)} 
+      → (H : (j : I) (p : Param P f j) → ϕ₀ j p == ϕ₁ j p)
+      → {g : Ops P} (j : I) (p : Param P f j)
+      → {n₀ : Node P (ϕ₀ j p) g} {n₁ : Node P (ϕ₁ j p) g}
+      → (q : n₀ == n₁ [ (λ x → Node P x g) ↓ H j p ])
+      → inr (j , p , n₀) == inr (j , p , n₁) [ (λ x → Node P (nd (f , x)) g) ↓ Decor-== H ]
+    ↓-Node-there-in H {g} j p {n₀} {n₁} q = ↓-Node-there-in₀ (Decor-== H) j p
+      (transport (λ y → n₀ == n₁ [ (λ x → Node P x g) ↓ y ]) (Decor-==-β H j p) q)
 
-    ↓-nd-Leaf-thd' : {i j : I} {f : Op P i}
-      → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
-      → {l₀ : Leaf P (nd (f , ϕ₀)) j} {l₁ : Leaf P (nd (f , ϕ₁)) j}
-      → (q : l₀ == l₁ [ (λ x → Leaf P (nd (f , x)) j) ↓ e ])
-      → transport (λ x → Leaf P x j) (app= (app= e (fst l₀)) (fst (snd l₀))) (snd (snd l₀)) 
-        == snd (snd l₁) [ uncurry (λ k p → Leaf P (ϕ₁ k p) j) ↓ pair= (↓-nd-Leaf-fst e q) (↓-nd-Leaf-snd e q) ]
-    ↓-nd-Leaf-thd' idp idp = idp
+    -- -- Not sure we are using the following.
+
+    -- -- The next two path-overs are useful in inductive
+    -- -- arguments about frames.
+    -- ↓-nd-Frame-in₀ : {i : I} {f g : Op P i}
+    --   → {ϕ₀ ϕ₁ : Decor P g (W P)} (e : ϕ₀ == ϕ₁)
+    --   → {α : Frame P (nd (g , ϕ₀)) f} {β : Frame P (nd (g , ϕ₁)) f}
+    --   → (F : (j k : I) (p : Param P g j)
+    --          → (l₀ : Leaf P (ϕ₀ j p) k) (l₁ : Leaf P (ϕ₁ j p) k)
+    --          → (r : l₀ == l₁ [ (λ x → Leaf P x k) ↓ app= (app= e j) p ])
+    --          → –> (α k) (j , p , l₀) == –> (β k) (j , p , l₁))
+    --   → α == β [ (λ x → Frame P (nd (g , x)) f) ↓ e ]
+    -- ↓-nd-Frame-in₀ idp F = λ= (λ k → equiv-== λ { (j , p , l) → F j k p l l idp })
+
+    -- ↓-nd-Frame-in : {i : I} {f g : Op P i}
+    --   → {ϕ₀ ϕ₁ : Decor P g (W P)}
+    --   → (E : (j : I) (p : Param P g j) → ϕ₀ j p == ϕ₁ j p)
+    --   → {α : Frame P (nd (g , ϕ₀)) f} {β : Frame P (nd (g , ϕ₁)) f}
+    --   → (F : (j k : I) (p : Param P g j)
+    --          → (l₀ : Leaf P (ϕ₀ j p) k) (l₁ : Leaf P (ϕ₁ j p) k)
+    --          → (r : l₀ == l₁ [ (λ x → Leaf P x k) ↓ E j p ])
+    --          → –> (α k) (j , p , l₀) == –> (β k) (j , p , l₁))
+    --   → α == β [ (λ x → Frame P (nd (g , x)) f) ↓ Decor-== E ]
+    -- ↓-nd-Frame-in E F = ↓-nd-Frame-in₀ (Decor-== E)
+    --   (λ j k p l₀ l₁ r → F j k p l₀ l₁
+    --     (transport! (λ y → l₀ == l₁ [ (λ x → Leaf P x k) ↓ y ])
+    --                 (Decor-==-β E j p) r))
+
+    -- -- Some helper path overs for decomposing leaves
+    -- ↓-nd-Leaf-fst : {i j : I} {f : Op P i}
+    --   → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
+    --   → {l₀ : Leaf P (nd (f , ϕ₀)) j} {l₁ : Leaf P (nd (f , ϕ₁)) j}
+    --   → (q : l₀ == l₁ [ (λ x → Leaf P (nd (f , x)) j) ↓ e ])
+    --   → fst l₀ == fst l₁
+    -- ↓-nd-Leaf-fst idp idp = idp
+
+    -- ↓-nd-Leaf-snd : {i j : I} {f : Op P i}
+    --   → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
+    --   → {l₀ : Leaf P (nd (f , ϕ₀)) j} {l₁ : Leaf P (nd (f , ϕ₁)) j}
+    --   → (q : l₀ == l₁ [ (λ x → Leaf P (nd (f , x)) j) ↓ e ])
+    --   → fst (snd l₀) == fst (snd l₁) [ (λ x → Param P f x) ↓ ↓-nd-Leaf-fst e q ]
+    -- ↓-nd-Leaf-snd idp idp = idp
+
+    -- ↓-nd-Leaf-thd : {i j : I} {f : Op P i}
+    --   → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
+    --   → {l₀ : Leaf P (nd (f , ϕ₀)) j} {l₁ : Leaf P (nd (f , ϕ₁)) j}
+    --   → (q : l₀ == l₁ [ (λ x → Leaf P (nd (f , x)) j) ↓ e ])
+    --   → snd (snd l₀) == snd (snd l₁) [ (λ { (ϕ , k , l) → Leaf P (ϕ k l) j }) ↓ pair×= e (pair= (↓-nd-Leaf-fst e q) (↓-nd-Leaf-snd e q)) ]
+    -- ↓-nd-Leaf-thd idp idp = idp
+
+    -- ↓-nd-Leaf-thd' : {i j : I} {f : Op P i}
+    --   → {ϕ₀ ϕ₁ : Decor P f (W P)} (e : ϕ₀ == ϕ₁)
+    --   → {l₀ : Leaf P (nd (f , ϕ₀)) j} {l₁ : Leaf P (nd (f , ϕ₁)) j}
+    --   → (q : l₀ == l₁ [ (λ x → Leaf P (nd (f , x)) j) ↓ e ])
+    --   → transport (λ x → Leaf P x j) (app= (app= e (fst l₀)) (fst (snd l₀))) (snd (snd l₀)) 
+    --     == snd (snd l₁) [ uncurry (λ k p → Leaf P (ϕ₁ k p) j) ↓ pair= (↓-nd-Leaf-fst e q) (↓-nd-Leaf-snd e q) ]
+    -- ↓-nd-Leaf-thd' idp idp = idp
 

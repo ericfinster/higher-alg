@@ -44,10 +44,13 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   record SubstRel : Type ℓ where
     field
 
-      η-rel : {i : I} (f : Op P i) → R (i , f) (subst-η (i , f))
-      γ-rel : {i : I} (f : Op P i) (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
-                → (κ : (g : Ops P) → Node P w g → InFrame P g) 
-                → R (i , f) (subst-γ f w α κ)
+      η-rel : {i : I} (f : Op P i)
+        → R (i , f) (subst-η (i , f))
+        
+      γ-rel : {i : I} (f : Op P i)
+        → (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
+        → (κ : (g : Ops P) → Node P w g → InFrame P g) 
+        → R (i , f) (subst-γ f w α κ)
 
   open SubstRel
   
@@ -63,7 +66,7 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
     subst-nd-eqv  w (λ g n → fst (κ g n)) g
 
   --
-  --  Substitution Laws
+  --  Unit left law
   --
 
   subst-unit-l : {i : I} (w : W P i)
@@ -99,40 +102,25 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
     → subst-nd-to w (subst-η-dec w) g (g , n , inl idp)
       == n [ (λ x → Node P x g) ↓ subst-unit-l w ]
   subst-nd-unit-l (lf i) g (lift ())
-  subst-nd-unit-l (nd (f , ϕ)) ._ (inl idp) = {!!}
-  subst-nd-unit-l (nd (f , ϕ)) g (inr (k , p , n)) = {!!}
+  subst-nd-unit-l (nd (f , ϕ)) ._ (inl idp) =
+    ↓-ap-in (λ x → Node P x (_ , f)) (λ x → nd (f , x))
+      (↓-Node-here-in P (Decor-== P (λ j p → subst-unit-l (ϕ j p))))
+  subst-nd-unit-l (nd (f , ϕ)) g (inr (k , p , n)) =
+    ↓-ap-in (λ x → Node P x g) (λ x → nd (f , x))
+      (↓-Node-there-in P (λ j p₁ → subst-unit-l (ϕ j p₁)) k p
+        (subst-nd-unit-l (ϕ k p) g n))
 
   --
-  --  Yikes, this is horrendous and needs to be cleaned up...
-  --
-  
-  subst-unit-r-lem₀ : {i : I} (w : W P i)
-    → (j : I) (l : Leaf P w j)
-    → graft-unit-lf-to P w j (graft-leaf-to P w (λ k _ → lf k) j (j , l , idp)) == l
-  subst-unit-r-lem₀ (lf i) .i idp = idp
-  subst-unit-r-lem₀ (nd (f , ϕ)) j (k , p , l) =
-    ap (λ x → k , p , x) (subst-unit-r-lem₀ (ϕ k p) j l)
+  --  Unit right law
+  -- 
 
-  subst-unit-r-lem₁ : {i : I} (f : Op P i)
-    → (w : W P i) (α : Frame P w f)
-    → (j : I) (k : I) (l₀ : Leaf P w k) (l₁ : Leaf P (lf k) j)
-    → –> (α j) (graft-unit-lf-to P w j (graft-leaf-to P w (λ k _ → lf k) j (k , l₀ , l₁)))
-      == –> (corolla-frm P f j) (k , –> (α k) l₀ , l₁)
-  subst-unit-r-lem₁ f₀ (lf i) α .i .i idp idp = idp
-  subst-unit-r-lem₁ f₀ (nd (f , ϕ)) α j .j (k , p , l) idp =
-    ap (λ x → –> (α j) (k , p , x)) (subst-unit-r-lem₀ (ϕ k p) j l)
-
-  subst-unit-r-lem : {i : I} (f : Op P i)
-    → (w : W P i) (α : Frame P w f)
-    → (j : I) (l : Leaf P (graft P w (λ k _ → lf k)) j)
-    → let (k , l₀ , l₁) = graft-leaf-from P w (λ k _ → lf k) j l
-      in –> (α j) (graft-unit-lf-to P w j l) ==
-         –> (corolla-frm P f j) (k , (–> (α k) l₀) , l₁)
-  subst-unit-r-lem f w α j l = 
-    let (k , l₀ , l₁) = graft-leaf-from P w (λ k _ → lf k) j l
-    in ap (λ x → –> (α j) (graft-unit-lf-to P w j x))
-          (! (graft-leaf-to-from P w (λ k _ → lf k) j l)) ∙
-       subst-unit-r-lem₁ f w α j k l₀ l₁ 
+  subst-unit-r-lem : {i : I} (w : W P i)
+    → (j : I) (t : Σ I (λ k → Σ (Leaf P w k) (λ l → k == j)))
+    → graft-unit-lf-to P w j (graft-leaf-to P w (λ k _ → lf k) j t)
+      == transport (Leaf P w) (snd (snd t)) (fst (snd t))
+  subst-unit-r-lem (lf i) .i (.i , idp , idp) = idp
+  subst-unit-r-lem (nd (f , ϕ)) j (.j , (k , p , l) , idp) =
+    ap (λ x → (k , p , x)) (subst-unit-r-lem (ϕ k p) j (j , l , idp))
 
   subst-unit-r-frm : {i : I} {f : Op P i}
     → (κ : (g : Ops P) → Node P (corolla P f) g → InFrame P g)
@@ -141,8 +129,18 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
              [ (λ x → Frame P x f) ↓ graft-unit P (fst (κ (i , f) (inl idp))) ]
   subst-unit-r-frm {i} {f} κ = 
     let (w , α) = κ (i , f) (inl idp)
-    in graft-unit-frm P w α ∙'ᵈ
-       (λ= λ j → equiv-== (λ l → subst-unit-r-lem f w α j l))
+        ψ k _ = lf k
+        t j l = graft-leaf-from P  w ψ j l
+        
+        lem j l = –> (α j) (graft-unit-lf-to P w j l)
+                    =⟨ ! (graft-leaf-to-from P w ψ j l) |in-ctx (λ x → –> (α j) (graft-unit-lf-to P w j x)) ⟩
+                  –> (α j) (graft-unit-lf-to P w j (graft-leaf-to P w ψ j (t j l)))
+                    =⟨ subst-unit-r-lem w j (t j l) |in-ctx (–> (α j)) ⟩
+                  –> (α j) (transport (Leaf P w) (snd (snd (t j l))) (fst (snd (t j l))))
+                    =⟨ transp-→ (Leaf P w) (Param P f) (snd (snd (t j l))) (λ i → –> (α i)) ⟩ 
+                  –> (corolla-frm P f j) (subst-lf-from (corolla P f) κ j l) ∎
+
+    in graft-unit-frm P w α ∙'ᵈ (λ= λ j → equiv-== (λ l → lem j l))
 
   subst-nd-unit-r : {i : I} (f : Op P i)
     → (κ : (g : Ops P) → Node P (corolla P f) g → InFrame P g)

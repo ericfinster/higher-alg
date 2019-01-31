@@ -40,8 +40,13 @@ module Util where
     → c₀ == c₁ [ (λ x → C (fst x)) ↓ pair= p q ]
   ↓-Σ-weaken C {p = idp} {q = idp} idp = idp
 
-  -- Needed for a lemma.
+  transp-→ : ∀ {i j} {A : Type i} (P Q : A → Type j) 
+    → {a₁ a₂ : A} (p : a₁ == a₂) {y : P a₁}
+    → (f : (a : A) → P a → Q a)
+    → f a₂ (transport P p y) == transport Q p (f a₁ y)
+  transp-→ P Q idp f = idp
 
+  -- Needed for a lemma.
   apd↓-cst :  ∀ {i j} {A : Type i} {B C : A → Type j} (f : {a : A} → B a → C a)
     {x y : A} {p : x == y} {u : B x} {v : B y}
     → u == v [ B ↓ p ]
