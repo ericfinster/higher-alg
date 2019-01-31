@@ -142,14 +142,10 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
 
     in graft-unit-frm P w α ∙'ᵈ (λ= λ j → equiv-== (λ l → lem j l))
 
-  subst-nd-unit-r : {i : I} (f : Op P i)
-    → (κ : (g : Ops P) → Node P (corolla P f) g → InFrame P g)
-    → (g : Ops P) (n : Node P (fst (κ (i , f) (inl idp))) g)
-    → n == subst-nd-to (corolla P f) κ g ((i , f) , inl idp , n)
-        [ (λ x → Node P x g) ↓ graft-unit P (fst (κ (i , f) (inl idp))) ]
-  subst-nd-unit-r f κ = {!!}
-
-  -- -- Substitution and grafting commute with each other
+  --
+  --  Commutation of substitution and grafting
+  --
+  
   -- subst-graft : {i : I} (w : W P i) (ψ : (j : I) → Leaf P w j → W P j)
   --   → (κ : (g : Ops P) → Node P w g → InFrame P g)
   --   → (θ : (g : Ops P) → Σ I (λ j → Σ (Leaf P w j) (λ l → Node P (ψ j l) g)) → InFrame P g) 
@@ -175,6 +171,10 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   --                 (λ t → let (k , l₁ , n) = t in (k , (j , p j l₀ , l₁) , n))
   --                 (graft-node-from P (ϕ j (p j l₀)) (ψ' j l₀) g n))))))) ⟩ 
   --      subst (graft P (nd (f , ϕ)) ψ) (λ g n → ⊔-rec (κ g) (θ g) (graft-node-from P (nd (f , ϕ)) ψ g n)) ∎
+
+  --
+  --  Associativity of substitution
+  -- 
 
   postulate
   
@@ -290,7 +290,7 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   unit-r-frm (SubstBiasedLaws SRel SLaws) {i , f} κ g n =
     ↓-Σ-weaken (λ x → Node P (fst x) g)
       (↓-Σ-weaken (λ x → Node P x g)
-                  (subst-nd-unit-r f (λ g n → fst (κ g n)) g n))
+        (graft-unit-nd P (fst (fst (κ (_ , f) (inl idp)))) g n)) 
   assoc-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) κ ν g h m k n o =
     let κ' g n = fst (κ g n)
         ν' g t = fst (ν g t)

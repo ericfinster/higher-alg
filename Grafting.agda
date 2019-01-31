@@ -225,6 +225,19 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
                         –> (α j) (graft-unit-lf-to w j l₁) ∎ 
     in ↓-W-Frame-in P lem
 
+  graft-unit-nd : {i : I} (w : W P i)
+    → (g : Ops P) (n : Node P w g)
+    → n == graft-node-to w (λ j _ → lf j) g (inl n)
+        [ (λ x → Node P x g) ↓ graft-unit w ]
+  graft-unit-nd (lf i) g (lift ())
+  graft-unit-nd (nd (f , ϕ)) .(_ , f) (inl idp) =
+    ↓-ap-in (λ x → Node P x (_ , f)) (λ x → nd (f , x))
+      (↓-Node-here-in P (Decor-== P (λ j p → graft-unit (ϕ j p))))
+  graft-unit-nd (nd (f , ϕ)) g (inr (k , p , n)) = 
+    ↓-ap-in (λ x → Node P x g) (λ x → nd (f , x))
+      (↓-Node-there-in P (λ j p → graft-unit (ϕ j p)) k p
+        (graft-unit-nd (ϕ k p) g n))
+      
   -- grafting is associative
   graft-assoc : {i : I} (w : W P i)
     → (ψ₀ : ∀ j → Leaf P w j → W P j)
