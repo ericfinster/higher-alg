@@ -61,15 +61,17 @@ module wip.PolyOver where
 
     module _  (R : PolyRel P) where
 
-      -- From this information, we find that we can
-      -- pull a relation back ....
+      -- A relation on P pulls back to a relation
+      -- on the total polynomial ....
+      
       Rel↑ : PolyRel (ΣPoly P Q)
       Rel↑ ((i , j) , (f , g)) (w , α) =
         R (i , f) (W↓ w , Frame↓ α)
 
       --
-      -- ... or we can define a polynomial over the slice.
-      -- These two constructions are compatible in that:
+      -- ... Alternatively, there is a natural choice of polynomial
+      -- over the slice of P by the relation R.  These two
+      -- constructions are compatible in the sense that:
       --
       --   (ΣPoly P Q // Rel↑ R) ≃ (ΣPoly (P // R) (RelOver P R Q))
       --
@@ -168,9 +170,10 @@ module wip.PolyOver where
 
     -- Easy, peasy!
     SubInvar↑ : SubInvar R → SubInvar (Rel↑ Q R)
-    SubInvar↑ Ψ {(i , j) , (f , g)} pd = transport (λ x → R (i , f) x)
-      (! (flatn-inv-to _ _ pd))
-      (Ψ (W↓ (RelOver Q R) (–> (W≃ (Rel≃ Q R) _) pd)))
+    SubInvar↑ Ψ {(i , j) , (f , g)} pd =
+      transport! (R (i , f))
+                 (flatn-inv-to _ _ pd)
+                 (Ψ (W↓ (RelOver Q R) (–> (W≃ (Rel≃ Q R) _) pd)))
 
     postulate
 

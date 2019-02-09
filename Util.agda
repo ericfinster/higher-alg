@@ -123,13 +123,6 @@ module Util where
   ⊔-rec-∘ f g h k (inl a') = idp
   ⊔-rec-∘ f g h k (inr b') = idp
 
-  -- ⊔-codiag : ∀ {i j k} {A A' : Type i} {B : Type j} {C : Type k}
-  --   → (f : A → B) (g : A' → B) (h : B → C) (x : A ⊔ A')
-  --   → ⊔-rec h h (⊔-rec (inl ∘ f) (inr ∘ g) x) == h (⊔-rec f g x)
-  -- ⊔-codiag f g h (inl a) = idp
-  -- ⊔-codiag f g h (inr a') = idp
-
-
   ⊔-codiag : ∀ {i j k} {A A' : Type i} {B : Type j} {C : Type k}
     → (f : A → B) (g : A' → B) (h : B → C) (x : A ⊔ A')
     → ⊔-rec (h ∘ f) (h ∘ g) x == h (⊔-rec f g x)

@@ -249,4 +249,23 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
     (λ= (λ j → λ= (λ p → graft-assoc (ϕ j p) (λ k l → ψ₀ k (j , p , l))
       (λ k t → ψ₁ k (fst t , (j , p , fst (snd t)) , snd (snd t))))))
 
+  -- Probably these are actually equivalent.
+  -- Right.  In both cases, they should be equivalent to
+  -- the space of *three* leaves of appropriate type.
+  graft-assoc-lf-ichg : {i : I} (w : W P i)
+    → (ψ₀ : ∀ j → Leaf P w j → W P j)
+    → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
+    → (j : I)
+    → Σ I (λ k → Σ (Leaf P (graft w ψ₀) k) (λ l → Leaf P (ψ₁ k (graft-leaf-from w ψ₀ k l)) j))
+    → Σ I (λ k₀ → Σ (Leaf P w k₀) (λ l₀ → Leaf P (graft (ψ₀ k₀ l₀) (λ k₁ l₁ → ψ₁ k₁ (k₀ , l₀ , l₁))) j))
+  graft-assoc-lf-ichg w ψ₀ ψ₁ j (k , l₀ , l₁) =
+    let (m , n₀ , n₁) = graft-leaf-from w ψ₀ k l₀
+    in m , n₀ , graft-leaf-to (ψ₀ m n₀) (λ k₁ l₂ → ψ₁ k₁ (m , n₀ , l₂)) j (k , n₁ , l₁)
 
+  -- graft-assoc-frm-lem : {i : I} (w : W P i)
+  --   → (ψ₀ : ∀ j → Leaf P w j → W P j)
+  --   → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
+  --   → (j : I) (l : Leaf P (graft w (λ j l₀ → graft (ψ₀ j l₀) (λ k l₁ → ψ₁ k (j , l₀ , l₁)))) j)
+  --   → graft-assoc-lf-ichg w ψ₀ ψ₁ j (graft-leaf-from (graft w ψ₀) (λ j l → ψ₁ j (graft-leaf-from w ψ₀ j l)) j (transport! (λ x → Leaf P x j) (graft-assoc w ψ₀ ψ₁) l))
+  --     == graft-leaf-from w (λ j l₀ → graft (ψ₀ j l₀) (λ k l₁ → ψ₁ k (j , l₀ , l₁))) j l
+  -- graft-assoc-frm-lem w ψ₀ ψ₁ j l = {!!}  

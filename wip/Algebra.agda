@@ -79,7 +79,7 @@ module wip.Algebra where
     PbMagma : PolyMagma P → PolyMagma PbPoly
     PbMagma M = {!!}
 
-    PbSubInvar : {M : PolyMagma P} → SubInvar (MgmRel M) → SubInvar (MgmRel (PbMagma M))
+    PbSubInvar : {M : PolyMagma P} → SubInvar ⟪ M ⟫ → SubInvar ⟪ PbMagma M ⟫
     PbSubInvar Ψ = {!!}
 
   PbCoh : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (X : I → Type ℓ)
@@ -102,7 +102,7 @@ module wip.Algebra where
     field
 
       ν : (i : I) → ⟦ P ⟧ X i → X i
-      ν-co : PolyAlg (PbPoly P X // MgmRel (PbMagma P X M))
+      ν-co : PolyAlg (PbPoly P X // ⟪ PbMagma P X M ⟫)
                      (SlcMgm (Ψ (PbCoh X C)))
                      (H (PbCoh X C))
                      λ { ((i , x) , (f , δ)) → ν i (f , δ) == x }
