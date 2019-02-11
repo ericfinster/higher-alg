@@ -58,6 +58,16 @@ module Util where
     → f u == f v [ C ↓ p ]
   apd↓-cst f {p = idp} idp = idp
 
+  ap-fst : ∀ {i j k} {A : Type i} {B : A → Type j} {C : Type k}
+    → {c₀ c₁ : C} {p : c₀ == c₁} (f : C → Σ A B)
+    → fst= (ap f p) == ap (λ x → fst (f x)) p
+  ap-fst {p = idp} f = idp
+
+  transp-fst= : ∀ {i j} {A : Type i} {B : A → Type j}
+    → {a₀ a₁ : A} {b₀ : B a₀} {b₁ : B a₁} (p : (a₀ , b₀) == (a₁ , b₁))
+    → transport B (fst= p) b₀ == b₁
+  transp-fst= idp = idp
+  
   to-transp-↓ : ∀ {i j} {A : Type i} (P : A → Type j) {a₁ a₂ : A}
     (p : a₁ == a₂) (y : P a₁) → y == transport P p y [ P ↓ p ]
   to-transp-↓ _ idp _ = idp
