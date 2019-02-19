@@ -235,3 +235,18 @@ module Util where
     → inl p == inl q [ (λ a → P a ⊔ Q a) ↓ e ]
     → p == q [ P ↓ e ]
   ⊔-po-inl idp p q d = –> (inl=inl-equiv p q) d
+
+
+  -- Some lemmas on '<' used to prove that Delta is univalent
+  <-trans-pred : {m n k : ℕ} → m < n → n < S k → m < k
+  <-trans-pred p ltS = p
+  <-trans-pred p (ltSR q) = <-trans p q
+    
+  <-irrefl : {n : ℕ} → ¬ (n < n)
+  <-irrefl p = <-to-≠ p idp
+
+  <-neg-commut : {m n : ℕ} → m < n → ¬ (n < m)
+  <-neg-commut p q = <-irrefl (<-trans p q)
+
+  m<n<Sm : {m n : ℕ} → m < n → ¬ (n < S m)
+  m<n<Sm p q = <-irrefl (<-trans-pred p q)
