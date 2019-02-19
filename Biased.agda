@@ -299,26 +299,26 @@ module Biased where
         → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
         → (j : I) (l : Leaf P (subst P w (λ g n → fst (κ g n))) j)
         → –> (μ-bsd-frm (subst P w (λ g n → fst (κ g n))) j) l  == 
-          –> (μ-bsd-frm w j ∘e (subst-lf-eqv P w (λ g n → fst (κ g n)) j) ⁻¹) l
+          –> (μ-bsd-frm w j ∘e (subst-leaf-eqv P w (λ g n → fst (κ g n)) j) ⁻¹) l
             [ (λ x → Param P x j) ↓ μ-subst-invar w κ ]
 
-      μ-subst-lf-inv-lem : {i j : I} (f : Op P i) (ϕ : Decor P f (W P))
+      μ-subst-leaf-inv-lem : {i j : I} (f : Op P i) (ϕ : Decor P f (W P))
         → (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
         → (κ : (g : Ops P) → Node P (nd (f , ϕ)) g → Op (P // R) g)
         → (l : Leaf P (graft P w (λ j' l' → subst P (ϕ j' (–> (α j') l')) (λ g n → fst (κ g (inr (j' , (–> (α j') l') , n))) ))) j)
         → –> (μ-bsd-frm (graft P w (λ j' l' → subst P (ϕ j' (–> (α j') l')) (λ g n → fst (κ g (inr (j' , (–> (α j') l') , n))) ))) j) l ==
           (let (k , l₀ , l₁) = graft-leaf-from P w (λ j' l' → subst P (ϕ j' (–> (α j') l')) (λ g n → fst (κ g (inr (j' , –> (α j') l' , n))))) j l
             in –> (γ-frm f (λ k p → μ-bsd (ϕ k p)) j) (k , (–> (α k) l₀) ,
-                 –> (μ-bsd-frm (ϕ k (–> (α k) l₀)) j) (subst-lf-from P (ϕ k (–> (α k) l₀)) (λ g n → fst (κ g (inr (k , (–> (α k) l₀) , n)))) j l₁)))
+                 –> (μ-bsd-frm (ϕ k (–> (α k) l₀)) j) (subst-leaf-from P (ϕ k (–> (α k) l₀)) (λ g n → fst (κ g (inr (k , (–> (α k) l₀) , n)))) j l₁)))
             [ (λ x → Param P x j) ↓ μ-subst-inv-lem f ϕ ((w , α) , r) κ ]
 
       μ-lf-invar (lf i) κ j l = idp
       μ-lf-invar (nd (f , ϕ)) κ j l =
         let ((w , α) , r) = κ (_ , f) (inl idp)
-        in μ-subst-lf-inv-lem f ϕ w α r κ l 
+        in μ-subst-leaf-inv-lem f ϕ w α r κ l 
 
 
-      μ-subst-lf-inv-lem ._ ϕ w ._ idp κ l = 
+      μ-subst-leaf-inv-lem ._ ϕ w ._ idp κ l = 
         let κp j p g n = κ g (inr (j , p , n))
             ψp j p = subst P (ϕ j p) (λ g n → fst (κp j p g n))
             ψ j l = ψp j (–> (μ-bsd-frm w j) l)

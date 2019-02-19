@@ -20,14 +20,14 @@ module PolyMonad where
     flatn-frm (lf (i , f)) = corolla-frm P f
     flatn-frm (nd (((w , α) , _) , κ)) j =
       let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
-      in α j ∘e (subst-lf-eqv P w κ' j) ⁻¹
+      in α j ∘e (subst-leaf-eqv P w κ' j) ⁻¹
 
     bd-frame-to : {f : Ops P} (pd : W (P // R) f)
       → (g : Ops P) → Leaf (P // R) pd g → Node P (flatn pd) g
     bd-frame-to (lf (i , f)) (j , g) l = inl l
     bd-frame-to (nd (((w , α) , _) , κ)) g (h , n , l) =
       let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
-      in subst-nd-to P w κ' g
+      in subst-node-to P w κ' g
          (h , n , bd-frame-to (κ h n) g l)
 
     bd-frame-from : {f : Ops P} (pd : W (P // R) f)
@@ -36,7 +36,7 @@ module PolyMonad where
     bd-frame-from (lf (i , f)) g (inr (j , p , ())) 
     bd-frame-from (nd (((w , α) , _) , κ)) g n = 
       let κ' g n = flatn (κ g n) , flatn-frm (κ g n)
-          (h , n₀ , n₁) = subst-nd-from P w κ' g n
+          (h , n₀ , n₁) = subst-node-from P w κ' g n
       in h , n₀ , bd-frame-from (κ h n₀) g n₁
 
     postulate

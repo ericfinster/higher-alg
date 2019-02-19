@@ -87,6 +87,19 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
     graft-lf-rec {w = w} {ψ = ψ} {k = k} f l =
       f (graft-leaf-from w ψ k l)
 
+  -- Implicit versions
+  graft-lf-to : {i : I} {w : W P i}
+    → {ψ : ∀ j → Leaf P w j → W P j} {k : I}
+    → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k))
+    → Leaf P (graft w ψ) k
+  graft-lf-to {i} {w} {ψ} {k} = graft-leaf-to w ψ k
+  
+  graft-lf-from : {i : I} {w : W P i}
+    → {ψ : ∀ j → Leaf P w j → W P j} {k : I}
+    → Leaf P (graft w ψ) k
+    → Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ j l) k))
+  graft-lf-from {i} {w} {ψ} {k} = graft-leaf-from w ψ k
+
   --
   --  Nodes in a graft
   --
@@ -212,8 +225,6 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
   graft-node-rec {w = w} {ψ = ψ} {g = g} inl* inr* n =
     ⊔-rec inl* (λ { (j , l , n) → inr* j l n  }) (graft-node-from w ψ g n)
 
-
-
   postulate
 
     graft-node-rec-unfold : ∀ {ℓ'} {A : Type ℓ'}
@@ -244,6 +255,20 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
       → graft-node-rec inl* inr* (graft-nd-inr (j , l , n)) == inr* j l n
     -- graft-node-rec-inr-β {w = w} {ψ = ψ} {g = g} inl* inr* j l n =
     --   {!!}
+
+  graft-nd-to : {i : I} {w : W P i}
+    → {ψ : ∀ j → Leaf P w j → W P j} {g : Ops P}
+    → Node P w g ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ψ k l) g))
+    → Node P (graft w ψ) g
+  graft-nd-to {i} {w} {ψ} {g} =
+    graft-node-to w ψ g
+
+  graft-nd-from : {i : I} {w : W P i}
+    → {ψ : ∀ j → Leaf P w j → W P j} {g : Ops P}
+    → Node P (graft w ψ) g
+    → Node P w g ⊔ Σ I (λ k → Σ (Leaf P w k) (λ l → Node P (ψ k l) g))
+  graft-nd-from {i} {w} {ψ} {g} =
+    graft-node-from w ψ g
 
   --
   -- Basic laws of grafting
