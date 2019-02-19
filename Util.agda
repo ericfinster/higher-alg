@@ -141,8 +141,15 @@ module Util where
   ⊔-codiag : ∀ {i j k} {A A' : Type i} {B : Type j} {C : Type k}
     → (f : A → B) (g : A' → B) (h : B → C) (x : A ⊔ A')
     → ⊔-rec (h ∘ f) (h ∘ g) x == h (⊔-rec f g x)
-  ⊔-codiag f g h (inl a') = idp
-  ⊔-codiag f g h (inr a) = idp
+  ⊔-codiag f g h (inl a) = idp
+  ⊔-codiag f g h (inr b) = idp
+
+  ⊔-map-∘ : ∀ {i j k} {A A' : Type i} {B B' : Type j} {C : Type k}
+    → (f : A → C) (g : B → C)
+    → (h : A' → A) (k : B' → B) (x : A' ⊔ B')
+    → ⊔-rec f g (⊔-rec (inl ∘ h) (inr ∘ k) x) == ⊔-rec (f ∘ h) (g ∘ k) x
+  ⊔-map-∘ f g h k (inl a) = idp
+  ⊔-map-∘ f g h k (inr b) = idp
 
   ⊔-emap : ∀ {i i' j j'} {A : Type i} {A' : Type i'}
     → {B : Type j} {B' : Type j'}

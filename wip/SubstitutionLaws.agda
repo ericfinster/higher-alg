@@ -47,8 +47,8 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
       η-rel : (f : Ops P) → R f (subst-η f)
         
       γ-rel : (f : Ops P) (wα : InFrame P f) (r : R f wα)
-        → (κ : (g : Ops P) → Node P (fst wα) g → InFrame P g) 
-        → R f (subst-γ f wα κ)
+        → (κ : (g : Ops P) → Node P (fst wα) g → Op (P // R) g) 
+        → R f (subst-γ f wα (λ g n → fst (κ g n)))
 
   open SubstRel
   
@@ -59,86 +59,87 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
     subst-η-frm
   γ (SubstBiasedMgm SRel) {f} (wα , r) κ =
     let κ' g n = fst (κ g n)
-    in subst-γ f wα κ' , γ-rel SRel f wα r κ'
+    in subst-γ f wα κ' , γ-rel SRel f wα r κ
   γ-frm (SubstBiasedMgm SRel) ((w , α) , r) κ g =
-    subst-nd-eqv w (λ g n → fst (κ g n)) g
+    let κ' g n = fst (κ g n)
+    in subst-nd-eqv w κ' g
 
-  --
-  --  Unit left law
-  --
+  -- --
+  -- --  Unit left law
+  -- --
 
-  subst-unit-l : {i : I} (w : W P i)
-    →  subst w (subst-η-dec w) == w
-  subst-unit-l (lf i) = idp
-  subst-unit-l (nd (f , ϕ)) = ap (λ x → nd (f , x))
-    (Decor-== P (λ j p → subst-unit-l (ϕ j p)))
+  -- subst-unit-l : {i : I} (w : W P i)
+  --   →  subst w (subst-η-dec w) == w
+  -- subst-unit-l (lf i) = idp
+  -- subst-unit-l (nd (f , ϕ)) = ap (λ x → nd (f , x))
+  --   (Decor-== P (λ j p → subst-unit-l (ϕ j p)))
 
-  subst-unit-l-lem : {i : I} (w : W P i)
-    → (j : I) (l : Leaf P (subst w (subst-η-dec w)) j)
-    → l == subst-lf-from w (subst-η-dec w) j l [ (λ x → Leaf P x j) ↓ subst-unit-l w ]
-  subst-unit-l-lem (lf i) j l = idp
-  subst-unit-l-lem (nd (f , ϕ)) j (k , p , l) =
-    ↓-ap-in (λ x → Leaf P x j)
-            (λ x → nd (f , x))
-            (↓-nd-Leaf-ih P (λ j₁ p₁ → subst-unit-l (ϕ j₁ p₁)) k p
-                            (subst-unit-l-lem (ϕ k p) j l))
+  -- subst-unit-l-lem : {i : I} (w : W P i)
+  --   → (j : I) (l : Leaf P (subst w (subst-η-dec w)) j)
+  --   → l == subst-lf-from w (subst-η-dec w) j l [ (λ x → Leaf P x j) ↓ subst-unit-l w ]
+  -- subst-unit-l-lem (lf i) j l = idp
+  -- subst-unit-l-lem (nd (f , ϕ)) j (k , p , l) =
+  --   ↓-ap-in (λ x → Leaf P x j)
+  --           (λ x → nd (f , x))
+  --           (↓-nd-Leaf-ih P (λ j₁ p₁ → subst-unit-l (ϕ j₁ p₁)) k p
+  --                           (subst-unit-l-lem (ϕ k p) j l))
 
-  subst-unit-l-frm : {i : I} {f : Op P i}
-    → (w : W P i) (α : Frame P w f)
-    → (λ j → α j ∘e (subst-lf-eqv w (λ g n → subst-η g) j) ⁻¹)
-        == α [ (λ x → Frame P x f) ↓ subst-unit-l w ]
-  subst-unit-l-frm w α =
-    let lem j l₀ l₁ q = –> (α j) (subst-lf-from w (subst-η-dec w) j l₀)
-                          =⟨ ! (to-transp (subst-unit-l-lem w j l₀)) |in-ctx (–> (α j)) ⟩
-                        –> (α j) (transport (λ x → Leaf P x j) (subst-unit-l w) l₀)
-                          =⟨ to-transp q |in-ctx (–> (α j)) ⟩ 
-                        –> (α j) l₁ ∎
-    in ↓-W-Frame-in P lem
+  -- subst-unit-l-frm : {i : I} {f : Op P i}
+  --   → (w : W P i) (α : Frame P w f)
+  --   → (λ j → α j ∘e (subst-lf-eqv w (λ g n → subst-η g) j) ⁻¹)
+  --       == α [ (λ x → Frame P x f) ↓ subst-unit-l w ]
+  -- subst-unit-l-frm w α =
+  --   let lem j l₀ l₁ q = –> (α j) (subst-lf-from w (subst-η-dec w) j l₀)
+  --                         =⟨ ! (to-transp (subst-unit-l-lem w j l₀)) |in-ctx (–> (α j)) ⟩
+  --                       –> (α j) (transport (λ x → Leaf P x j) (subst-unit-l w) l₀)
+  --                         =⟨ to-transp q |in-ctx (–> (α j)) ⟩ 
+  --                       –> (α j) l₁ ∎
+  --   in ↓-W-Frame-in P lem
 
-  subst-nd-unit-l : {i : I} (w : W P i)
-    → (g : Ops P) (n : Node P w g)
-    → subst-nd-to w (subst-η-dec w) g (g , n , inl idp)
-      == n [ (λ x → Node P x g) ↓ subst-unit-l w ]
-  subst-nd-unit-l (lf i) g (lift ())
-  subst-nd-unit-l (nd (f , ϕ)) ._ (inl idp) =
-    ↓-ap-in (λ x → Node P x (_ , f)) (λ x → nd (f , x))
-      (↓-Node-here-in P (Decor-== P (λ j p → subst-unit-l (ϕ j p))))
-  subst-nd-unit-l (nd (f , ϕ)) g (inr (k , p , n)) =
-    ↓-ap-in (λ x → Node P x g) (λ x → nd (f , x))
-      (↓-Node-there-in P (λ j p₁ → subst-unit-l (ϕ j p₁)) k p
-        (subst-nd-unit-l (ϕ k p) g n))
+  -- subst-nd-unit-l : {i : I} (w : W P i)
+  --   → (g : Ops P) (n : Node P w g)
+  --   → subst-nd-to w (subst-η-dec w) g (g , n , inl idp)
+  --     == n [ (λ x → Node P x g) ↓ subst-unit-l w ]
+  -- subst-nd-unit-l (lf i) g (lift ())
+  -- subst-nd-unit-l (nd (f , ϕ)) ._ (inl idp) =
+  --   ↓-ap-in (λ x → Node P x (_ , f)) (λ x → nd (f , x))
+  --     (↓-Node-here-in P (Decor-== P (λ j p → subst-unit-l (ϕ j p))))
+  -- subst-nd-unit-l (nd (f , ϕ)) g (inr (k , p , n)) =
+  --   ↓-ap-in (λ x → Node P x g) (λ x → nd (f , x))
+  --     (↓-Node-there-in P (λ j p₁ → subst-unit-l (ϕ j p₁)) k p
+  --       (subst-nd-unit-l (ϕ k p) g n))
 
-  --
-  --  Unit right law
-  -- 
+  -- --
+  -- --  Unit right law
+  -- -- 
 
-  subst-unit-r-lem : {i : I} (w : W P i)
-    → (j : I) (t : Σ I (λ k → Σ (Leaf P w k) (λ l → k == j)))
-    → graft-unit-lf-to P w j (graft-leaf-to P w (λ k _ → lf k) j t)
-      == transport (Leaf P w) (snd (snd t)) (fst (snd t))
-  subst-unit-r-lem (lf i) .i (.i , idp , idp) = idp
-  subst-unit-r-lem (nd (f , ϕ)) j (.j , (k , p , l) , idp) =
-    ap (λ x → (k , p , x)) (subst-unit-r-lem (ϕ k p) j (j , l , idp))
+  -- subst-unit-r-lem : {i : I} (w : W P i)
+  --   → (j : I) (t : Σ I (λ k → Σ (Leaf P w k) (λ l → k == j)))
+  --   → graft-unit-lf-to P w j (graft-leaf-to P w (λ k _ → lf k) j t)
+  --     == transport (Leaf P w) (snd (snd t)) (fst (snd t))
+  -- subst-unit-r-lem (lf i) .i (.i , idp , idp) = idp
+  -- subst-unit-r-lem (nd (f , ϕ)) j (.j , (k , p , l) , idp) =
+  --   ap (λ x → (k , p , x)) (subst-unit-r-lem (ϕ k p) j (j , l , idp))
 
-  subst-unit-r-frm : {i : I} {f : Op P i}
-    → (κ : (g : Ops P) → Node P (corolla P f) g → InFrame P g)
-    → snd (κ (i , f) (inl idp))
-        == (λ j → corolla-frm P f j ∘e (subst-lf-eqv (corolla P f) κ j) ⁻¹)
-             [ (λ x → Frame P x f) ↓ graft-unit P (fst (κ (i , f) (inl idp))) ]
-  subst-unit-r-frm {i} {f} κ = 
-    let (w , α) = κ (i , f) (inl idp)
-        ψ k _ = lf k
-        t j l = graft-leaf-from P w ψ j l
+  -- subst-unit-r-frm : {i : I} {f : Op P i}
+  --   → (κ : (g : Ops P) → Node P (corolla P f) g → InFrame P g)
+  --   → snd (κ (i , f) (inl idp))
+  --       == (λ j → corolla-frm P f j ∘e (subst-lf-eqv (corolla P f) κ j) ⁻¹)
+  --            [ (λ x → Frame P x f) ↓ graft-unit P (fst (κ (i , f) (inl idp))) ]
+  -- subst-unit-r-frm {i} {f} κ = 
+  --   let (w , α) = κ (i , f) (inl idp)
+  --       ψ k _ = lf k
+  --       t j l = graft-leaf-from P w ψ j l
         
-        lem j l = –> (α j) (graft-unit-lf-to P w j l)
-                    =⟨ ! (graft-leaf-to-from P w ψ j l) |in-ctx (λ x → –> (α j) (graft-unit-lf-to P w j x)) ⟩
-                  –> (α j) (graft-unit-lf-to P w j (graft-leaf-to P w ψ j (t j l)))
-                    =⟨ subst-unit-r-lem w j (t j l) |in-ctx (–> (α j)) ⟩
-                  –> (α j) (transport (Leaf P w) (snd (snd (t j l))) (fst (snd (t j l))))
-                    =⟨ transp-→ (Leaf P w) (Param P f) (snd (snd (t j l))) (λ i → –> (α i)) ⟩ 
-                  –> (corolla-frm P f j) (subst-lf-from (corolla P f) κ j l) ∎
+  --       lem j l = –> (α j) (graft-unit-lf-to P w j l)
+  --                   =⟨ ! (graft-leaf-to-from P w ψ j l) |in-ctx (λ x → –> (α j) (graft-unit-lf-to P w j x)) ⟩
+  --                 –> (α j) (graft-unit-lf-to P w j (graft-leaf-to P w ψ j (t j l)))
+  --                   =⟨ subst-unit-r-lem w j (t j l) |in-ctx (–> (α j)) ⟩
+  --                 –> (α j) (transport (Leaf P w) (snd (snd (t j l))) (fst (snd (t j l))))
+  --                   =⟨ transp-→ (Leaf P w) (Param P f) (snd (snd (t j l))) (λ i → –> (α i)) ⟩ 
+  --                 –> (corolla-frm P f j) (subst-lf-from (corolla P f) κ j l) ∎
 
-    in graft-unit-frm P w α ∙'ᵈ (λ= λ j → equiv-== (λ l → lem j l))
+  --   in graft-unit-frm P w α ∙'ᵈ (λ= λ j → equiv-== (λ l → lem j l))
 
   --
   --  Commutation of substitution and grafting
@@ -217,6 +218,14 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
        subst-graft w ψ-sg κ-sg θ-sg ∙
        ap (subst (graft P w ψ-sg)) (λ= (λ g → λ= (λ n → lem g n)))
 
+
+  subst-assoc-lf-action : {i : I} (w : W P i) 
+    → (κ : (g : Ops P) → Node P w g → InFrame P g) 
+    → (ν : (g : Ops P) → Σ (Ops P) (λ k → Σ (Node P w k) (λ p → Node P (fst (κ k p)) g)) → InFrame P g)
+    → (j : I) → Leaf P (subst w (λ g n → subst-γ _ (κ g n) (λ g' n' → ν g' (g , n , n')))) j
+    → Leaf P (subst (subst w κ) (λ g n → ν g (subst-nd-from w κ g n))) j
+  subst-assoc-lf-action w κ ν j l = {!!}
+  
   -- subst-assoc-frm-lem : {i : I} (w : W P i) 
   --   → (κ : (g : Ops P) → Node P w g → InFrame P g)
   --   → (ν : (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g)) → InFrame P g)
@@ -272,59 +281,62 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
             [ (λ x → Node P x g) ↓ subst-assoc w κ ν ]
     -- subst-nd-assoc = {!!}
 
-  record SubstRelLaws (SRel : SubstRel) : Type ℓ where
-    field
+  -- record SubstRelLaws (SRel : SubstRel) : Type ℓ where
+  --   field
 
-      subst-unit-l-rel : {i : I} {f : Op P i}
-        → (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
-        → γ-rel SRel (i , f) (w , α) r (λ g _ → fst (η (SubstBiasedMgm SRel) g))
-            == r [ R (i , f) ↓ pair= (subst-unit-l w) (subst-unit-l-frm w α) ]
+  --     subst-unit-l-rel : {i : I} {f : Op P i}
+  --       → (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
+  --       → γ-rel SRel (i , f) (w , α) r (λ g _ → η (SubstBiasedMgm SRel) g)
+  --           == r [ R (i , f) ↓ pair= (subst-unit-l w) (subst-unit-l-frm w α) ]
 
-      subst-unit-r-rel : {i : I} {f : Op P i}
-        → (κ : (g : Ops P) → Node P (corolla P f) g → Op (P // R) g)
-        → snd (κ (i , f) (inl idp)) == γ-rel SRel (i , f) (corolla P f , corolla-frm P f) (η-rel SRel (i , f)) (λ g n → fst (κ g n))
-            [ R (i , f) ↓ pair= (graft-unit P (fst (fst ((κ (i , f) (inl idp)))))) (subst-unit-r-frm (λ g n → fst (κ g n))) ]
+  --     subst-unit-r-rel : {i : I} {f : Op P i}
+  --       → (κ : (g : Ops P) → Node P (corolla P f) g → Op (P // R) g)
+  --       → snd (κ (i , f) (inl idp)) == γ-rel SRel (i , f) (corolla P f , corolla-frm P f) (η-rel SRel (i , f)) κ
+  --           [ R (i , f) ↓ pair= (graft-unit P (fst (fst ((κ (i , f) (inl idp)))))) (subst-unit-r-frm (λ g n → fst (κ g n))) ]
 
-      subst-assoc-rel : {i : I} {f : Op P i}
-        → (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
-        → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
-        → (ν : (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (fst (κ h n))) g)) → Op (P // R) g)
-        → let κ' g n = fst (κ g n)
-              ν' g t = fst (ν g t)
-          in γ-rel SRel (i , f) (w , α) r (λ g n → subst-γ g (κ' g n) (λ g₁ n₁ → ν' g₁ (g , n , n₁)))
-             == γ-rel SRel (i , f) (subst-γ (i , f) (w , α) κ') (γ-rel SRel (i , f) (w , α) r κ')
-                      (λ g n → fst (ν g (<– (subst-nd-eqv w κ' g) n)))
-               [ R (i , f) ↓ pair= (subst-assoc w κ' ν') (subst-assoc-frm w α κ' ν') ]
+  --     subst-assoc-rel : {i : I} {f : Op P i}
+  --       → (w : W P i) (α : Frame P w f) (r : R (i , f) (w , α))
+  --       → (κ : (g : Ops P) → Node P w g → Op (P // R) g)
+  --       → (ν : (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (fst (κ h n))) g)) → Op (P // R) g)
+  --       → let κ' g n = fst (κ g n)
+  --             ν' g t = fst (ν g t)
+  --         in γ-rel SRel (i , f) (w , α) r (λ g n → subst-γ g (κ' g n) (λ g₁ n₁ → ν' g₁ (g , n , n₁)) ,
+  --                                                  γ-rel SRel g (κ' g n) (snd (κ g n)) (λ g₁ n₁ → ν g₁ (g , n , n₁)))
+  --            == γ-rel SRel (i , f) (subst-γ (i , f) (w , α) κ')
+  --                                  (γ-rel SRel (i , f) (w , α) r κ)
+  --                                  (λ g n → ν g (<– (subst-nd-eqv w κ' g) n))
+  --              [ R (i , f) ↓ pair= (subst-assoc w κ' ν') (subst-assoc-frm w α κ' ν') ]
 
-  open SubstRelLaws
 
-  SubstBiasedLaws : (SRel : SubstRel) (SLaws : SubstRelLaws SRel)
-    → BiasedLaws (P // R) (SubstBiasedMgm SRel)
-  unit-l (SubstBiasedLaws SRel SLaws) ((w , α) , r) =
-    pair= (pair= (subst-unit-l w) (subst-unit-l-frm w α))
-          (subst-unit-l-rel SLaws w α r)
-  unit-r (SubstBiasedLaws SRel SLaws) {i , f} κ =
-    let ((w , α) , r) = κ (i , f) (inl idp)
-        κ' g n = fst (κ g n)
-    in pair= (pair= (graft-unit P w) (subst-unit-r-frm κ'))
-             (subst-unit-r-rel SLaws κ)
-  assoc (SubstBiasedLaws SRel SLaws) {i , f} ((w , α) , r) κ ν = 
-    let κ' g n = fst (κ g n)
-        ν' g t = fst (ν g t)
-    in pair= (pair= (subst-assoc w κ' ν') (subst-assoc-frm w α κ' ν'))
-             (subst-assoc-rel SLaws w α r κ ν)
-  unit-l-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) g n =
-    ↓-Σ-weaken (λ x → Node P (fst x) g)
-      (↓-Σ-weaken (λ x → Node P x g)
-                  (subst-nd-unit-l w g n))
-  unit-r-frm (SubstBiasedLaws SRel SLaws) {i , f} κ g n =
-    ↓-Σ-weaken (λ x → Node P (fst x) g)
-      (↓-Σ-weaken (λ x → Node P x g)
-        (graft-unit-nd P (fst (fst (κ (_ , f) (inl idp)))) g n)) 
-  assoc-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) κ ν g h m k n o =
-    let κ' g n = fst (κ g n)
-        ν' g t = fst (ν g t)
-    in ↓-Σ-weaken (λ x → Node P (fst x) g)
-         (↓-Σ-weaken (λ x → Node P x g)
-                     (subst-nd-assoc w α κ' ν' g h m k n o))
+  -- open SubstRelLaws
+
+  -- SubstBiasedLaws : (SRel : SubstRel) (SLaws : SubstRelLaws SRel)
+  --   → BiasedLaws (P // R) (SubstBiasedMgm SRel)
+  -- unit-l (SubstBiasedLaws SRel SLaws) ((w , α) , r) =
+  --   pair= (pair= (subst-unit-l w) (subst-unit-l-frm w α))
+  --         (subst-unit-l-rel SLaws w α r)
+  -- unit-r (SubstBiasedLaws SRel SLaws) {i , f} κ =
+  --   let ((w , α) , r) = κ (i , f) (inl idp)
+  --       κ' g n = fst (κ g n)
+  --   in pair= (pair= (graft-unit P w) (subst-unit-r-frm κ'))
+  --            (subst-unit-r-rel SLaws κ)
+  -- assoc (SubstBiasedLaws SRel SLaws) {i , f} ((w , α) , r) κ ν = 
+  --   let κ' g n = fst (κ g n)
+  --       ν' g t = fst (ν g t)
+  --   in pair= (pair= (subst-assoc w κ' ν') (subst-assoc-frm w α κ' ν'))
+  --            (subst-assoc-rel SLaws w α r κ ν)
+  -- unit-l-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) g n =
+  --   ↓-Σ-weaken (λ x → Node P (fst x) g)
+  --     (↓-Σ-weaken (λ x → Node P x g)
+  --                 (subst-nd-unit-l w g n))
+  -- unit-r-frm (SubstBiasedLaws SRel SLaws) {i , f} κ g n =
+  --   ↓-Σ-weaken (λ x → Node P (fst x) g)
+  --     (↓-Σ-weaken (λ x → Node P x g)
+  --       (graft-unit-nd P (fst (fst (κ (_ , f) (inl idp)))) g n)) 
+  -- assoc-frm (SubstBiasedLaws SRel SLaws) ((w , α) , r) κ ν g h m k n o =
+  --   let κ' g n = fst (κ g n)
+  --       ν' g t = fst (ν g t)
+  --   in ↓-Σ-weaken (λ x → Node P (fst x) g)
+  --        (↓-Σ-weaken (λ x → Node P x g)
+  --                    (subst-nd-assoc w α κ' ν' g h m k n o))
 

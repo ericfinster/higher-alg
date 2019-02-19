@@ -100,6 +100,17 @@ module Biased where
       unit-r-frm : {i : I} (ϕ : (j : I) → Param P (η i) j → Op P j) (j : I) (p : Param P (ϕ i (–> (η-frm i i) idp)) j)
         → p == γ-frm-to B (i , –> (η-frm i i) idp , p) [ (λ x → Param P x j) ↓ unit-r ϕ ]
 
+    -- assoc-act : {i : I} (f : Op P i)
+    --     → (ϕ : (j : I) → Param P f j → Op P j)
+    --     → (ψ : (j : I) → Σ I (λ k → Σ (Param P f k) (λ p → Param P (ϕ k p) j)) → Op P j)
+    --     → (j : I)
+    --     → Param P (γ f (λ j p → γ (ϕ j p) (λ k q → ψ k (j , p , q)))) j 
+    --     → Param P (γ (γ f ϕ) (λ j p → ψ j (<– (γ-frm f ϕ j) p))) j
+    -- assoc-act f ϕ ψ j p =
+    --   let (k₀ , p₀ , p₁₂) = γ-frm-from B p
+    --       (k₁ , p₁ , p₂) = γ-frm-from B p₁₂
+    --   in γ-frm-to B (k₁ , γ-frm-to B (k₀ , p₀ , p₁) , transport! (λ x → Param P (ψ k₁ x) j) (<–-inv-l (γ-frm f ϕ k₁) (k₀ , p₀ , p₁)) p₂)
+
       assoc-frm : {i : I} (f : Op P i)
         → (ϕ : (j : I) → Param P f j → Op P j)
         → (ψ : (j : I) → Σ I (λ k → Σ (Param P f k) (λ p → Param P (ϕ k p) j)) → Op P j) (l : I)

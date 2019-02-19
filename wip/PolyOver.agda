@@ -4,6 +4,7 @@ open import HoTT
 open import Util
 open import Polynomial
 open import Grafting
+open import Substitution
 open import PolyMonad
 open import wip.PolyEquiv
 open import wip.PolyPaths
@@ -171,3 +172,65 @@ module wip.PolyOver where
       in ap (λ x → nd (f , x))
             (Decor-== P (λ j p → graft↓ (ϕ (j , Param↓ Q f g p ) (p , idp)) (ψ' j p)))
 
+    subst-decor-↓ : {i : I} {j : Sort↓ Q i} (w : W (ΣPoly P Q) (i , j))
+      → (κ : (h : Ops (ΣPoly P Q)) → Node (ΣPoly P Q) w h → InFrame (ΣPoly P Q) h)
+      → (g : Ops P) → Node P (W↓ w) g → InFrame P g
+    subst-decor-↓ w κ (k , g) n = 
+      let ((l , h) , n') = W↓-nd-from w k g n
+      in W↓ (fst (κ ((k , l) , (g , h)) n')) ,
+         Frame↓ (snd (κ ((k , l) , (g , h)) n'))
+
+    -- W↓-nd-from : {i : I} {j : Sort↓ Q i} (w : W (ΣPoly P Q) (i , j)) (k : I) (h : Op P k)
+    --   → Node P (W↓ w) (k , h)
+    --   → Σ (Σ (Sort↓ Q k) (Op↓ Q h)) (λ { (m , o) → Node (ΣPoly P Q) w ((k , m) , (h , o)) })
+    -- W↓-nd-from (lf .(_ , _)) k h (lift ())
+    -- W↓-nd-from (nd ((f , g) , ϕ)) k .f (inl idp) = (_ , g) , inl idp
+    -- W↓-nd-from (nd ((f , g) , ϕ)) k h (inr (k₀ , p , n)) =
+    --   let ((m , t) , n') = W↓-nd-from (ϕ (k₀ , Param↓ Q f g p) (p , idp)) k h n
+    --   in (m , t) , inr ((k₀ , Param↓ Q f g p) , (p , idp) , n')
+
+
+    subst↓ : {i : I} {j : Sort↓ Q i} (w : W (ΣPoly P Q) (i , j))
+      → (κ : (h : Ops (ΣPoly P Q)) → Node (ΣPoly P Q) w h → InFrame (ΣPoly P Q) h)
+      → W↓ (subst (ΣPoly P Q) w κ) ==
+        subst P (W↓ w) (subst-decor-↓ w κ)
+    subst↓ (lf .(_ , _)) κ = idp
+    subst↓ (nd ((f , g) , ϕ)) κ = 
+      let (w , α) = κ (_ , (f , g)) (inl idp)
+          (w' , β') = subst-decor-↓ (nd ((f , g) , ϕ)) κ (_ , f) (inl idp)
+          κ' j l g n = κ g (inr (j , –> (α j) l , n))
+          ψ j l = subst (ΣPoly P Q) (ϕ j (–> (α j) l)) (κ' j l)
+          ψ' j l = W↓ (ψ (j , fst (W↓-lf-from w j l)) (snd (W↓-lf-from w j l)))
+          ψ'' j l = subst P (W↓ (ϕ (j , Param↓ Q f g (–> (β' j) l)) (–> (β' j) l , idp)))
+                            (λ h n → subst-decor-↓ (nd ((f , g) , ϕ)) κ h (inr (j , –> (β' j) l , n)))
+
+          lem j₀ l₀ = let (j₁ , l₁) = W↓-lf-from w j₀ l₀
+                      in W↓ (subst (ΣPoly P Q) (ϕ (j₀ , j₁) (–> (α (j₀ , j₁)) l₁)) (κ' (j₀ , j₁) l₁))
+                           =⟨ subst↓ (ϕ (j₀ , j₁) (–> (α (j₀ , j₁)) l₁)) (κ' (j₀ , j₁) l₁) ⟩
+                         subst P (W↓ (ϕ (j₀ , j₁) (–> (α (j₀ , j₁)) l₁)))
+                                 (subst-decor-↓ (ϕ (j₀ , j₁) (–> (α (j₀ , j₁)) l₁)) (κ' (j₀ , j₁) l₁))
+                           =⟨ {!!} ⟩ 
+                         -- subst P (W↓ (ϕ (j₀ , Param↓ Q f g (–> (β' j₀) l₀)) (–> (β' j₀) l₀ , idp)))
+                         --         (subst-decor-↓ (ϕ (j₀ , Param↓ Q f g (–> (β' j₀) l₀)) (–> (β' j₀) l₀ , idp))
+                         --                        λ h n → ? )
+                         --   =⟨ idp ⟩ 
+                         subst P (W↓ (ϕ (j₀ , Param↓ Q f g (–> (β' j₀) l₀)) (–> (β' j₀) l₀ , idp)))
+                                 (λ h n → subst-decor-↓ (nd ((f , g) , ϕ)) κ h (inr (j₀ , –> (β' j₀) l₀ , n))) ∎
+                            
+      in W↓ (graft (ΣPoly P Q) w ψ)
+           =⟨ graft↓ w ψ ⟩
+         graft P (W↓ w) ψ'
+           =⟨ λ= (λ j → λ= (λ l → lem j l)) |in-ctx (graft P (W↓ w)) ⟩ 
+         graft P (W↓ w) ψ'' ∎
+
+
+  -- -- Elementary substitution.
+  -- subst : {i : I} (w : W P i)
+  --   → (κ : (g : Ops P) → Node P w g → InFrame P g)
+  --   → W P i
+  -- subst (lf i) κ = lf i
+  -- subst (nd (f , ϕ)) κ =
+  --   let (w , α) = κ (_ , f) (inl idp)
+  --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
+  --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
+  --   in graft P w ψ

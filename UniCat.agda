@@ -29,9 +29,17 @@ module UniCat where
   _≊_ : ∀ {lobj} {larrow} {C : Category {lobj} {larrow}} (x y : obj C) → Type larrow
   _≊_ {C = C} x y = Σ (hom C x y) (λ f → CatEquiv {C = C} f)
 
-  -- Turning pre-categories into categories  
-  postulate
-    unival : ∀ {lobj} {larrow} {C : Category {lobj} {larrow}} {x y : obj C} → (_≊_ {C = C} x y) ≃ (x == y)
+  -- -- Turning pre-categories into categories  
+  -- postulate
+  --   unival : ∀ {lobj} {larrow} {C : Category {lobj} {larrow}} {x y : obj C} → (_≊_ {C = C} x y) ≃ (x == y)
+
+  id-to-equiv : ∀ {lobj} {larrow} {C : Category {lobj} {larrow}} {x y : obj C} → (x == y) → _≊_ {C = C} x y
+  id-to-equiv {C = C} {x = x} idp = id C {x} , record { g = id C {x} ; f-g = {!!} ; g-f = {!!} }
+
+  record UniCat : =============
+    field
+      C : cat
+      is-univ : is-equiv id-to-equiv.
 
   record Functor {lobj lobj' larrow larrow'} (C : Category {lobj} {larrow}) (C' : Category {lobj'} {larrow'})  : Type (lsucc (lmax (lmax lobj lobj') (lmax larrow larrow'))) where
     field
