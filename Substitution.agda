@@ -172,6 +172,20 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     → {j : I} → Leaf P (subst w κ) j → Leaf P w j
   subst-lf-from {i} {w} {κ} {j} = subst-leaf-from w κ j
 
+  subst-lf-to-from : {i : I} {w : W P i}
+    → {κ : (g : Ops P) → Node P w g → InFrame P g}
+    → {j : I} (l : Leaf P (subst w κ) j)
+    → subst-leaf-to w κ j (subst-leaf-from w κ j l) == l
+  subst-lf-to-from {i} {w} {κ} {j} =
+    subst-leaf-to-from w κ j
+    
+  subst-lf-from-to : {i : I} {w : W P i}
+    → {κ : (g : Ops P) → Node P w g → InFrame P g}
+    → {j : I} (l : Leaf P w j)
+    → subst-leaf-from w κ j (subst-leaf-to w κ j l) == l
+  subst-lf-from-to {i} {w} {κ} {j} =
+    subst-leaf-from-to w κ j
+
   subst-nd-to : {i : I} {w : W P i}
     → {κ : (g : Ops P) → Node P w g → InFrame P g}
     → {g : Ops P} → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g))
