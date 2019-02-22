@@ -51,6 +51,12 @@ module Util where
     → f a₂ (transport P p y) == transport Q p (f a₁ y)
   transp-→ P Q idp f = idp
 
+  transp!-→ : ∀ {i j} {A : Type i} (P Q : A → Type j) 
+    → {a₁ a₂ : A} (p : a₁ == a₂) {y : P a₂}
+    → (f : (a : A) → P a → Q a)
+    → f a₁ (transport! P p y) == transport! Q p (f a₂ y)
+  transp!-→ P Q idp f = idp
+
   -- Needed for a lemma.
   apd↓-cst :  ∀ {i j} {A : Type i} {B C : A → Type j} (f : {a : A} → B a → C a)
     {x y : A} {p : x == y} {u : B x} {v : B y}
@@ -201,6 +207,13 @@ module Util where
   transport-equiv-lemma {j = j} = equiv-induction
      (λ {A} {B} α → (P : A → Type j) (σ : (b : B) → P (<– α b)) (b : B) → transport P (<–-inv-l α (<– α b)) (σ (–> α (<– α b))) == σ b)
      (λ A B σ a → idp)
+
+  transp!-eqv-lem : ∀ {i j} {A B : Type i} {C : B → Type j}
+    → (e : A ≃ B) (a : A) (c : C (–> e a))
+    → transport! C (<–-inv-r e (–> e a)) c == c [ C ∘ (–> e) ↓ <–-inv-l e a ]
+  transp!-eqv-lem {C = C} e a c = ↓-ap-out C (–> e) (<–-inv-l e a)
+    (transport! (λ x → PathOver C x (transport! C (<–-inv-r e (–> e a)) c) c)
+                (<–-inv-adj e a) (to-transp!!-↓ C (<–-inv-r e (–> e a)) c))
 
   -- So I'm pretty sure that I've proved this before,
   -- but is there a direct way to see it?
