@@ -154,7 +154,6 @@ module wip.PolyOver where
                               =⟨ <–-inv-r (W↓-lf-eqv w k) l ⟩ 
                             l ∎
 
-
     Frame↓ : {i : I} {f : Op P i} {j : Sort↓ Q i} {g : Op↓ Q f j}
       → {w : W (ΣPoly P Q) (i , j)} (α : Frame (ΣPoly P Q) w (f , g))
       → Frame P (W↓ w) f
@@ -189,7 +188,6 @@ module wip.PolyOver where
     --   let ((m , t) , n') = W↓-nd-from (ϕ (k₀ , Param↓ Q f g p) (p , idp)) k h n
     --   in (m , t) , inr ((k₀ , Param↓ Q f g p) , (p , idp) , n')
 
-
     subst↓ : {i : I} {j : Sort↓ Q i} (w : W (ΣPoly P Q) (i , j))
       → (κ : (h : Ops (ΣPoly P Q)) → Node (ΣPoly P Q) w h → InFrame (ΣPoly P Q) h)
       → W↓ (subst (ΣPoly P Q) w κ) ==
@@ -204,12 +202,22 @@ module wip.PolyOver where
           ψ'' j l = subst P (W↓ (ϕ (j , Param↓ Q f g (–> (β' j) l)) (–> (β' j) l , idp)))
                             (λ h n → subst-decor-↓ (nd ((f , g) , ϕ)) κ h (inr (j , –> (β' j) l , n)))
 
+    -- W↓-lf-from : {i : I} {j : Sort↓ Q i} (w : W (ΣPoly P Q) (i , j)) (k : I)
+    --   → Leaf P (W↓ w) k
+    --   → Σ (Sort↓ Q k) (λ l → Leaf (ΣPoly P Q) w (k , l))
+    -- W↓-lf-from (lf (i , j)) .i idp = j , idp
+    -- W↓-lf-from (nd ((f , g) , ϕ)) k (m , p , l) = 
+    --   let (n , l') = W↓-lf-from (ϕ (m , Param↓ Q f g p) (p , idp)) k l
+    --   in n , (m , Param↓ Q f g p) , (p , idp) , l'
+
+
+
           lem j₀ l₀ = let (j₁ , l₁) = W↓-lf-from w j₀ l₀
                       in W↓ (subst (ΣPoly P Q) (ϕ (j₀ , j₁) (–> (α (j₀ , j₁)) l₁)) (κ' (j₀ , j₁) l₁))
                            =⟨ subst↓ (ϕ (j₀ , j₁) (–> (α (j₀ , j₁)) l₁)) (κ' (j₀ , j₁) l₁) ⟩
                          subst P (W↓ (ϕ (j₀ , j₁) (–> (α (j₀ , j₁)) l₁)))
                                  (subst-decor-↓ (ϕ (j₀ , j₁) (–> (α (j₀ , j₁)) l₁)) (κ' (j₀ , j₁) l₁))
-                           =⟨ {!!} ⟩ 
+                           =⟨ {!j₁!} ⟩ 
                          -- subst P (W↓ (ϕ (j₀ , Param↓ Q f g (–> (β' j₀) l₀)) (–> (β' j₀) l₀ , idp)))
                          --         (subst-decor-↓ (ϕ (j₀ , Param↓ Q f g (–> (β' j₀) l₀)) (–> (β' j₀) l₀ , idp))
                          --                        λ h n → ? )
@@ -234,3 +242,18 @@ module wip.PolyOver where
   --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
   --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
   --   in graft P w ψ
+
+
+    -- postulate
+
+    --   flatn-inv-to : {i : I} (f : Op P i) {j : Sort↓ Q i} (g : Op↓ Q f j)
+    --       → (pd : W (ΣPoly P Q // (Rel↑ Q R)) ((i , j) , f , g))
+    --       → Path {A = InFrame P (i , f)}
+    --              (W↓ Q (flatn (Rel↑ Q R) pd) , Frame↓ Q (flatn-frm (Rel↑ Q R) pd))
+    --              (flatn R (W↓ (RelOver Q R) (–> (W≃ (Rel≃ Q R) _) pd)) , flatn-frm R (W↓ (RelOver Q R) (–> (W≃ (Rel≃ Q R) _) pd)))
+
+    --   flatn-inv-from : {i : I} (f : Op P i) {j : Sort↓ Q i} (g : Op↓ Q f j)
+    --       → (pd : W (ΣPoly (P // R) (RelOver Q R)) ((i , f) , (j , g)))
+    --       → Path {A = InFrame P (i , f)}
+    --              (W↓ Q (flatn (Rel↑ Q R) (<– (W≃ (Rel≃ Q R) _) pd)) , Frame↓ Q (flatn-frm (Rel↑ Q R) (<– (W≃ (Rel≃ Q R) _) pd)))
+    --              (flatn R (W↓ (RelOver Q R) pd) , flatn-frm R (W↓ (RelOver Q R) pd))

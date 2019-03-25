@@ -205,8 +205,16 @@ module Util where
     → (P : A → Type j) (σ : (b : B) → P (<– α b)) (b : B)
     → transport P (<–-inv-l α (<– α b)) (σ (–> α (<– α b))) == σ b
   transport-equiv-lemma {j = j} = equiv-induction
-     (λ {A} {B} α → (P : A → Type j) (σ : (b : B) → P (<– α b)) (b : B) → transport P (<–-inv-l α (<– α b)) (σ (–> α (<– α b))) == σ b)
+     (λ {A} {B} α → (P : A → Type j) (σ : (b : B) → P (<– α b)) (b : B)
+       → transport P (<–-inv-l α (<– α b)) (σ (–> α (<– α b))) == σ b)
      (λ A B σ a → idp)
+
+  postulate
+
+    transp!-eqv-pth : ∀ {i j k l} {A : Type i} {B : Type j} {C : Type k}
+      → (α : A ≃ B) (P : B → Type l) 
+      → (f : (b : B) (p : P b) → C) (b : B) (p : P b)
+      → f (–> α (<– α b)) (transport! P (<–-inv-r α b) p) == f b p
 
   transp!-eqv-lem : ∀ {i j} {A B : Type i} {C : B → Type j}
     → (e : A ≃ B) (a : A) (c : C (–> e a))
@@ -214,6 +222,17 @@ module Util where
   transp!-eqv-lem {C = C} e a c = ↓-ap-out C (–> e) (<–-inv-l e a)
     (transport! (λ x → PathOver C x (transport! C (<–-inv-r e (–> e a)) c) c)
                 (<–-inv-adj e a) (to-transp!!-↓ C (<–-inv-r e (–> e a)) c))
+
+  transp!-pair-lem : ∀ {i j} {A B : Type i} (C : B → Type j)
+    → (e : A ≃ B) (b : B) (c : C b)
+    → Path {A = Σ B C} (–> e (<– e b) , transport! C (<–-inv-r e b) c) (b , c)
+  transp!-pair-lem C e b c = pair= (<–-inv-r e b) (to-transp!!-↓ C (<–-inv-r e b) c)
+
+  transp!-Σ : ∀ {i j k} {B : Type i} (C : B → Type j) (D : (b : B) → C b → Type k)
+    → {b b' : B} (p : b' == b) (c : C b) (d : D b c) 
+    → (transport! C p c  , transport! (λ x → D (fst x) (snd x)) (pair= p (to-transp!!-↓ C p c)) d) ==
+       transport! (λ x → Σ (C x) (D x)) p (c , d)
+  transp!-Σ C D idp c d = idp
 
   -- So I'm pretty sure that I've proved this before,
   -- but is there a direct way to see it?

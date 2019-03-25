@@ -144,7 +144,29 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   --
   --  Commutation of substitution and grafting
   --
-  
+
+  --  Might be useful ????
+  -- ↓-graft-Leaf-ih₀ : {i j : I} {w : W P i}
+  --   → {ψ₀ ψ₁ : Decor Fr w (W P)} (e : ψ₀ == ψ₁)
+  --   → (k : I) (l : Leaf P w k)
+  --   → {l₀ : Leaf P (ψ₀ k l) j} {l₁ : Leaf P (ψ₁ k l) j}
+  --   → l₀ == l₁ [ (λ x → Leaf P x j) ↓ app= (app= e k) l ]
+  --   → graft-lf-to (k , l , l₀) == graft-lf-to (k , l , l₁) [ (λ x → Leaf P (graft w x) j) ↓ e ]
+  -- ↓-graft-Leaf-ih₀ idp k p idp = idp
+
+  -- ↓-graft-Leaf-ih : {i j : I} {w : W P i}
+  --   → {ψ₀ ψ₁ : Decor Fr w (W P)} 
+  --   → (H : (k : I) (l : Leaf P w k) → ψ₀ k l == ψ₁ k l)
+  --   → (k : I) (l : Leaf P w k)
+  --   → {l₀ : Leaf P (ψ₀ k l) j} {l₁ : Leaf P (ψ₁ k l) j}
+  --   → l₀ == l₁ [ (λ x → Leaf P x j) ↓ H k l ]
+  --   → graft-lf-to (k , l , l₀) == graft-lf-to (k , l , l₁) [ (λ x → Leaf P (graft w x) j) ↓ Decor-== Fr H ]
+  -- ↓-graft-Leaf-ih H k l {l₀} {l₁} q =
+  --   ↓-graft-Leaf-ih₀ (Decor-== Fr H) k l
+  --     (transport (λ y → l₀ == l₁ [ (λ x → Leaf P x _) ↓ y ])
+  --                (Decor-==-β Fr H k l) q)
+
+
   subst-graft : {i : I} (w : W P i) (ψ : (j : I) → Leaf P w j → W P j)
     → (κ : (g : Ops P) → Node P w g → InFrame P g)
     → (θ : (g : Ops P) → Σ I (λ j → Σ (Leaf P w j) (λ l → Node P (ψ j l) g)) → InFrame P g) 
@@ -153,15 +175,20 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   subst-graft (lf i) ψ κ θ = idp
   subst-graft (nd (f , ϕ)) ψ κ θ = 
     let (w , α) = κ (_ , f) (inl idp)
+
+        -- induction hyp
         p j l₀ = –> (α j) l₀
         ψ' j l₀ k l₁ = ψ k (j , p j l₀ , l₁)
         κ' j l₀ g n = κ g (inr (j , p j l₀ , n))
         θ' j l₀ g t = let (k , l₁ , n) = t in θ g (k , (j , p j l₀ , l₁) , n)
-        ψ₀ j l₀ = subst (ϕ j (p j l₀)) (κ' j l₀)
-        slf k j l₀ l₁ = subst-leaf-from (ϕ j (p j l₀)) (κ' j l₀) k l₁
-        ψ₁ k t = let (j , l₀ , l₁) = t in subst (ψ' j l₀ k (slf k j l₀ l₁)) (λ g n → θ' j l₀ g (k , slf k j l₀ l₁ , n))
         ih j l = subst-graft (ϕ j (p j l)) (ψ' j l) (κ' j l) (θ' j l)
-        
+
+        -- double graft arguments
+        slf k j l₀ l₁ = subst-leaf-from (ϕ j (p j l₀)) (κ' j l₀) k l₁
+        ψ₀ j l₀ = subst (ϕ j (p j l₀)) (κ' j l₀)
+        ψ₁ k t = let (j , l₀ , l₁) = t in subst (ψ' j l₀ k (slf k j l₀ l₁)) (λ g n → θ' j l₀ g (k , slf k j l₀ l₁ , n))
+
+        -- fixup lemma
         lem j l g n = ⊔-rec-∘ (κ g) (θ g)
                               (λ l' → inr (j , p j l , l'))
                               (λ t → let (k , l' , n) = t in (k , (j , p j l , l') , n))
@@ -184,17 +211,22 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
       transport! (λ x → Leaf P (subst (ψ i x) (λ g n → θ g (i , x , n))) j)
         (subst-leaf-from-to (lf i) κ i idp)
         (subst-leaf-to (ψ i idp) (λ g n → θ g (i , idp , n)) j l₁)
-      =⟨ {! !} ⟩
+      =⟨ {!!} ⟩ 
      subst-leaf-to (ψ i idp) (λ g n → θ g (i , idp , n)) j l₁ ∎
     
   subst-graft-frm-lem (nd (f , ϕ)) ψ κ θ j k (k₀ , p₀ , l₀) l₁ = 
     let (w , α) = κ (_ , f) (inl idp)
+    
+        -- induction hyp
         p j l₀ = –> (α j) l₀
         ψ' j l₀ k l₁ = ψ k (j , p j l₀ , l₁)
         κ' j l₀ g n = κ g (inr (j , p j l₀ , n))
         θ' j l₀ g t = let (k , l₁ , n) = t in θ g (k , (j , p j l₀ , l₁) , n)
-        ψ₀ j l₀ = subst (ϕ j (p j l₀)) (κ' j l₀)
+        ih-pth j l = subst-graft (ϕ j (p j l)) (ψ' j l) (κ' j l) (θ' j l)
+
+        -- double graft arguments
         slf k j l₀ l₁ = subst-leaf-from (ϕ j (p j l₀)) (κ' j l₀) k l₁
+        ψ₀ j l₀ = subst (ϕ j (p j l₀)) (κ' j l₀)
         ψ₁ k t = let (j , l₀ , l₁) = t in subst (ψ' j l₀ k (slf k j l₀ l₁)) (λ g n → θ' j l₀ g (k , slf k j l₀ l₁ , n))
 
         lf₀ = <– (α k₀) p₀
@@ -206,66 +238,6 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
         
     in {!g-assoc!}
 
-
-      -- (graft-lf-to P
-      --  (k ,
-      --   subst-lf-to (k₀ , p₀ , l₀) ,
-      --   transport!
-      --   (λ x → Leaf P (subst (ψ k x) (λ g n → θ g (k , x , n))) j)
-      --   (subst-leaf-from-to (nd (f , ϕ)) κ k (k₀ , p₀ , l₀))
-      --   (subst-lf-to l₁)))
-      -- (subst-lf-to (graft-lf-to P (k , (k₀ , p₀ , l₀) , l₁)))
-
-
--- (graft-lf-to P
---  (k ,
---   graft-lf-to P
---   (k₀ ,
---    is-equiv.g (snd (snd (κ (;i , f) (inl idp)) k₀)) p₀ ,
---    subst-lf-to
---    (transport! (λ x → Leaf P (ϕ k₀ x) k)
---     (is-equiv.f-g (snd (snd (κ (;i , f) (inl idp)) k₀)) p₀) l₀))
---   ,
---   transport!
---   (λ x →
---      Leaf P
---      (subst
---       (ψ k
---        (fst x ,
---         fst (snd (κ (;i , f) (inl idp)) (fst x)) (fst (snd x)) ,
---         subst-leaf-from
---         (ϕ (fst x)
---          (fst (snd (κ (;i , f) (inl idp)) (fst x)) (fst (snd x))))
---         (λ g n →
---            κ g
---            (inr
---             (fst x ,
---              fst (snd (κ (;i , f) (inl idp)) (fst x)) (fst (snd x)) , n)))
---         k (snd (snd x))))
---       (λ g n →
---          _809 (P = P) (R = R) (f = f) (ϕ = ϕ) (ψ = ψ) (κ = κ) (θ = θ)
---          (j = j) (k = k) (k₀ = k₀) (p₀ = p₀) (l₀ = l₀) (l₁ = l₁) (k = k)
---          (t = x) (g = g) (n = n)))
---      j)
---   (graft-leaf-from-to P (fst (κ (;i , f) (inl idp)))
---    (λ j₁ l₂ →
---       subst (ϕ j₁ (fst (snd (κ (;i , f) (inl idp)) j₁) l₂))
---       (λ g n →
---          κ g (inr (j₁ , fst (snd (κ (;i , f) (inl idp)) j₁) l₂ , n))))
---    k
---    (k₀ ,
---     is-equiv.g (snd (snd (κ (;i , f) (inl idp)) k₀)) p₀ ,
---     subst-lf-to
---     (transport! (λ x → Leaf P (ϕ k₀ x) k)
---      (is-equiv.f-g (snd (snd (κ (;i , f) (inl idp)) k₀)) p₀) l₀)))
---   (subst-lf-to
---    (transport! (λ x → Leaf P (ψ k (k₀ , fst x , snd x)) j)
---     (pair= (is-equiv.f-g (snd (snd (κ (;i , f) (inl idp)) k₀)) p₀) ?1)
---     l₁))))
-
-
-  -- Leaf P (ψ k (k₀ , p₀ , l₀)) j
-
   -- -- The associativity path over associated to leaves
   -- graft-assoc-lf-ovr : {i : I} (w : W P i)
   --   → (ψ₀ : ∀ j → Leaf P w j → W P j)
@@ -276,10 +248,6 @@ module wip.SubstitutionLaws {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) wh
   --       transport! (λ x → Leaf P (ψ₁ j₁ x) j₂) (graft-leaf-from-to w ψ₀ j₁ (j₀ , l₀ , l₁)) l₂)
   --     == graft-lf-to {w = w} (j₀ , l₀ , (graft-lf-to {w = ψ₀ j₀ l₀} (j₁ , l₁ , l₂)))
   --       [ (λ x → Leaf P x j₂) ↓ graft-assoc w ψ₀ ψ₁ ]
-
-
-
-
 
   -- --
   -- --  Associativity of substitution

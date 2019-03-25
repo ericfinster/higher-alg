@@ -183,33 +183,6 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
   graft-nd-from-to {i} {w} {ψ} {g} =
     graft-node-from-to w ψ g
 
-
-  -- -- The polynomial underlying the free monad
-  -- Fr : Poly I
-  -- Op Fr = W P
-  -- Param Fr = Leaf P
-
-  -- -- Some useful path-over principles....
-  -- ↓-graft-Leaf-ih₀ : {i j : I} {w : W P i}
-  --   → {ψ₀ ψ₁ : Decor Fr w (W P)} (e : ψ₀ == ψ₁)
-  --   → (k : I) (l : Leaf P w k)
-  --   → {l₀ : Leaf P (ψ₀ k l) j} {l₁ : Leaf P (ψ₁ k l) j}
-  --   → l₀ == l₁ [ (λ x → Leaf P x j) ↓ app= (app= e k) l ]
-  --   → graft-lf-to (k , l , l₀) == graft-lf-to (k , l , l₁) [ (λ x → Leaf P (graft w x) j) ↓ e ]
-  -- ↓-graft-Leaf-ih₀ idp k p idp = idp
-
-  -- ↓-graft-Leaf-ih : {i j : I} {w : W P i}
-  --   → {ψ₀ ψ₁ : Decor Fr w (W P)} 
-  --   → (H : (k : I) (l : Leaf P w k) → ψ₀ k l == ψ₁ k l)
-  --   → (k : I) (l : Leaf P w k)
-  --   → {l₀ : Leaf P (ψ₀ k l) j} {l₁ : Leaf P (ψ₁ k l) j}
-  --   → l₀ == l₁ [ (λ x → Leaf P x j) ↓ H k l ]
-  --   → graft-lf-to (k , l , l₀) == graft-lf-to (k , l , l₁) [ (λ x → Leaf P (graft w x) j) ↓ Decor-== Fr H ]
-  -- ↓-graft-Leaf-ih H k l {l₀} {l₁} q =
-  --   ↓-graft-Leaf-ih₀ (Decor-== Fr H) k l
-  --     (transport (λ y → l₀ == l₁ [ (λ x → Leaf P x _) ↓ y ])
-  --                (Decor-==-β Fr H k l) q)
-
   --
   -- Basic laws of grafting
   --
@@ -326,38 +299,17 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
                  graft-assoc-lf-ovr (ϕ k₀ p₀) (ψ₀' k₀ p₀) (ψ₁' k₀ p₀) j₀ l₀ j₁ l₁ j₂ l₂))
 
   -- The action of associativity on nodes
+
+  -- There are 3 possibilities depending on the position
+  -- of the node in the iterated graft
   
-  -- Note that we have three distinct possibilities based on the
-  -- position in the iterated composition of the node in question.
-  -- Hence we write the three possibilities as a collection of
-  -- mutually recursive functions.
-  
+  -- Left
   graft-assoc-nd-left : {i : I} (w : W P i)
     → (ψ₀ : ∀ j → Leaf P w j → W P j)
     → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
     → (g : Ops P) (n : Node P w g)
     →  graft-nd-to {w = graft w ψ₀} (inl (graft-nd-to {w = w} (inl n)))
     == graft-nd-to {w = w} (inl n) [ (λ x → Node P x g) ↓ graft-assoc w ψ₀ ψ₁ ]
-
-  graft-assoc-nd-mid : {i : I} (w : W P i)
-    → (ψ₀ : ∀ j → Leaf P w j → W P j)
-    → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
-    → (g : Ops P) (j : I) (l : Leaf P w j) (n : Node P (ψ₀ j l) g)
-    →  graft-nd-to {w = graft w ψ₀} (inl (graft-nd-to {w = w} (inr (j , l , n))))
-    == graft-nd-to {w = w} (inr (j  , l , graft-nd-to {w = ψ₀ j l} (inl n)))
-        [ (λ x → Node P x g) ↓ graft-assoc w ψ₀ ψ₁ ]
-
-  graft-assoc-nd-right : {i : I} (w : W P i)
-    → (ψ₀ : ∀ j → Leaf P w j → W P j)
-    → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
-    → (g : Ops P) (j : I) (l₀ : Leaf P w j)
-    → (k : I) (l₁ : Leaf P (ψ₀ j l₀) k) (n : Node P (ψ₁ k (j , l₀ , l₁)) g)
-    → graft-nd-to {w = graft w ψ₀} (inr (k , graft-lf-to {w = w} (j , l₀ , l₁) ,
-        transport! (λ x → Node P (ψ₁ k x) g) (graft-leaf-from-to w ψ₀ k (j , l₀ , l₁)) n))
-    == graft-nd-to {w = w} (inr (j , l₀ , graft-nd-to {w = ψ₀ j l₀} (inr (k , l₁ , n))))
-        [ (λ x → Node P x g) ↓ graft-assoc w ψ₀ ψ₁ ]
-
-  -- Left
   graft-assoc-nd-left (lf i) ψ₀ ψ₁ g (lift ())
   graft-assoc-nd-left (nd (f , ϕ)) ψ₀ ψ₁ ._ (inl idp) =
     let ψ₀' j p k l = ψ₀ k (j , p , l)
@@ -375,6 +327,13 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
                  (graft-assoc-nd-left (ϕ j₀ p₀) (ψ₀' j₀ p₀) (ψ₁' j₀ p₀) g n))
 
   -- Mid
+  graft-assoc-nd-mid : {i : I} (w : W P i)
+    → (ψ₀ : ∀ j → Leaf P w j → W P j)
+    → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
+    → (g : Ops P) (j : I) (l : Leaf P w j) (n : Node P (ψ₀ j l) g)
+    →  graft-nd-to {w = graft w ψ₀} (inl (graft-nd-to {w = w} (inr (j , l , n))))
+    == graft-nd-to {w = w} (inr (j  , l , graft-nd-to {w = ψ₀ j l} (inl n)))
+        [ (λ x → Node P x g) ↓ graft-assoc w ψ₀ ψ₁ ]
   graft-assoc-nd-mid (lf i) ψ₀ ψ₁ g .i idp n = idp
   graft-assoc-nd-mid (nd (f , ϕ)) ψ₀ ψ₁ g j (j₀ , p₀ , l) n = 
     let ψ₀' j p k l = ψ₀ k (j , p , l)
@@ -385,6 +344,15 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
             (graft-assoc-nd-mid (ϕ j₀ p₀) (ψ₀' j₀ p₀) (ψ₁' j₀ p₀) g j l n))
 
   -- Right
+  graft-assoc-nd-right : {i : I} (w : W P i)
+    → (ψ₀ : ∀ j → Leaf P w j → W P j)
+    → (ψ₁ : ∀ k → (t : Σ I (λ j → Σ (Leaf P w j) (λ l → Leaf P (ψ₀ j l) k))) → W P k)
+    → (g : Ops P) (j : I) (l₀ : Leaf P w j)
+    → (k : I) (l₁ : Leaf P (ψ₀ j l₀) k) (n : Node P (ψ₁ k (j , l₀ , l₁)) g)
+    → graft-nd-to {w = graft w ψ₀} (inr (k , graft-lf-to {w = w} (j , l₀ , l₁) ,
+        transport! (λ x → Node P (ψ₁ k x) g) (graft-leaf-from-to w ψ₀ k (j , l₀ , l₁)) n))
+    == graft-nd-to {w = w} (inr (j , l₀ , graft-nd-to {w = ψ₀ j l₀} (inr (k , l₁ , n))))
+        [ (λ x → Node P x g) ↓ graft-assoc w ψ₀ ψ₁ ]
   graft-assoc-nd-right (lf i) ψ₀ ψ₁ g .i idp k l₁ n = idp
   graft-assoc-nd-right (nd (f , ϕ)) ψ₀ ψ₁ g j (j₀ , p₀ , l₀) k l₁ n = 
     let ψ₀' j p k l = ψ₀ k (j , p , l)
@@ -398,3 +366,23 @@ module Grafting {ℓ} {I : Type ℓ} (P : Poly I) where
                 (! (transp!-ap (λ x → Node P (ψ₁ k x) g) σ pth n))) ∙ᵈ
              graft-assoc-nd-right (ϕ j₀ p₀) (ψ₀' j₀ p₀) (ψ₁' j₀ p₀) g j l₀ k l₁ n))
 
+  -- Some useful path-over principles....
+  ↓-graft-Leaf-ih₀ : {i j : I} {w : W P i}
+    → {ψ₀ ψ₁ : Decor (Fr P) w (W P)} (e : ψ₀ == ψ₁)
+    → (k : I) (l : Leaf P w k)
+    → {l₀ : Leaf P (ψ₀ k l) j} {l₁ : Leaf P (ψ₁ k l) j}
+    → l₀ == l₁ [ (λ x → Leaf P x j) ↓ app= (app= e k) l ]
+    → graft-lf-to (k , l , l₀) == graft-lf-to (k , l , l₁) [ (λ x → Leaf P (graft w x) j) ↓ e ]
+  ↓-graft-Leaf-ih₀ idp k p idp = idp
+
+  ↓-graft-Leaf-ih : {i j : I} {w : W P i}
+    → {ψ₀ ψ₁ : Decor (Fr P) w (W P)} 
+    → (H : (k : I) (l : Leaf P w k) → ψ₀ k l == ψ₁ k l)
+    → (k : I) (l : Leaf P w k)
+    → {l₀ : Leaf P (ψ₀ k l) j} {l₁ : Leaf P (ψ₁ k l) j}
+    → l₀ == l₁ [ (λ x → Leaf P x j) ↓ H k l ]
+    → graft-lf-to (k , l , l₀) == graft-lf-to (k , l , l₁) [ (λ x → Leaf P (graft w x) j) ↓ Decor-== (Fr P) H ]
+  ↓-graft-Leaf-ih H k l {l₀} {l₁} q =
+    ↓-graft-Leaf-ih₀ (Decor-== (Fr P) H) k l
+      (transport (λ y → l₀ == l₁ [ (λ x → Leaf P x _) ↓ y ])
+                 (Decor-==-β (Fr P) H k l) q)

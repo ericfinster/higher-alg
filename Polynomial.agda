@@ -93,6 +93,17 @@ module Polynomial where
             adj : (l : Leaf (corolla f) j) → ap to (from-to l) == idp
             adj (j , p , idp) = idp
 
+
+    -- The polynomial underlying the free monad
+    Fr : Poly I
+    Op Fr = W 
+    Param Fr = Leaf 
+
+    -- The polynomial underlying the substitution monad
+    Subst : Poly (Σ I (Op P))
+    Op Subst = InFrame
+    Param Subst (w , _) g = Node w g
+
   --
   --  Polynomial Magmas and Slicing
   --
