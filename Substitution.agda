@@ -7,10 +7,11 @@ open import Grafting
 
 module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
 
+  SubstDecor : {i : I} (w : W P i) → Type ℓ
+  SubstDecor w = (g : Ops P) → Node P w g → InFrame P g
+
   -- Elementary substitution.
-  subst : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
-    → W P i
+  subst : {i : I} (w : W P i) (κ : SubstDecor w) → W P i
   subst (lf i) κ = lf i
   subst (nd (f , ϕ)) κ =
     let (w , α) = κ (_ , f) (inl idp)
@@ -18,51 +19,46 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
         ψ j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
     in graft P w ψ
 
-  -- Leaves in a substitution
-  -- subst-leaf-to : {i : I} (w : W P i)
-  --   → (κ : (g : Ops P) → Node P w g → InFrame P g)
-  --   → (j : I) → Leaf P w j → Leaf P (subst w κ) j 
-  -- subst-leaf-to (lf i) κ j l = l
-  -- subst-leaf-to (nd (f , ϕ)) κ j (k , p , l) = 
-  --   let (w , α) = κ (_ , f) (inl idp)
-  --       κ' j l g n = κ g (inr (j , –> (α j) l , n))
-  --       ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-  --       l' = subst-leaf-to (ϕ k p) (λ g n → κ g (inr (k , p , n))) j l
-  --       Q x = Leaf P (subst (ϕ k x) (λ g n → κ g (inr (k , x , n)))) j
-  --   in graft-leaf-to P w ψ j (k , <– (α k) p , transport! Q (<–-inv-r (α k) p) l')
+  module SubstLocal {i : I} (f : Op P i) (ϕ : Decor P f (W P))
+    (κ : SubstDecor (nd (f , ϕ))) where
+
+    ws : W P i
+    ws = fst (κ (i , f) (inl idp))
+
+    αs : Frame P ws f
+    αs = snd (κ (i , f) (inl idp))
+
+    κs : (j : I) (p : Param P f j) → SubstDecor (ϕ j p)
+    κs j p g n = κ g (inr (j , p , n))
+
+    ψs : Decor (Fr P) ws (W P)
+    ψs j l = subst (ϕ j (–> (αs j) l)) (κs j (–> (αs j) l))
 
   -- Leaves in a substitution
-  subst-leaf-to : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
+  subst-leaf-to : {i : I} (w : W P i) (κ : SubstDecor w)
     → (j : I) → Leaf P w j → Leaf P (subst w κ) j 
   subst-leaf-to (lf i) κ j l = l
   subst-leaf-to (nd (f , ϕ)) κ j (k , p , l) = 
-    let (w , α) = κ (_ , f) (inl idp)
-        κ' j p g n = κ g (inr (j , p , n))
-        ψ j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
-        p' = –> (α k) (<– (α k) p)
-        l' = transport! (λ x → Leaf P (ϕ k x) j) (<–-inv-r (α k) p) l
-    in graft-leaf-to P w ψ j (k , <– (α k) p , subst-leaf-to (ϕ k p') _ j l')
+    let open SubstLocal f ϕ κ
+        p' = –> (αs k) (<– (αs k) p)
+        l' = transport! (λ x → Leaf P (ϕ k x) j) (<–-inv-r (αs k) p) l
+    in graft-leaf-to P ws ψs j (k , <– (αs k) p , subst-leaf-to (ϕ k p') (κs k p') j l')
 
-  subst-leaf-from : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
+  subst-leaf-from : {i : I} (w : W P i) (κ : SubstDecor w)
     → (j : I) → Leaf P (subst w κ) j → Leaf P w j
   subst-leaf-from (lf i) κ j l = l
   subst-leaf-from (nd (f , ϕ)) κ j l = 
-    let (w , α) = κ (_ , f) (inl idp)
-        κ' j p g n = κ g (inr (j , p , n))
-        ψ j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
-        (k , l₀ , l₁) = graft-leaf-from P w ψ j l
-        p = –> (α k) l₀ 
-    in k , p , subst-leaf-from (ϕ k p) (κ' k p) j l₁
+    let open SubstLocal f ϕ κ
+        (k , l₀ , l₁) = graft-leaf-from P ws ψs j l
+        p = –> (αs k) l₀ 
+    in k , p , subst-leaf-from (ϕ k p) (κs k p) j l₁
 
   -- TODO: Making these un-abstract something like doubles the
   -- the typechecking time of Biased.  Why?
 
   abstract
   
-    subst-leaf-to-from : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → InFrame P g)
+    subst-leaf-to-from : {i : I} (w : W P i) (κ : SubstDecor w)
       → (j : I) (l : Leaf P (subst w κ) j)
       → subst-leaf-to w κ j (subst-leaf-from w κ j l) == l
     subst-leaf-to-from (lf i) κ j l = idp
@@ -92,92 +88,112 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
            =⟨ graft-leaf-to-from P w ψ j l ⟩ 
          l ∎
 
-  subst-leaf-from-to : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
+  -- Is there some simpler way to do this?
+  subst-leaf-from-to : {i : I} (w : W P i) (κ : SubstDecor w)
     → (j : I) (l : Leaf P w j)
     → subst-leaf-from w κ j (subst-leaf-to w κ j l) == l
   subst-leaf-from-to (lf i) κ .i idp = idp
   subst-leaf-from-to (nd (f , ϕ)) κ j (k , p , l) =
-    let (w , α) = κ (_ , f) (inl idp)
-        κ' j p g n = κ g (inr (j , p , n))
-        ψ j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
+    let open SubstLocal f ϕ κ
 
-        p' = –> (α k) (<– (α k) p)
-        l' = transport! (λ x → Leaf P (ϕ k x) j) (<–-inv-r (α k) p) l
-        t = k , <– (α k) p , subst-leaf-to (ϕ k p') _ j l'
+        p' = –> (αs k) (<– (αs k) p)
+        l' = transport! (λ x → Leaf P (ϕ k x) j) (<–-inv-r (αs k) p) l
+        t = k , <– (αs k) p , subst-leaf-to (ϕ k p') (κs k p') j l'
 
-        (k₀ , l₀ , l₁) = graft-leaf-from P w ψ j (graft-leaf-to P w ψ j t)
-    
-        σ x = let (a , b , c) = x
-                  b' = –> (α a) b
-              in a , b' , subst-leaf-from (ϕ a b') (κ' a b') j c
-              
-    in ap σ (graft-leaf-from-to P w ψ j t) ∙
+        σ t = let (k , l₀ , l₁) = t
+                  p₀ = –> (αs k) l₀
+              in k , p₀  , subst-leaf-from (ϕ k p₀) (κs k p₀) j l₁
+
+    in ap σ (graft-leaf-from-to P ws ψs j t) ∙
        ap (λ x → k , p' , x) (subst-leaf-from-to (ϕ k p') _ j l') ∙
-       ap (λ x → k , x) (transp!-pair-lem (λ x → Leaf P (ϕ k x) j) (α k) p l) 
+       ap (λ x → k , x) (transp!-pair-lem (λ x → Leaf P (ϕ k x) j) (αs k) p l)
+       
+       -- ap σ (graft-leaf-from-to P ws ψs j t) ∙
+       -- ap (λ x → k , x) (pair= (<–-inv-r (αs k) p) (subst-leaf-from-to (ϕ k p') (κs k p') j l' ∙ᵈ
+       --                                              to-transp!!-↓ (λ x → Leaf P (ϕ k x) j) (<–-inv-r (αs k) p) l))
 
-
-  subst-leaf-eqv : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
+  subst-leaf-eqv : {i : I} (w : W P i) (κ : SubstDecor w)
     → (j : I) → Leaf P w j ≃ Leaf P (subst w κ) j 
   subst-leaf-eqv w κ j = equiv (subst-leaf-to w κ j) (subst-leaf-from w κ j)
     (subst-leaf-to-from w κ j) (subst-leaf-from-to w κ j)
 
   -- Nodes in a substitution
-  subst-node-to : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
-    → (g : Ops P) → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g))
+  subst-node-to : {i : I} (w : W P i) (κ : SubstDecor w) (g : Ops P)
+    → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g))
     → Node P (subst w κ) g
   subst-node-to (lf i) κ g (h , lift () , n₁)
   subst-node-to (nd (f , ϕ)) κ g (._ , inl idp , n₁) = 
-    let (w , α) = κ (_ , f) (inl idp)
-        κ' j l g n = κ g (inr (j , –> (α j) l , n))
-        ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-    in graft-node-to P w ψ g (inl n₁)
+    let open SubstLocal f ϕ κ
+    in graft-node-to P ws ψs g (inl n₁)
   subst-node-to (nd (f , ϕ)) κ g (h , inr (k , p , n₀) , n₁) = 
-    let (w , α) = κ (_ , f) (inl idp)
-        κ' j p g n = κ g (inr (j , p , n))
-        ψ j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
-        n' = subst-node-to (ϕ k p) (λ g n → κ g (inr (k , p , n))) g (h , n₀ , n₁)
-        Q x = Node P (subst (ϕ k x) (λ g n → κ g (inr (k , x , n)))) g
-    in graft-node-to P w ψ g (inr (k , <– (α k) p , transport! Q (<–-inv-r (α k) p) n'))
+    let open SubstLocal f ϕ κ
+        l = <– (αs k) p
+        p' = –> (αs k) l
+        (n₀' , n₁') = transport! (λ x → Σ (Node P (ϕ k x) h) (λ n → Node P (fst (κs k x h n)) g))
+                                 (<–-inv-r (αs k) p) (n₀ , n₁)
+    in graft-node-to P ws ψs g (inr (k , <– (αs k) p , subst-node-to (ϕ k p') (κs k p') g (h , n₀' , n₁')))
 
-  subst-node-from : {i : I} (w : W P i)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
-    → (g : Ops P) → Node P (subst w κ) g
+        -- Hmmm.  Here you are backwards from your usual convention....
+        -- i.e. you transport after as opposed to before ....
+    --     n' = subst-node-to (ϕ k p) (κs k p) g (h , n₀ , n₁)
+    --     Q x = Node P (subst (ϕ k x) (κs k x)) g
+    -- in graft-node-to P ws ψs g (inr (k , <– (αs k) p , transport! Q (<–-inv-r (αs k) p) n'))
+
+  subst-node-from : {i : I} (w : W P i) (κ : SubstDecor w) (g : Ops P)
+    → Node P (subst w κ) g
     → Σ (Ops P) (λ h → Σ (Node P w h) (λ n → Node P (fst (κ h n)) g))
-
-  subst-node-from-lcl : {i : I} (f : Op P i)
-    → (ϕ : (j : I) → Param P f j → W P j) 
-    → (κ : (h : Ops P) → Node P (nd (f , ϕ)) h → InFrame P h) (g : Ops P)
-    → (n : let (w , α) = κ (_ , f) (inl idp)
-               κ' j l h n = κ h (inr (j , –> (α j) l , n))
-               ψ j l = subst (ϕ j (–> (α j) l)) (κ' j l)
-           in Node P w g ⊔ Σ I (λ j → Σ (Leaf P w j) (λ l → Node P (ψ j l) g)))
-    → Σ (Ops P) (λ h → Σ (Node P (nd (f , ϕ)) h) (λ n' → Node P (fst (κ h n')) g))
-
   subst-node-from (lf i) κ g (lift ())
-  subst-node-from (nd (f , ϕ)) κ g n = 
-    let (w , α) = κ (_ , f) (inl idp)
-        κ' j p g n = κ g (inr (j , p , n))
-        ψ j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
-    in  subst-node-from-lcl f ϕ κ g (graft-node-from P w ψ g n) 
+  subst-node-from (nd (f , ϕ)) κ g n = ⊔-rec gleft gright (graft-node-from P ws ψs g n)
+    where open SubstLocal f ϕ κ
 
-  subst-node-from-lcl f ϕ κ g =
-    ⊔-rec (λ n → (_ , f) , inl idp , n)
-          (λ t → let (j , l , n) = t
-                     (w , α) = κ (_ , f) (inl idp)
-                     κ' j p g n = κ g (inr (j , p , n))
-                     ψ j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
-                     (h , n₀ , n₁) = subst-node-from (ϕ j (–> (α j) l)) (κ' j (–> (α j) l)) g n
-                  in h , inr (j , –> (α j) l , n₀) , n₁)
+          gleft : Node P ws g → Σ (Ops P) (λ h → Σ (Node P (nd (f , ϕ)) h) (λ n₁ → Node P (fst (κ h n₁)) g))
+          gleft n₀ = (_ , f) , inl idp , n₀
+
+          gright : Σ I (λ k → Σ (Leaf P ws k) (λ l → Node P (ψs k l) g))
+            → Σ (Ops P) (λ h → Σ (Node P (nd (f , ϕ)) h) (λ n₁ → Node P (fst (κ h n₁)) g))
+          gright (j , l , n) = let p = –> (αs j) l
+                                   (h , n₀ , n₁) = subst-node-from (ϕ j p) (κs j p) g n
+                               in h , inr (j , p , n₀) , n₁
+
+  -- Okay, so like, this way, you have actual access to the recursor.
+  -- But I guess you see now what the point of having a separate definition
+  -- was like you do in the grafting module: then you can write and prove
+  -- the second equation directly using the types ....
+  subst-node-from-rec-left : {i : I} (f : Op P i)
+    → (ϕ : Decor P f (W P)) (κ : SubstDecor (nd (f , ϕ)))
+    → (g : Ops P) (n₀ : Node P (SubstLocal.ws f ϕ κ) g)
+    → Σ (Ops P) (λ h → Σ (Node P (nd (f , ϕ)) h) (λ n → Node P (fst (κ h n)) g))
+  subst-node-from-rec-left f ϕ κ g n₀ = (_ , f) , inl idp , n₀
 
   postulate
-
-    subst-node-to-from : {i : I} (w : W P i)
-      → (κ : (g : Ops P) → Node P w g → InFrame P g)
+  
+    subst-node-to-from : {i : I} (w : W P i) (κ : SubstDecor w)
       → (g : Ops P) (n : Node P (subst w κ) g)
       → subst-node-to w κ g (subst-node-from w κ g n) == n
+    -- subst-node-to-from (lf i) κ g (lift ())
+    -- subst-node-to-from (nd (f , ϕ)) κ g n =
+    --   Coprod-elim {C = C} doneleft doneright (graft-node-from P ws ψs g n) ∙
+    --   graft-node-to-from P ws ψs g n
+
+    --   where open SubstLocal f ϕ κ
+
+    --         gleft : Node P ws g → Σ (Ops P) (λ h → Σ (Node P (nd (f , ϕ)) h) (λ n₁ → Node P (fst (κ h n₁)) g))
+    --         gleft n₀ = (_ , f) , inl idp , n₀
+
+    --         gright : Σ I (λ k → Σ (Leaf P ws k) (λ l → Node P (ψs k l) g))
+    --           → Σ (Ops P) (λ h → Σ (Node P (nd (f , ϕ)) h) (λ n₁ → Node P (fst (κ h n₁)) g))
+    --         gright (j , l , n) = let p = –> (αs j) l
+    --                                  (h , n₀ , n₁) = subst-node-from (ϕ j p) (κs j p) g n
+    --                              in h , inr (j , p , n₀) , n₁
+
+    --         C : Node P ws g ⊔ Σ I (λ k → Σ (Leaf P ws k) (λ l → Node P (ψs k l) g)) → Type ℓ
+    --         C n = subst-node-to (nd (f , ϕ)) κ g (⊔-rec gleft gright n) == graft-node-to P ws ψs g n
+
+    --         doneleft : (n₀ : Node P ws g) → C (inl n₀)
+    --         doneleft n₀ = idp
+
+    --         doneright : (b : Σ I (λ k → Σ (Leaf P ws k) (λ l → Node P (ψs k l) g))) → C (inr b)
+    --         doneright (j , l , n) = ap (λ x → graft-node-to P ws ψs g (inr (j , x))) (pair= (<–-inv-l (αs j) l) {!!})
       
     subst-node-from-to : {i : I} (w : W P i)
       → (κ : (g : Ops P) → Node P w g → InFrame P g)

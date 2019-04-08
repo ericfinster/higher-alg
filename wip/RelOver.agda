@@ -3,7 +3,6 @@
 open import HoTT
 open import Util
 open import Polynomial
-open import PolyMonad
 open import wip.PolyOver
 open import wip.PolyEquiv
 
