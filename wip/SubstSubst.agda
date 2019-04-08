@@ -17,6 +17,12 @@ module wip.SubstSubst {ℓ} {I : Type ℓ} (P : Poly I) where
     → Frame P (subst w κ) f
   subst-frm-∘ α κ j = α j ∘e (subst-leaf-eqv _ κ j)⁻¹
 
+  subst-γ : (f : Ops P) (wα : InFrame P f)
+    → (κ : (g : Ops P) → Node P (fst wα) g → InFrame P g) 
+    → InFrame P f
+  subst-γ (i , f) (w , α) κ =
+    subst w κ , subst-frm-∘ α κ
+
   SADecor : {i : I} (w : W P i) (κ : SubstDecor w) → Type ℓ
   SADecor w κ = (g : Ops P)
     → Σ (Ops P) (λ k → Σ (Node P w k) (λ p → Node P (fst (κ k p)) g))
@@ -95,6 +101,10 @@ module wip.SubstSubst {ℓ} {I : Type ℓ} (P : Poly I) where
        subst-graft w ψ-sg κ-sg θ-sg ∙
        ap (subst (graft w ψ-sg)) (λ= (λ g → λ= (λ n → sa-decor-lem g n)))
 
+  --
+  --  Action of substitution assoc on leaves
+  --
+
   subst-assoc-leaf-to-left : {i : I} (w : W P i) 
     → (κ : SubstDecor w) (ν : SADecor w κ)
     → (j : I) (l : Leaf P w j)
@@ -162,6 +172,41 @@ module wip.SubstSubst {ℓ} {I : Type ℓ} (P : Poly I) where
     --                         (↓-subst-Leaf-ih sa-decor-lem idp)
 
     --   in ih-po ∙ᵈ sg-po ∙ᵈ last-po  
+
+  --
+  --  Action of substitution assoc on frames
+  --
+  
+  subst-assoc-frm : {i : I} {f : Op P i}
+    → (w : W P i) (α : Frame P w f)
+    → (κ : SubstDecor w) (ν : SADecor w κ)
+    → subst-frm-∘ α (subst-assoc-decor-left w κ ν) ==
+      subst-frm-∘ (subst-frm-∘ α κ) (subst-assoc-decor-right w κ ν)
+        [ (λ x → Frame P x f) ↓ subst-assoc w κ ν ]
+  subst-assoc-frm w α κ ν = 
+    let κ' g n = subst-γ g (κ g n) (λ g₁ n₁ → ν g₁ (g , n , n₁))
+        ν' g n = ν g (<– (subst-node-eqv w κ g) n)
+        lem j l₀ l₁ q = subst-leaf-from w κ' j l₀
+                          =⟨ ! (subst-lf-from-to {w = w} (subst-lf-from {w = w} {κ = κ'} l₀)) ⟩ 
+                        subst-lf-from {w = w} {κ = κ} (subst-lf-to {w = w} {κ = κ} (subst-lf-from {w = w} {κ = κ'} l₀))
+                          =⟨ ! (ap (subst-lf-from {w = w}) (subst-lf-from-to {w = subst w κ} (subst-lf-to {w = w} (subst-lf-from {w = w} l₀)))) ⟩
+                        subst-lf-from {w = w} {κ = κ} (subst-lf-from {w = subst w κ} {κ = ν'}
+                          (subst-lf-to {w = subst w κ} {κ = ν'} (subst-lf-to {w = w} {κ = κ} (subst-lf-from {w = w} {κ = κ'} l₀))))
+                          =⟨ ! (to-transp (subst-assoc-lf-ovr w κ ν j (subst-lf-from {w = w} l₀)))
+                            |in-ctx (λ x → subst-lf-from {w = w} (subst-lf-from {w = subst w κ} x)) ⟩ 
+                        subst-lf-from {w = w} (subst-lf-from {w = subst w κ}
+                          (transport (λ x → Leaf P x j) (subst-assoc w κ ν) (subst-lf-to (subst-lf-from {w = w} l₀)))) 
+                          =⟨ subst-lf-to-from {w = w} l₀ |in-ctx (λ x → subst-lf-from {w = w} (subst-lf-from {w = subst w κ}
+                               (transport (λ x → Leaf P x j) (subst-assoc w κ ν) x))) ⟩ 
+                        subst-lf-from {w = w} (subst-lf-from {w = subst w κ} (transport (λ x → Leaf P x j) (subst-assoc w κ ν) l₀)) 
+                          =⟨ to-transp q |in-ctx (λ x → subst-lf-from {w = w} (subst-lf-from {w = subst w κ} x)) ⟩ 
+                        subst-lf-from {w = w} (subst-lf-from {w = subst w κ} l₁) ∎
+    in ↓-W-Frame-in P (λ j l₀ l₁ q → ap (–> (α j)) (lem j l₀ l₁ q)) 
+
+
+  --
+  --  Action of substitution assoc on nodes
+  --
 
   subst-assoc-node-to-left : {i : I} (w : W P i) 
     → (κ : SubstDecor w) (ν : SADecor w κ)
