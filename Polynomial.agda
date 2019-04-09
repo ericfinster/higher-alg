@@ -93,39 +93,6 @@ module Polynomial where
             adj : (l : Leaf (corolla f) j) → ap to (from-to l) == idp
             adj (j , p , idp) = idp
 
-
-    -- The polynomial underlying the free monad
-    Fr : Poly I
-    Op Fr = W 
-    Param Fr = Leaf 
-
-    -- The polynomial underlying the substitution monad
-    Subst : Poly (Σ I (Op P))
-    Op Subst = InFrame
-    Param Subst (w , _) g = Node w g
-
-  --
-  --  Polynomial Magmas and Slicing
-  --
-
-  record PolyMagma {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
-    constructor mgm
-    field
-      μ : {i : I} (w : W P i) → Op P i
-      μ-frm : {i : I} (w : W P i) → Frame P w (μ w)
-
-  open PolyMagma public
-
-  -- The slice of a polynomial by a relation
-  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Ops P)
-  Op (P // R) f = Σ (InFrame P f) (R f)
-  Param (P // R) ((w , _) , _) = Node P w
-
-  -- The relation induced by a magma
-  ⟪_⟫ : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P) → PolyRel P
-  ⟪_⟫ {P = P} M (i , f) (w , α) = Path {A = OutFrame P w}
-    (μ M w , μ-frm M w) (f , α)
-
   --
   --  Path-overs for Frames in each variable
   --

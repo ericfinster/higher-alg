@@ -4,7 +4,7 @@ open import HoTT
 open import Util
 open import Polynomial
 open import Biased
-open import wip.BiasedRel
+-- open import wip.BiasedRel
 
 module wip.SubstMonad {ℓ}  where
 
@@ -31,12 +31,6 @@ module wip.SubstMonad {ℓ}  where
     SubstMgm : PolyMagma SubstPoly
     SubstMgm = BsdMgm SubstPoly SubstBiasedMgm
 
-    fltn : {f : Ops P} → W SubstPoly f → Op SubstPoly f
-    fltn = μ-bsd SubstPoly SubstBiasedMgm
-
-    bdfrm : {f : Ops P} (pd : W SubstPoly f) → Frame SubstPoly pd (fltn pd)
-    bdfrm pd = μ-bsd-frm SubstPoly SubstBiasedMgm pd
-
     SubstBiasedLaws : BiasedLaws SubstPoly SubstBiasedMgm
     unit-l SubstBiasedLaws (w , α) =
       pair= (subst-unit-l w) (subst-unit-l-frm w α)
@@ -53,19 +47,3 @@ module wip.SubstMonad {ℓ}  where
     assoc-frm SubstBiasedLaws (w , α) κ ν k g m h n o =
       ↓-Σ-weaken (λ x → Node P x k) (subst-node-assoc w κ ν g h k m n o)
 
-  module _ {I : Type ℓ} (P : Poly I) where
-
-    open import PolyMonad
-    
-    SlicedMagma : PolyMagma (SubstPoly P // ⟪ SubstMgm P ⟫)
-    SlicedMagma = SlcMgm (μ-bsd-invar (SubstPoly P) (SubstBiasedMgm P) (SubstBiasedLaws P))
-    
-    -- Okay.  So there it is.  This is the way things come out
-    -- given how you have set it all up.  So what's missing, then,
-    -- are the associated maps on trees and so on.  But essentially,
-    -- you know the statement that you want: there is a completely
-    -- canonical map from this guy down to the substitution polynomial.
-    -- This map commutes with the induced magma structure by definition.
-    -- We therefore obtain a corresponding map on the relations induced
-    -- by this magma structure to the relation given by the substitution
-    -- structure iterated.  The claim is that this map is an equivalence.

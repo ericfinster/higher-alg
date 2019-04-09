@@ -8,26 +8,6 @@ module wip.SubstUnits {ℓ} {I : Type ℓ} (P : Poly I) where
   open import Grafting P
   open import Substitution P
 
-  subst-η : (f : Ops P) → InFrame P f
-  subst-η (_ , f) = corolla P f , corolla-frm P f
-
-  subst-η-dec : {i : I} (w : W P i) →
-    (g : Ops P) (n : Node P w g) → InFrame P g
-  subst-η-dec w g n = subst-η g
-
-  subst-η-frm : (f g : Ops P)
-    → (f == g) ≃ (f == g) ⊔ Σ I (λ k → Σ (Param P (snd f) k) (λ p → Lift {j = ℓ} ⊥))
-  subst-η-frm f g = equiv inl from to-from (λ _ → idp)
-
-    where from : (f == g) ⊔ Σ I (λ k → Σ (Param P (snd f) k) (λ p → Lift ⊥)) → f == g
-          from (inl e) = e
-          from (inr (_ , _ , ()))
-
-          to-from : (e : (f == g) ⊔ Σ I (λ k → Σ (Param P (snd f) k) (λ p → Lift ⊥)))
-            → inl (from e) == e
-          to-from (inl e) = idp
-          to-from (inr (_ , _ , ()))
-
   --
   --  Unit left law
   --

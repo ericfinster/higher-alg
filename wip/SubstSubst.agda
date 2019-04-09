@@ -11,18 +11,6 @@ module wip.SubstSubst {ℓ} {I : Type ℓ} (P : Poly I) where
   open import Substitution P
   open import wip.SubstGraft P
 
-  subst-frm-∘ : {i : I} {f : Op P i} {w : W P i}
-    → (α : Frame P w f)
-    → (κ : (g : Ops P) → Node P w g → InFrame P g)
-    → Frame P (subst w κ) f
-  subst-frm-∘ α κ j = α j ∘e (subst-leaf-eqv _ κ j)⁻¹
-
-  subst-γ : (f : Ops P) (wα : InFrame P f)
-    → (κ : (g : Ops P) → Node P (fst wα) g → InFrame P g) 
-    → InFrame P f
-  subst-γ (i , f) (w , α) κ =
-    subst w κ , subst-frm-∘ α κ
-
   SADecor : {i : I} (w : W P i) (κ : SubstDecor w) → Type ℓ
   SADecor w κ = (g : Ops P)
     → Σ (Ops P) (λ k → Σ (Node P w k) (λ p → Node P (fst (κ k p)) g))

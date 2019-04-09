@@ -4,8 +4,14 @@ open import HoTT
 open import Util
 open import Polynomial
 open import Grafting
+open import PolyMagma
 
 module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
+
+  -- The polynomial underlying the substitution monad
+  Subst : Poly (Σ I (Op P))
+  Op Subst = InFrame P
+  Param Subst (w , _) g = Node P w g
 
   SubstDecor : {i : I} (w : W P i) → Type ℓ
   SubstDecor w = (g : Ops P) → Node P w g → InFrame P g
@@ -291,3 +297,56 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
     (transport (λ y → n₀ == n₁ [ (λ x → Node P (fst x) h) ↓ y ])
                (! (app=-β (H g) n) ∙ ap (λ x → app= x n) (! (app=-β (λ k → λ= (H k)) g))) q) 
 
+  -- The Substitution Magma
+
+  open BiasedMgm
+  
+  subst-η : (f : Ops P) → InFrame P f
+  subst-η (_ , f) = corolla P f , corolla-frm P f
+
+  -- subst-η-dec : {i : I} (w : W P i) →
+  --   (g : Ops P) (n : Node P w g) → InFrame P g
+  -- subst-η-dec w g n = subst-η g
+
+  subst-η-frm : (f g : Ops P)
+    → (f == g) ≃ (f == g) ⊔ Σ I (λ k → Σ (Param P (snd f) k) (λ p → Lift {j = ℓ} ⊥))
+  subst-η-frm f g = equiv inl from to-from (λ _ → idp)
+
+    where from : (f == g) ⊔ Σ I (λ k → Σ (Param P (snd f) k) (λ p → Lift ⊥)) → f == g
+          from (inl e) = e
+          from (inr (_ , _ , ()))
+
+          to-from : (e : (f == g) ⊔ Σ I (λ k → Σ (Param P (snd f) k) (λ p → Lift ⊥)))
+            → inl (from e) == e
+          to-from (inl e) = idp
+          to-from (inr (_ , _ , ()))
+
+  subst-frm-∘ : {i : I} {f : Op P i} {w : W P i}
+    → (α : Frame P w f)
+    → (κ : (g : Ops P) → Node P w g → InFrame P g)
+    → Frame P (subst w κ) f
+  subst-frm-∘ α κ j = α j ∘e (subst-leaf-eqv _ κ j)⁻¹
+
+  subst-γ : (f : Ops P) (wα : InFrame P f)
+    → (κ : (g : Ops P) → Node P (fst wα) g → InFrame P g) 
+    → InFrame P f
+  subst-γ (i , f) (w , α) κ =
+    subst w κ , subst-frm-∘ α κ
+
+  SubstBiasedMgm : BiasedMgm Subst
+  η SubstBiasedMgm = subst-η
+  η-frm SubstBiasedMgm = subst-η-frm
+  γ SubstBiasedMgm (w , α) κ = subst w κ , subst-frm-∘ α κ
+  γ-frm SubstBiasedMgm (w , α) κ = subst-node-eqv w κ
+
+  SubstMgm : PolyMagma Subst
+  SubstMgm = BsdMgm SubstBiasedMgm
+  
+  -- These replace flatten and bd-frame with the multiplication
+  -- derived from the general framework....
+  
+  μ-subst : {f : Ops P} → W Subst f → Op Subst f
+  μ-subst = μ-bsd SubstBiasedMgm
+
+  μ-frm-subst : {f : Ops P} (pd : W Subst f) → Frame Subst pd (μ-subst pd)
+  μ-frm-subst pd = μ-bsd-frm SubstBiasedMgm pd
