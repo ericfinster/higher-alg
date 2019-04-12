@@ -12,7 +12,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
 
   -- Custom decoration for SubstGraft
   SGDecor : {i : I} {w : W P i}
-    → (ψ : Decor (Fr P) w (W P))
+    → (ψ : Decor Fr w (W P))
     → (κ : SubstDecor w) → Type ℓ
   SGDecor {w = w} ψ κ = (g : Ops P)
     → Σ I (λ j → Σ (Leaf P w j) (λ l → Node P (ψ j l) g))
@@ -20,27 +20,27 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
 
   -- Left and right decoration arguments
   subst-graft-decor-left : {i : I} (w : W P i) 
-    → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
-    → Decor (Fr P) (subst w κ) (W P)
+    → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+    → Decor Fr (subst w κ) (W P)
   subst-graft-decor-left w ψ κ θ j l =
     subst (ψ j (subst-leaf-from w κ j l)) (λ g n → θ g (j , subst-leaf-from w κ j l , n))
 
   subst-graft-decor-right : {i : I} (w : W P i)
-    → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+    → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
     → SubstDecor (graft w ψ)
   subst-graft-decor-right w ψ κ θ g n =
     ⊔-rec (κ g) (θ g) (graft-node-from w ψ g n)
 
   -- Definitions common to a node clause
   module SGLocal {i : I} (f : Op P i) (ϕ : Decor P f (W P))
-    (ψ : Decor (Fr P) (nd (f , ϕ)) (W P)) 
+    (ψ : Decor Fr (nd (f , ϕ)) (W P)) 
     (κ : SubstDecor (nd (f , ϕ))) 
     (θ : SGDecor ψ κ) where
 
     w = fst (κ (i , f) (inl idp))
     α = snd (κ (i , f) (inl idp))
 
-    ψ' : (j : I) (p : Param P f j) → Decor (Fr P) (ϕ j p) (W P)
+    ψ' : (j : I) (p : Param P f j) → Decor Fr (ϕ j p) (W P)
     ψ' j p k l = ψ k (j , p , l)
 
     κ' : (j : I) (p : Param P f j) → SubstDecor (ϕ j p)
@@ -50,7 +50,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
     θ' j p g t = let (k , l , n) = t in θ g (k , (j , p , l) , n)
 
     -- graft associativity arguments
-    ψ₀ : Decor (Fr P) w (W P)
+    ψ₀ : Decor Fr w (W P)
     ψ₀ j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
 
     lf-split : (j : I)
@@ -73,7 +73,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
                                    (λ { (k , l , n') → k , (j , p , l) , n' })
                                    (graft-node-from (ϕ j p) (ψ' j p) g n)
 
-  subst-graft : {i : I} (w : W P i) (ψ : Decor (Fr P) w (W P))
+  subst-graft : {i : I} (w : W P i) (ψ : Decor Fr w (W P))
     → (κ : SubstDecor w) (θ : SGDecor ψ κ)
     → graft (subst w κ) (subst-graft-decor-left w ψ κ θ)
       == subst (graft w ψ) (subst-graft-decor-right w ψ κ θ)                          
@@ -85,17 +85,17 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
         H j l = ih j (–> (α j) l) ∙ ap (subst (graft (ϕ j (–> (α j) l)) (ψ' j (–> (α j) l))))
                                        (λ= (λ g → λ= (λ n → sg-decor-lem j (–> (α j) l) g n)))
     in graft-assoc w ψ₀ ψ₁ ∙
-       ap (graft w) (Decor-== (Fr P) H)
+       ap (graft w) (Decor-== Fr H)
 
   subst-graft-nd-to-left-left : {i : I} (w : W P i) 
-    → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+    → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
     → (g : Ops P) (h : Ops P) (m : Node P w g) (n : Node P (fst (κ g m)) h)
     → Node P (graft (subst w κ) (subst-graft-decor-left w ψ κ θ)) h
   subst-graft-nd-to-left-left w ψ κ θ g h m n = 
     graft-node-to (subst w κ) _ h (inl (subst-nd-to {w = w} (g , m , n)))
 
   subst-graft-nd-to-left-right : {i : I} (w : W P i) 
-    → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+    → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
     → (g : Ops P) (h : Ops P) (m : Node P w g) (n : Node P (fst (κ g m)) h)
     → Node P (subst (graft w ψ) (subst-graft-decor-right w ψ κ θ)) h
   subst-graft-nd-to-left-right w ψ κ θ g h m n = 
@@ -105,7 +105,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
   postulate
 
     subst-graft-nd-left : {i : I} (w : W P i) 
-      → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+      → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
       → (g : Ops P) (h : Ops P) (m : Node P w g) (n : Node P (fst (κ g m)) h)
       → subst-graft-nd-to-left-left w ψ κ θ g h m n ==
         subst-graft-nd-to-left-right w ψ κ θ g h m n 
@@ -118,7 +118,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
   --                                        (λ= (λ g → λ= (λ n → ζ-lem j (–> (α j) l) g n)))
   --     in graft-assoc-nd-left w ψ₀ ψ₁ h n ∙ᵈ 
   --          ↓-ap-in (λ x → Node P x h) (graft w)
-  --            (↓-graft-Node-left (Decor-== (Fr P) H) idp)
+  --            (↓-graft-Node-left (Decor-== Fr H) idp)
 
   --   subst-graft-nd-left (nd {i} (f , ϕ)) ψ κ θ g h (inr (j , p , m)) n = 
   --     let open SGLocal f ϕ ψ κ θ
@@ -168,7 +168,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
   --                                             (to-transp-↓ (λ x → Node P (fst x) h) (ζ-lem j p' g (graft-nd-to (inl m'))) n'') ∙'ᵈ lem₂)))
 
   subst-graft-nd-to-right-left : {i : I} (w : W P i) 
-    → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+    → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
     → (j : I) (l : Leaf P w j) (g : Ops P) (h : Ops P) (m : Node P (ψ j l) g) (n : Node P (fst (θ g (j , l , m))) h)
     → Node P (graft (subst w κ) (subst-graft-decor-left w ψ κ θ)) h
   subst-graft-nd-to-right-left w ψ κ θ j l g h m n =
@@ -178,7 +178,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
                            (subst-leaf-from-to w κ j l) (subst-nd-to {w = ψ j l} (g , m , n))))
 
   subst-graft-nd-to-right-right : {i : I} (w : W P i) 
-    → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+    → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
     → (j : I) (l : Leaf P w j) (g : Ops P) (h : Ops P) (m : Node P (ψ j l) g) (n : Node P (fst (θ g (j , l , m))) h)
     → Node P (subst (graft w ψ) (subst-graft-decor-right w ψ κ θ)) h
   subst-graft-nd-to-right-right w ψ κ θ j l g h m n = 
@@ -188,7 +188,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
   postulate
   
     subst-graft-nd-right : {i : I} (w : W P i) 
-      → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+      → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
       → (j : I) (l : Leaf P w j) (g : Ops P) (h : Ops P) (m : Node P (ψ j l) g) (n : Node P (fst (θ g (j , l , m))) h)
       → subst-graft-nd-to-right-left w ψ κ θ j l g h m n == 
         subst-graft-nd-to-right-right w ψ κ θ j l g h m n 
@@ -199,7 +199,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
   -- 
 
   subst-graft-leaf-to-left : {i : I} (w : W P i) 
-    → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+    → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
     → (j : I) (k : I) (l₀ : Leaf P w k) (l₁ : Leaf P (ψ k l₀) j)
     → Leaf P (graft (subst w κ) (subst-graft-decor-left w ψ κ θ)) j 
   subst-graft-leaf-to-left w ψ κ θ j k l₀ l₁ = 
@@ -214,14 +214,14 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
                  
 
   subst-graft-leaf-to-right : {i : I} (w : W P i) 
-    → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+    → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
     → (j : I) (k : I) (l₀ : Leaf P w k) (l₁ : Leaf P (ψ k l₀) j)
     → Leaf P (subst (graft w ψ) (subst-graft-decor-right w ψ κ θ)) j
   subst-graft-leaf-to-right w ψ κ θ j k l₀ l₁ = 
     subst-lf-to {w = graft w ψ} (graft-lf-to {w = w} (k , l₀ , l₁))
 
   -- subst-graft-lf-ovr : {i : I} (w : W P i) 
-  --   → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+  --   → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
   --   → (j : I) (k : I) (l₀ : Leaf P w k) (l₁ : Leaf P (ψ k l₀) j)
   --   → subst-graft-leaf-to-left w ψ κ θ j k l₀ l₁ ==
   --     subst-graft-leaf-to-right w ψ κ θ j k l₀ l₁
@@ -258,7 +258,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
   --   -- trying to tell you?
 
   --   -- subst-graft-leaf-to-left : {i : I} (w : W P i) 
-  --   --   → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+  --   --   → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
   --   --   → (j : I) (k : I) (l₀ : Leaf P w k) (l₁ : Leaf P (ψ k l₀) j)
   --   --   → Leaf P (graft (subst w κ) (subst-graft-decor-left w ψ κ θ)) j 
   --   -- subst-graft-leaf-to-left w ψ κ θ j k l₀ l₁ = 
@@ -322,7 +322,7 @@ module wip.SubstGraft {ℓ} {I : Type ℓ} (P : Poly I) where
   postulate
   
     subst-graft-lf-ovr : {i : I} (w : W P i) 
-      → (ψ : Decor (Fr P) w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
+      → (ψ : Decor Fr w (W P)) (κ : SubstDecor w) (θ : SGDecor ψ κ)
       → (j : I) (k : I) (l₀ : Leaf P w k) (l₁ : Leaf P (ψ k l₀) j)
       → subst-graft-leaf-to-left w ψ κ θ j k l₀ l₁ ==
         subst-graft-leaf-to-right w ψ κ θ j k l₀ l₁

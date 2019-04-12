@@ -304,9 +304,9 @@ module Substitution {ℓ} {I : Type ℓ} (P : Poly I) where
   subst-η : (f : Ops P) → InFrame P f
   subst-η (_ , f) = corolla P f , corolla-frm P f
 
-  -- subst-η-dec : {i : I} (w : W P i) →
-  --   (g : Ops P) (n : Node P w g) → InFrame P g
-  -- subst-η-dec w g n = subst-η g
+  subst-η-dec : {i : I} (w : W P i) →
+    (g : Ops P) (n : Node P w g) → InFrame P g
+  subst-η-dec w g n = subst-η g
 
   subst-η-frm : (f g : Ops P)
     → (f == g) ≃ (f == g) ⊔ Σ I (λ k → Σ (Param P (snd f) k) (λ p → Lift {j = ℓ} ⊥))

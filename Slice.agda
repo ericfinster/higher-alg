@@ -7,7 +7,7 @@ open import PolyMagma
 open import Grafting
 open import Substitution
 
--- Subdivision invariance and all that jazz
+-- Slicing a polynomial by a relation, etc.
 module Slice where
 
   -- The slice of a polynomial by a relation
@@ -52,17 +52,27 @@ module Slice where
       → Leaf (Subst P) (W↓ pd) g ≃ Leaf (P // R) pd g 
     W↓-lf-eqv pd g = equiv (W↓-lf-to pd g) (W↓-lf-from pd g)
       (W↓-lf-to-from pd g) (W↓-lf-from-to pd g)
-    
+
+    -- These two are part of an equivalence between frames ...
     Frame↓ : {f : Ops P} {wαr : Op (P // R) f} {pd : W (P // R) f}
       → Frame (P // R) pd wαr
       → Frame (Subst P) (W↓ pd) (fst wαr)
     Frame↓ {pd = pd} β g = (β g) ∘e W↓-lf-eqv pd g
+
+    Frame↑ : {f : Ops P} {wαr : Op (P // R) f} {pd : W (P // R) f}
+      → Frame (Subst P) (W↓ pd) (fst wαr)
+      → Frame (P // R) pd wαr
+    Frame↑ {pd = pd} β g = β g ∘e (W↓-lf-eqv pd g)⁻¹ 
 
     -- Exactly.  And this is the new version of being
     -- subdivision invariant.
     SubInvar : Type ℓ
     SubInvar = {f : Ops P} (pd : W (P // R) f)
       → R f (μ-subst P (W↓ pd))
+
+    SlcMgm : SubInvar → PolyMagma (P // R)
+    μ (SlcMgm Ψ) pd = μ-subst P (W↓ pd) , Ψ pd
+    μ-frm (SlcMgm Ψ) pd = Frame↑ {wαr = μ-subst P (W↓ pd) , Ψ pd} {pd = pd} (μ-frm-subst P (W↓ pd))
 
     -- The extra information required from a relation in order that we
     -- can construct a biased multiplication on the slice by R.
@@ -303,3 +313,7 @@ module Slice where
         pair= (μ-subst-invar w κ) (↓-Op-Frame-in P (μ-subst-invar w κ)
                                                    (μ-lf-invar w κ))
 
+
+      -- Subdivision invariance of the biased relation
+      LawsInvar : SubInvar P ⟪ BsdMgm B ⟫
+      LawsInvar = ToSubInvar P ⟪ BsdMgm B ⟫ LawsRel

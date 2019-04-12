@@ -46,7 +46,7 @@ module wip.SubstSubst {ℓ} {I : Type ℓ} (P : Poly I) where
       ν' j p g t = ν g (fst t , (inr (j , p , fst (snd t))) , snd (snd t))
 
       -- subst-graft decorations
-      ψ-sg : Decor (Fr P) w (W P)
+      ψ-sg : Decor Fr w (W P)
       ψ-sg j l = subst (ϕ j (–> (α j) l)) (κ' j (–> (α j) l))
 
       κ-sg : SubstDecor w
@@ -85,7 +85,7 @@ module wip.SubstSubst {ℓ} {I : Type ℓ} (P : Poly I) where
         β = subst-frm-∘ α (λ g n → ν g ((_ , f) , inl idp , n))
         ih j p = subst-assoc (ϕ j p) (κ' j p) (ν' j p)
 
-    in ap (graft (subst w κ-sg)) (Decor-== (Fr P) (λ j l → ih j (–> (β j) l))) ∙ 
+    in ap (graft (subst w κ-sg)) (Decor-== Fr (λ j l → ih j (–> (β j) l))) ∙ 
        subst-graft w ψ-sg κ-sg θ-sg ∙
        ap (subst (graft w ψ-sg)) (λ= (λ g → λ= (λ n → sa-decor-lem g n)))
 
@@ -143,7 +143,7 @@ module wip.SubstSubst {ℓ} {I : Type ℓ} (P : Poly I) where
 
     --       ih-po : subst-assoc-leaf-to-left (nd (f , ϕ)) κ ν j (k , p , l) ==
     --               subst-graft-leaf-to-left w ψ-sg κ-sg θ-sg j k l' (subst-lf-to {w = ϕ k p'} l₀)
-    --                 [ (λ x → Leaf P x j) ↓ ap (graft (subst w κ-sg)) (Decor-== (Fr P) (λ j l → ih j (–> (β j) l))) ]
+    --                 [ (λ x → Leaf P x j) ↓ ap (graft (subst w κ-sg)) (Decor-== Fr (λ j l → ih j (–> (β j) l))) ]
     --       ih-po = ↓-ap-in (λ x → Leaf P x j) (graft (subst w κ-sg))
     --                 (↓-graft-Leaf-ih (λ j₁ l₁ → ih j₁ (–> (β j₁) l₁)) k (subst-lf-to {w = w} l')
     --                                  (lem₀ ∙ᵈ subst-assoc-lf-ovr (ϕ k βp) (κ' k βp) (ν' k βp) j βl ∙'ᵈ lem₁))
