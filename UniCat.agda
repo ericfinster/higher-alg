@@ -5,7 +5,7 @@ open import HoTT
 module UniCat where
 
   -- Definition of a pre-category
-  record Category {lobj larrow} : Type (lsucc (lmax lobj larrow)) where
+  record PreCategory lobj larrow : Type (lsucc (lmax lobj larrow)) where
     infixl 40 _●_
     field
       obj       : Type lobj
@@ -17,47 +17,57 @@ module UniCat where
       unit-r    : {x y : obj} (f : hom x y) → f ● id == f
       homs-sets : (x y : obj) → is-set (hom x y)
 
-  open Category
+  module _ {lobj larrow} {P : PreCategory lobj larrow} where
 
-  -- Definition of an equivalence in a category
-  record CatEquiv {lobj larrow} {C : Category {lobj} {larrow}} {x y : obj C} (f : hom C x y) : Type larrow where
-    field
-      g : hom C y x
-      f-g : _●_ C f g == id C
-      g-f : _●_ C g f == id C
+    open PreCategory P
+
+    -- Definition of an equivalence in a category
+    record is-cat-equiv {x y : obj} (f : hom x y) : Type larrow where
+      constructor mk-cat-equiv
+      field
+        g : hom y x
+        f-g : f ● g == id
+        g-f : g ● f == id
+
+    Σ-is-cat-equiv : {x y : obj} (f : hom x y) → Σ (hom y x) (λ g → (f ● g == id) × (g ● f == id)) ≃ is-cat-equiv f
+    Σ-is-cat-equiv f = equiv (λ { (g , f-g , g-f) → mk-cat-equiv g f-g g-f }) (λ { (mk-cat-equiv g f-g g-f) → (g , f-g , g-f) }) (λ _ → idp) λ _ → idp
  
-  _≊_ : ∀ {lobj} {larrow} {C : Category {lobj} {larrow}} (x y : obj C) → Type larrow
-  _≊_ {C = C} x y = Σ (hom C x y) (λ f → CatEquiv {C = C} f)
+    _≊_ : (x y : obj) → Type larrow
+    _≊_ x y = Σ (hom x y) (λ f → is-cat-equiv f)
 
-  -- -- Turning pre-categories into categories  
-  -- postulate
-  --   unival : ∀ {lobj} {larrow} {C : Category {lobj} {larrow}} {x y : obj C} → (_≊_ {C = C} x y) ≃ (x == y)
+    ≊-is-set : (x y : obj) → is-set (x ≊ y)
+    ≊-is-set x y =
+      let Σ-is-cat-equiv-is-set _ = Σ-level (homs-sets _ _) λ _ → Σ-level (=-preserves-level (homs-sets _ _)) λ _ → (=-preserves-level (homs-sets _ _))
+      in Σ-level (homs-sets _ _) λ f → equiv-preserves-level (Σ-is-cat-equiv _) ⦃ (Σ-is-cat-equiv-is-set f) ⦄
 
-  id-to-equiv : ∀ {lobj} {larrow} {C : Category {lobj} {larrow}} {x y : obj C} → (x == y) → _≊_ {C = C} x y
-  id-to-equiv {C = C} {x = x} idp = id C {x} , record { g = id C {x} ; f-g = {!!} ; g-f = {!!} }
+    id-to-iso : (x y : obj) → x == y → x ≊ y
+    id-to-iso x y idp = id , mk-cat-equiv id (unit-l _) (unit-l _) 
 
-  record UniCat : =============
+  open PreCategory
+
+  record Category lobj larrow : Type (lsucc (lmax lobj larrow)) where
     field
-      C : cat
-      is-univ : is-equiv id-to-equiv.
+      precat    : PreCategory lobj larrow
+      univalent : (x y : obj precat) → is-equiv (id-to-iso {P = precat} x y)
+    open PreCategory precat public
 
-  record Functor {lobj lobj' larrow larrow'} (C : Category {lobj} {larrow}) (C' : Category {lobj'} {larrow'})  : Type (lsucc (lmax (lmax lobj lobj') (lmax larrow larrow'))) where
-    field
-      fobj  : obj C → obj C'
-      farr  : {x y : obj C} → hom C x y → hom C' (fobj x) (fobj y)
-      fcomp : {x y z : obj C} (f : hom C x y) (g : hom C y z) → farr (_●_ C g f) == _●_ C' (farr g) (farr f) 
-      fid   : {x : obj C} → farr (id C {x = x}) == id C' {x = fobj x}
+  module _ {lobj lobj' larrow larrow'} (Cat : Category lobj larrow) (Cat' : Category lobj' larrow') where
 
-  open Functor
+    open Category Cat renaming (precat to C)
+    open Category Cat' renaming (precat to C')   
 
-  record NatTrans
-    {lobj} {lobj'} {larrow} {larrow'}
-    {C : Category {lobj} {larrow}}
-    {C' : Category {lobj'} {larrow'}}
-    (F F' : Functor C C')
-    : Type (lsucc (lmax (lmax lobj lobj') (lmax larrow larrow'))) where
-    field
-      η        : (x : obj C) → hom C' (fobj F x) (fobj F' x)
-      η-commut : {x y : obj C} (f : hom C x y) → _●_ C' (η y) (farr F f)  == _●_ C' (farr F' f) (η x)
+    record Functor : Type (lsucc (lmax (lmax lobj lobj') (lmax larrow larrow'))) where
+      field
+        fobj  : obj C → obj C'
+        farr  : {x y : obj C} → hom C x y → hom C' (fobj x) (fobj y)
+        fcomp : {x y z : obj C} (f : hom C x y) (g : hom C y z) → farr (_●_ C g f) == _●_ C' (farr g) (farr f) 
+        fid   : {x : obj C} → farr (id C {x = x}) == id C' {x = fobj x}
 
-  open NatTrans
+    open Functor
+
+    record NatTrans (F F' : Functor) : Type (lsucc (lmax (lmax lobj lobj') (lmax larrow larrow'))) where
+      field
+        η        : (x : obj C) → hom C' (fobj F x) (fobj F' x)
+        η-commut : {x y : obj C} (f : hom C x y) → _●_ C' (η y) (farr F f)  == _●_ C' (farr F' f) (η x)
+
+    open NatTrans
