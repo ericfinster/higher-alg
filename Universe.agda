@@ -111,9 +111,47 @@ module Universe where
   η : {n : ℕ} (f : Frm n) (A : Cell f)
     → Tree f
 
+  η-pos : {n : ℕ} (f : Frm n) (τ : Cell f)
+    → Pos (η f τ)
+
   μ : {n : ℕ} (f : Frm n) (σ : Tree f) 
     → (δ : (p : Pos σ) → Tree (Typ σ p))
     → Tree f
+
+  μ-pos : {n : ℕ} (f : Frm n) (σ : Tree f) 
+    → (δ : (p : Pos σ) → Tree (Typ σ p))
+    → (ε : (p : Pos σ) → Tree (Typ σ p ∣ δ p ▸ Inh σ p))
+    → (p : Pos σ) (q : Pos (δ p))
+    → Pos (μ f σ δ)
+  
+  μ-pos-fst : {n : ℕ} (f : Frm n) (σ : Tree f) 
+    → (δ : (p : Pos σ) → Tree (Typ σ p))
+    → (ε : (p : Pos σ) → Tree (Typ σ p ∣ δ p ▸ Inh σ p))
+    → Pos (μ f σ δ) → Pos σ
+  
+  μ-pos-snd : {n : ℕ} (f : Frm n) (σ : Tree f) 
+    → (δ : (p : Pos σ) → Tree (Typ σ p))
+    → (ε : (p : Pos σ) → Tree (Typ σ p ∣ δ p ▸ Inh σ p))
+    → (p : Pos (μ f σ δ)) → Pos (δ (μ-pos-fst f σ δ ε p))
+
+  γ : {n : ℕ} {f : Frm n} (σ : Tree f) (τ : Cell f)
+    → (ρ : Tree (f ∣ σ ▸ τ)) 
+    → (δ : (p : Pos σ) → Tree (Typ σ p))
+    → (ε : (p : Pos σ) → Tree (Typ σ p ∣ δ p ▸ Inh σ p))
+    → Tree (f ∣ μ f σ δ ▸ τ)
+
+  γ-pos-inl : {n : ℕ} {f : Frm n} (σ : Tree f) (τ : Cell f)
+    → (ρ : Tree (f ∣ σ ▸ τ))
+    → (δ : (p : Pos σ) → Tree (Typ σ p))
+    → (ε : (p : Pos σ) → Tree (Typ σ p ∣ δ p ▸ Inh σ p))
+    → Pos ρ → Pos (γ σ τ ρ δ ε)
+
+  γ-pos-inr : {n : ℕ} {f : Frm n} (σ : Tree f) (τ : Cell f)
+    → (ρ : Tree (f ∣ σ ▸ τ))
+    → (δ : (p : Pos σ) → Tree (Typ σ p))
+    → (ε : (p : Pos σ) → Tree (Typ σ p ∣ δ p ▸ Inh σ p))
+    → (p : Pos σ) (q : Pos (ε p))
+    → Pos (γ σ τ ρ δ ε)
 
   data Tree where
   
@@ -210,16 +248,27 @@ module Universe where
     {-# REWRITE μ-unit-r #-}
 
 
-  η (Γ ▸ A) C = 
+  η (Γ ▸ A) E = 
     let η-ctx-dec p = η-ctx (CtxTyp Γ p)
         lf-ctx-dec p = lf-ctx (CtxTyp Γ p)
-     in nd-ctx Γ A C η-ctx-dec lf-ctx-dec
+     in nd-ctx Γ A E η-ctx-dec lf-ctx-dec
   η (f ∣ σ ▸ τ) C = 
     let η-dec p = η (Typ σ p) (Inh σ p)
         lf-dec p = lf (Typ σ p) (Inh σ p)
     in nd f σ τ C η-dec lf-dec
 
+  η-pos = {!!}
+  
   μ = {!!}
+
+  μ-pos = {!!}
+  μ-pos-fst = {!!}
+  μ-pos-snd = {!!}
+
+  γ = {!!}
+
+  γ-pos-inl = {!!}
+  γ-pos-inr = {!!}
 
   --
   --  Total definitions

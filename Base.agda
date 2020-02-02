@@ -9,7 +9,7 @@ module Base where
 
   {-# BUILTIN REWRITE _↦_ #-}
 
-  infixr 60 _,_
+  infixr 60 _,_ _×_
 
   record Σ (A : Set) (B : A → Set) : Set where
     constructor _,_
@@ -18,6 +18,9 @@ module Base where
       snd : B fst
 
   open Σ public
+
+  _×_ : Set → Set → Set
+  A × B = Σ A (λ _ → B)
 
   record ⊤ : Set where
     instance constructor unit
