@@ -93,6 +93,12 @@ module Polynomial where
             adj : (l : Leaf (corolla f) j) → ap to (from-to l) == idp
             adj (j , p , idp) = idp
 
+
+  -- The slice of a polynomial by a relation
+  _//_ : ∀ {ℓ} {I : Type ℓ} (P : Poly I) (R : PolyRel P) → Poly (Ops P)
+  Op (P // R) f = Σ (InFrame P f) (R f)
+  Param (P // R) ((w , _) , _) = Node P w
+
   --
   --  Path-overs for Frames in each variable
   --

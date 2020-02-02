@@ -5,9 +5,9 @@ open import Util
 open import Polynomial
 open import Grafting
 open import Substitution
-open import PolyMonad
-open import wip.PolyEquiv
-open import wip.PolyPaths
+-- open import PolyMonad
+-- open import wip.PolyEquiv
+-- open import wip.PolyPaths
 
 module wip.PolyOver where
 

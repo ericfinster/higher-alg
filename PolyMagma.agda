@@ -20,6 +20,23 @@ module PolyMagma where
   ⟪_⟫ {P = P} M (i , f) (w , α) = Path {A = OutFrame P w}
     (μ M w , μ-frm M w) (f , α)
 
+  -- -- Write a generic relation intro over?
+  -- MgmRel-↓-in : ∀ {ℓ} {I : Type ℓ} {P : Poly I} (M : PolyMagma P)
+  --   → {i : I} {f : Op P i}
+  --   → (w₀ : W P i) (α₀ : Frame P w₀ f)
+  --   → (w₁ : W P i) (α₁ : Frame P w₁ f)
+  --   → (p : w₀ == w₁) (q : α₀ == α₁ [ (λ x → Frame P x f) ↓ p ])
+  --   → (e₀ : ⟪ M ⟫ (i , f) (w₀ , α₀)) (e₁ : ⟪ M ⟫ (i , f) (w₁ , α₁))
+  --   → (x : ap (μ M) p ∙ fst= e₁ == fst= e₀)
+  --   → e₀ == e₁ [ (λ wα → ⟪ M ⟫ (i , f) wα) ↓ pair= p q ]
+  -- MgmRel-↓-in M {f = f} w₀ α₀ w₁ α₁ p q e₀ e₁ x = ↓-=-in {!!}
+
+  --   where blorp : μ M w₀ , μ-frm M w₀ == f , α₀
+  --         blorp = e₀
+
+  --         bleep : μ M w₁ , μ-frm M w₁ == f , α₁
+  --         bleep = e₁
+          
   -- A biased version
   record BiasedMgm {ℓ} {I : Type ℓ} (P : Poly I) : Type ℓ where
     field

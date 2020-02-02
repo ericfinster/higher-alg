@@ -3,7 +3,6 @@
 open import HoTT
 open import Util
 open import Polynomial
-open import PolyMonad
 
 -- Equivalences of Polynomials
 module wip.PolyEquiv where
