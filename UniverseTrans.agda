@@ -51,26 +51,28 @@ module UniverseTrans where
   η : {n : ℕ} (f : Frm n)
     → Cell {n} f
     → Tree {n} f
-  η = {!!}
 
   μ-frm : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
     → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
     → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
     → Frm n
-  μ-frm = {!!}
 
   μ : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
     → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
     → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
     → Tree (μ-frm f σ δ ε)
-  μ = {!!}
 
   μ-trans : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
     → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
     → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
     → Cell {n} f
     → Cell {n} (μ-frm f σ δ ε)
-  μ-trans = {!!}
+
+  γ : {n : ℕ} (f : Frm n) (σ : Tree {n} f) (τ : Cell {n} f)
+    → (θ : Tree {S n} (f , σ , τ))
+    → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+    → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
+    → Tree {S n} (μ-frm f σ δ ε , μ f σ δ ε , μ-trans f σ δ ε τ)
 
   data Tree where
   
@@ -105,6 +107,33 @@ module UniverseTrans where
   Inh (lf f τ) ()
   Inh (nd f σ τ θ δ ε) (inl unit) = θ
   Inh (nd f σ τ θ δ ε) (inr (p , q)) = Inh (ε p) q
+
+  postulate
+  
+    -- μ laws
+    μ-frm-unit-r : {n : ℕ} (f : Frm n) (σ : Tree {n} f)
+      → μ-frm f σ (λ p → η (Typ σ p) (Inh σ p)) (λ p → lf (Typ σ p) (Inh σ p)) ↦ f
+    {-# REWRITE μ-frm-unit-r #-}
+
+    μ-unit-r : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+      → μ f σ (λ p → η (Typ σ p) (Inh σ p)) (λ p → lf (Typ σ p) (Inh σ p)) ↦ σ
+    {-# REWRITE μ-unit-r #-}
+
+    μ-trans-unit-r : {n : ℕ} (f : Frm n) (σ : Tree {n} f) (τ : Cell {n} f)
+      → μ-trans f σ (λ p → η (Typ σ p) (Inh σ p)) (λ p → lf (Typ σ p) (Inh σ p)) τ ↦ τ 
+    {-# REWRITE μ-trans-unit-r #-}
+    
+  η {O} unit A = cns A (λ _ → nil)
+  η {S n} (f , σ , τ) θ = 
+    let η-dec p = η (Typ σ p) (Inh σ p)
+        lf-dec p = lf (Typ σ p) (Inh σ p)
+    in nd f σ τ θ η-dec lf-dec
+
+  μ-frm = {!!}
+  μ = {!!}
+  μ-trans = {!!}
+
+  γ = {!!}
 
   --
   --  Total definitions
