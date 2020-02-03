@@ -49,14 +49,29 @@ module UniverseTest where
   Cell {S n} (f , σ , τ) =
     (f↓ : Frm↓ f) → Eqv (Tree↓ f↓ σ) (Cell↓ f↓ τ) 
 
+  Frm↓ {O} unit = ⊤
+  Frm↓ {S n} (f , σ , τ) = Σ (Frm↓ f) (λ f↓ →
+    Tree↓ f↓ σ × Cell↓ f↓ τ)
+  
+  Cell↓ {O} unit A = A
+  Cell↓ {S n} {f , σ , τ} (f↓ , σ↓ , τ↓) E =
+    Rel (E f↓) σ↓ τ↓
+
   η : {n : ℕ} (f : Frm n)
     → Cell {n} f
     → Tree {n} f
 
+  {-# TERMINATING #-}
   μ : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
     → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
     → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
     → Tree f
+
+  γ-ctx : (Γ : Tree unit)
+    → (δ : (s : Tree↓ {O} unit Γ) → Tree unit)
+    → (ε : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree (Typ (δ s) p))
+    → (ζ : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree {S O} (Typ (δ s) p , ε s p , Inh (δ s) p))
+    → Tree unit
 
   γ : {n : ℕ} (f : Frm n) (σ : Tree {n} f) (τ : Cell {n} f)
     → (θ : Tree {S n} (f , σ , τ))
@@ -65,6 +80,19 @@ module UniverseTest where
     → (δ₁ : (p : Pos σ) (q : Pos (ε₀ p)) → Tree (Typ (ε₀ p) q))
     → (ε₁ : (p : Pos σ) (q : Pos (ε₀ p)) → Tree (Typ (ε₀ p) q , δ₁ p q , Inh (ε₀ p) q))
     → Tree {S n} (f , μ f σ δ₀ ε₀ , τ)
+
+  transport : {n : ℕ} (f : Frm n)
+    → (σ : Tree {n} f) (τ : Cell {n} f)
+    → (θ : Tree {S n} (f , σ , τ))
+    → (f↓ : Frm↓ f) (σ↓ : Tree↓ f↓ σ)
+    → Cell↓ f↓ τ
+
+  transport-lcl : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+    → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+    → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
+    → (f↓ : Frm↓ f)
+    → Tree↓ f↓ (μ f σ δ ε)
+    → Tree↓ f↓ σ
 
   data Tree where
   
@@ -100,18 +128,6 @@ module UniverseTest where
   Inh (nd f σ τ θ δ ε) (inl unit) = θ
   Inh (nd f σ τ θ δ ε) (inr (p , q)) = Inh (ε p) q
 
-  --
-  --  Total definitions
-  --
-  
-  Frm↓ {O} unit = ⊤
-  Frm↓ {S n} (f , σ , τ) = Σ (Frm↓ f) (λ f↓ →
-    Tree↓ f↓ σ × Cell↓ f↓ τ)
-  
-  Cell↓ {O} unit A = A
-  Cell↓ {S n} {f , σ , τ} (f↓ , σ↓ , τ↓) E =
-    Rel (E f↓) σ↓ τ↓
-
   data Tree↓ where
 
     nil↓ : Tree↓ {O} unit nil
@@ -130,40 +146,34 @@ module UniverseTest where
     let η-dec p = η (Typ σ p) (Inh σ p)
         lf-dec p = lf (Typ σ p) (Inh σ p)
     in nd f σ τ θ η-dec lf-dec
-
-  -- Might need to use the same trick here, keeping some work to
-  -- finish recursively at the end ...
-  γ-ctx : (Γ : Tree unit) (δ : (s : Tree↓ {O} unit Γ) → Tree unit) → Tree unit
-  γ-ctx nil δ = δ nil↓ 
-  γ-ctx (cns A B) δ = cns A (λ a → γ-ctx (B a) (λ s → δ (cns↓ a s)))
-
-  γ-ctx' : (Γ : Tree unit)
-    → (δ : (s : Tree↓ {O} unit Γ) → Tree unit)
-    → (ε : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree unit)
-    → (ζ : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree {S O} (unit , ε s p , Inh (δ s) p))
-    → Tree unit
-  γ-ctx' = {!!}
-
-  μ-transp : (Γ : Tree unit) (A : Set)
-    → (θ : Tree (unit , Γ , A))
-    → Tree↓ unit Γ → A
-  μ-transp Γ A θ = {!!}
   
   μ {O} unit nil δ ε = nil
   μ {O} unit (cns A B) δ ε =
     let Γ = δ (inl unit)
-        a s = μ-transp Γ A (ε (inl unit)) s
+        a s = transport {O} unit Γ A (ε (inl unit)) unit s
         B' s = B (a s)
         δ' s p = δ (inr (a s , p))
         ε' s p = ε (inr (a s , p))
-    in γ-ctx' Γ B' δ' ε'
+    in γ-ctx Γ B' δ' ε'
   μ {S n} (f , .(η f τ) , τ) (lf .f .τ) δ₁ ε₁ = lf f τ
   μ {S n} (._ , ._ , ._) (nd f σ τ θ δ₀ ε₀) δ₁ ε₁ = 
     let w = δ₁ (inl unit)
         δ₁' p q = δ₁ (inr (p , q))
         ε₁' p q = ε₁ (inr (p , q))
     in γ f σ τ w δ₀ ε₀ δ₁' ε₁'
-  
+
+  -- γ-ctx : (Γ : Tree unit)
+  --   → (δ : (s : Tree↓ {O} unit Γ) → Tree unit)
+  --   → (ε : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree (Typ (δ s) p))
+  --   → (ζ : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree {S O} (Typ (δ s) p , ε s p , Inh (δ s) p))
+  --   → Tree unit
+  γ-ctx nil δ ε ζ =
+    μ {O} unit (δ nil↓) (λ p → ε nil↓ p) (λ p → ζ nil↓ p)
+  γ-ctx (cns A B) δ ε ζ =
+    cns A (λ a → γ-ctx (B a) (λ s → δ (cns↓ a s))
+                             (λ s p → ε (cns↓ a s) p)
+                             (λ s p → ζ (cns↓ a s) p))
+
   -- γ : {n : ℕ} (f : Frm n) (σ : Tree {n} f) (τ : Cell {n} f)
   --   → (θ : Tree {S n} (f , σ , τ))
   --   → (δ₀ : (p : Pos σ) → Tree {n} (Typ σ p))
@@ -181,7 +191,6 @@ module UniverseTest where
     -- could possibly save us.  Have to be very careful about the
     -- types, but maybe you will make it out alive.
 
-
   -- γ .f .(η f τ) .τ (lf f τ) ϕ ψ = ψ (η-pos f τ)
   -- γ .f .(μ f σ δ) .τ (nd f σ τ α δ ε) ϕ ψ =
   --   let ϕ' p q = ϕ (μ-pos f σ δ p q)
@@ -189,8 +198,7 @@ module UniverseTest where
   --       δ' p = μ (Typ f σ p) (δ p) (ϕ' p)
   --       ε' p = γ (Typ f σ p) (δ p) (Inh f σ p) (ε p) (ϕ' p) (ψ' p)
   --   in nd f σ τ α δ' ε'
-
-
+  
   -- Interesting.  Here we exposed the equivalence.  Maybe this
   -- will let you directly apply the transport somewhere in order
   -- to fix the types...
@@ -199,6 +207,15 @@ module UniverseTest where
   -- for gamma in the lowest dimension as it should correspond to using
   -- the transport...
 
-  -- Okay.  I go to lunch with some small amount of hope ...
-  
+  -- transport : {n : ℕ} (f : Frm n)
+  --   → (σ : Tree {n} f) (τ : Cell {n} f)
+  --   → (θ : Tree {S n} (f , σ , τ))
+  --   → (f↓ : Frm↓ f) (σ↓ : Tree↓ f↓ σ)
+  --   → Cell↓ f↓ τ
+  transport {O} unit ._ A (lf .unit .A) unit (cns↓ a nil↓) = a
+  transport {O} unit .(μ unit Γ δ ε) A (nd .unit Γ .A θ δ ε) unit σ↓ =
+    To (θ unit) (transport-lcl unit Γ δ ε unit σ↓)
+  transport {S n} f σ τ θ f↓ σ↓ = {!!}
+
+  transport-lcl = {!!}
 
