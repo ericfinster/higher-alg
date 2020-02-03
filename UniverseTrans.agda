@@ -21,8 +21,8 @@ module UniverseTrans where
   Cell↓ : {n : ℕ} {f : Frm n} → Frm↓ f → Cell f → Set
   
   data Tree↓ : {n : ℕ} {f : Frm n} → Frm↓ f → Tree f → Set
-  Pos↓ : {n : ℕ} {f : Frm n} {f↓ : Frm↓ f} {σ : Tree f}
-    → (σ↓ : Tree↓ f↓ σ) → Set
+  -- Pos↓ : {n : ℕ} {f : Frm n} {f↓ : Frm↓ f} {σ : Tree f}
+  --   → (σ↓ : Tree↓ f↓ σ) → Set
 
   --
   --  Equivalences
@@ -87,17 +87,36 @@ module UniverseTrans where
       → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
       → Tree {S n} (μ-frm f σ δ ε , μ f σ δ ε , μ-trans f σ δ ε τ)
     
-  Pos = {!!}
-  Typ = {!!}
-  Inh = {!!}
+  Pos nil = ⊥
+  Pos (cns A B) = ⊤ ⊔ Σ A (λ a → Pos (B a))
+  Pos (lf f τ) = ⊥
+  Pos (nd f σ τ θ δ ε) = ⊤ ⊔ Σ (Pos σ) (λ p → Pos (ε p))
+  
+  Typ nil ()
+  Typ (cns A B) (inl unit) = unit
+  Typ (cns A B) (inr (p , q)) = Typ (B p) q
+  Typ (lf f τ) ()
+  Typ (nd f σ τ θ δ ε) (inl unit) = f , σ , τ
+  Typ (nd f σ τ θ δ ε) (inr (p , q)) = Typ (ε p) q
+  
+  Inh nil ()
+  Inh (cns A B) (inl unit) = A
+  Inh (cns A B) (inr (p , q)) = Inh (B p) q
+  Inh (lf f τ) ()
+  Inh (nd f σ τ θ δ ε) (inl unit) = θ
+  Inh (nd f σ τ θ δ ε) (inr (p , q)) = Inh (ε p) q
 
   --
   --  Total definitions
   --
   
-  Frm↓ = {!!}
-  Cell↓ = {!!}
+  Frm↓ {O} unit = ⊤
+  Frm↓ {S n} (f , σ , τ) = Σ (Frm↓ f) (λ f↓ →
+    Tree↓ f↓ σ × Cell↓ f↓ τ)
+  
+  Cell↓ {O} unit A = A
+  Cell↓ {S n} {f , σ , τ} (f↓ , σ↓ , τ↓) E =
+    Rel (E f↓) σ↓ τ↓
 
   data Tree↓ where
 
-  Pos↓ = {!!}
