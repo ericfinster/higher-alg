@@ -9,7 +9,7 @@ module Base where
 
   {-# BUILTIN REWRITE _↦_ #-}
 
-  infixr 60 _,_ _×_
+  infixr 60 _,_ _×_ _⊔_
 
   record Σ (A : Set) (B : A → Set) : Set where
     constructor _,_
@@ -35,3 +35,8 @@ module Base where
 
   {-# BUILTIN NATURAL ℕ #-}
 
+  data _⊔_ (A B : Set) : Set where
+    inl : A → A ⊔ B
+    inr : B → A ⊔ B
+
+  data ⊥ : Set where
