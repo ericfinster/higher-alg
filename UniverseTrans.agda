@@ -129,10 +129,31 @@ module UniverseTrans where
         lf-dec p = lf (Typ σ p) (Inh σ p)
     in nd f σ τ θ η-dec lf-dec
 
-  μ-frm = {!!}
-  μ = {!!}
-  μ-trans = {!!}
+  μ-frm {O} f σ δ ε = unit
+  μ-frm {S n} (f , .(η f τ) , τ) (lf .f .τ) δ₁ ε₁ = f , η f τ , τ
+  μ-frm {S n} (._ , ._ , ._) (nd f σ τ θ δ₀ ε₀) δ₁ ε₁ =
+    μ-frm f σ δ₀ ε₀ , μ f σ δ₀ ε₀ , μ-trans f σ δ₀ ε₀ τ
+  
+  μ {O} unit nil δ ε = nil
+  μ {O} unit (cns A B) δ ε = {!!}
+  μ {S n} (f , .(η f τ) , τ) (lf .f .τ) δ₁ ε₁ = lf f τ
+  μ {S n} (._ , ._ , ._) (nd f σ τ θ δ₀ ε₀) δ₁ ε₁ =
+    let w = δ₁ (inl unit)
+        δ₁' p q = δ₁ (inr (p , q))
+        ε₁' p q = ε₁ (inr (p , q))
+        -- Shouldn't we have to modify δ₀ as well then?
+        ε₀' p = μ (Typ σ p , δ₀ p , Inh σ p) (ε₀ p) (δ₁' p) (ε₁' p)
+    in γ f σ τ w δ₀ {!ε₀'!}
 
+  -- Here's another possibility: because we now use the extra data
+  -- when computing μ, it's possible that γ should no longer just
+  -- be multiplication in the free monad.  Rather, it should carry
+  -- along the higher information as well, calling back to μ when
+  -- it arrives at a leaf.  Could this allow for its type to be
+  -- more flexible????
+
+  μ-trans = {!!}
+  
   γ = {!!}
 
   --
