@@ -140,7 +140,13 @@ module UniverseTest where
     μ-unit-r : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
       → μ f σ (λ p → η (Typ σ p) (Inh σ p)) (λ p → lf (Typ σ p) (Inh σ p)) ↦ σ
     {-# REWRITE μ-unit-r #-}
-    
+
+    γ-ctx-unit-right : (Γ : Tree unit)
+      → (ε : (s : Tree↓ unit Γ) (p : ⊥) → Tree (Typ nil p))
+      → (ζ : (s : Tree↓ unit Γ) (p : ⊥) → Tree (Typ nil p , ε s p , Inh nil p))
+      → γ-ctx Γ (λ _ → nil) ε ζ ↦ Γ
+    {-# REWRITE γ-ctx-unit-right #-}
+
   η {O} unit A = cns A (λ _ → nil)
   η {S n} (f , σ , τ) θ = 
     let η-dec p = η (Typ σ p) (Inh σ p)
@@ -162,11 +168,6 @@ module UniverseTest where
         ε₁' p q = ε₁ (inr (p , q))
     in γ f σ τ w δ₀ ε₀ δ₁' ε₁'
 
-  -- γ-ctx : (Γ : Tree unit)
-  --   → (δ : (s : Tree↓ {O} unit Γ) → Tree unit)
-  --   → (ε : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree (Typ (δ s) p))
-  --   → (ζ : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree {S O} (Typ (δ s) p , ε s p , Inh (δ s) p))
-  --   → Tree unit
   γ-ctx nil δ ε ζ =
     μ {O} unit (δ nil↓) (λ p → ε nil↓ p) (λ p → ζ nil↓ p)
   γ-ctx (cns A B) δ ε ζ =
@@ -181,8 +182,11 @@ module UniverseTest where
   --   → (δ₁ : (p : Pos σ) (q : Pos (ε₀ p)) → Tree (Typ (ε₀ p) q))
   --   → (ε₁ : (p : Pos σ) (q : Pos (ε₀ p)) → Tree (Typ (ε₀ p) q , δ₁ p q , Inh (ε₀ p) q))
   --   → Tree {S n} (f , μ f σ δ₀ ε₀ , τ)
-  γ {O} unit .(cns A (λ _ → nil)) A (lf .unit .A) δ₀ ε₀ δ₁ ε₁ = {!!}
-  γ {O} unit .(μ unit θ δ ε) τ (nd .unit θ .τ θ₁ δ ε) δ₀ ε₀ δ₁ ε₁ = {!!}
+  γ {O} unit ._ A (lf .unit .A) δ₀ ε₀ δ₁ ε₁ =
+    μ {S O} (unit , δ₀ (inl unit) , A) (ε₀ (inl unit))
+      (λ p → δ₁ (inl unit) p) (λ p → ε₁ (inl unit) p)
+      -- Okay, that was the idea: finish multiplication at the leaves ...
+  γ {O} unit ._ A (nd .unit Γ .A θ δ ε) δ₀ ε₀ δ₁ ε₁ = {!!}
   γ {S n} ._ ._ ._ (lf (f , σ₀ , τ₀) τ₁) δ₀ ε₀ δ₁ ε₁ = {!!}
     -- It looks like γ-unit law should take care of this one ...
   γ {S n} ._ ._ ._ (nd (f , σ₀ , τ₀) θ σ₁ τ₁ δ ε) δ₀ ε₀ δ₁ ε₁ =
