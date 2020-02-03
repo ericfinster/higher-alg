@@ -67,6 +67,22 @@ module UniverseTest where
     → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
     → Tree f
 
+  μ-pos : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+    → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+    → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))    
+    → (p : Pos σ) (q : Pos (δ p))
+    → Pos (μ f σ δ ε)
+
+  μ-pos-fst : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+    → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+    → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))    
+    → Pos (μ f σ δ ε) → Pos σ
+
+  μ-pos-snd : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+    → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+    → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))    
+    → (p : Pos (μ f σ δ ε)) → Pos (δ (μ-pos-fst f σ δ ε p))
+
   γ-ctx : (Γ : Tree unit)
     → (δ : (s : Tree↓ {O} unit Γ) → Tree unit)
     → (ε : (s : Tree↓ {O} unit Γ) (p : Pos (δ s)) → Tree (Typ (δ s) p))
@@ -80,6 +96,12 @@ module UniverseTest where
     → (δ₁ : (p : Pos σ) (q : Pos (ε₀ p)) → Tree (Typ (ε₀ p) q))
     → (ε₁ : (p : Pos σ) (q : Pos (ε₀ p)) → Tree (Typ (ε₀ p) q , δ₁ p q , Inh (ε₀ p) q))
     → Tree {S n} (f , μ f σ δ₀ ε₀ , τ)
+
+  -- Okay.  But now, wasn't the idea that the return type here would be
+  -- able exactly to be *modified* by substituting multiplying in the
+  -- remainging decorations?  In that way we reflect what is actually happening ...
+  -- Yeah, but then we're right back where we started: this will then not give
+  -- the right answer for the return type of μ ....
 
   transport : {n : ℕ} (f : Frm n)
     → (σ : Tree {n} f) (τ : Cell {n} f)
@@ -141,6 +163,81 @@ module UniverseTest where
       → μ f σ (λ p → η (Typ σ p) (Inh σ p)) (λ p → lf (Typ σ p) (Inh σ p)) ↦ σ
     {-# REWRITE μ-unit-r #-}
 
+    μ-pos-typ : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+      → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+      → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))    
+      → (p : Pos (μ f σ δ ε))
+      → Typ (μ f σ δ ε) p ↦ Typ (δ (μ-pos-fst f σ δ ε p)) (μ-pos-snd f σ δ ε p)
+    {-# REWRITE μ-pos-typ #-}
+
+    μ-pos-inh : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+      → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+      → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))    
+      → (p : Pos (μ f σ δ ε))
+      → Inh (μ f σ δ ε) p ↦ Inh (δ (μ-pos-fst f σ δ ε p)) (μ-pos-snd f σ δ ε p)
+    {-# REWRITE μ-pos-inh #-}
+
+    μ-pos-fst-β : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+      → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+      → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
+      → (p : Pos σ) (q : Pos (δ p))
+      → μ-pos-fst f σ δ ε (μ-pos f σ δ ε p q) ↦ p 
+    {-# REWRITE μ-pos-fst-β #-}
+
+    μ-pos-snd-β : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+      → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+      → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
+      → (p : Pos σ) (q : Pos (δ p))
+      → μ-pos-snd f σ δ ε (μ-pos f σ δ ε p q) ↦ q
+    {-# REWRITE μ-pos-snd-β #-}
+
+    μ-pos-η : {n : ℕ} (f : Frm n) (σ : Tree {n} f) 
+      → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+      → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))    
+      → (p : Pos (μ f σ δ ε))
+      → μ-pos f σ δ ε (μ-pos-fst f σ δ ε p) (μ-pos-snd f σ δ ε p) ↦ p
+    {-# REWRITE μ-pos-η #-}
+
+
+    μ-assoc : {n : ℕ} (f : Frm n) (σ : Tree {n} f) (τ : Cell {n} f)
+      → (δ : (p : Pos σ) → Tree {n} (Typ σ p))
+      → (ε : (p : Pos σ) → Tree {S n} (Typ σ p , δ p , Inh σ p))
+      → (δ' : (p : Pos (μ f σ δ ε)) → Tree (Typ (μ f σ δ ε) p))
+      → (ε' : (p : Pos (μ f σ δ ε)) → Tree (Typ (μ f σ δ ε) p , δ' p , Inh (μ f σ δ ε) p))
+      → (δ'' : (p₀ : Pos σ) (p₁ : Pos (δ p₀)) (q : Pos (ε' (μ-pos f σ δ ε p₀ p₁))) → Tree (Typ (ε' (μ-pos f σ δ ε p₀ p₁)) q))
+      → (ε'' : (p₀ : Pos σ) (p₁ : Pos (δ p₀)) (q : Pos (ε' (μ-pos f σ δ ε p₀ p₁))) → Tree (Typ (ε' (μ-pos f σ δ ε p₀ p₁)) q , δ'' p₀ p₁ q , Inh (ε' (μ-pos f σ δ ε p₀ p₁)) q))
+      → μ f (μ f σ δ ε) δ' (λ p → μ (Typ (δ (μ-pos-fst f σ δ ε p)) (μ-pos-snd f σ δ ε p) , δ' p , Inh (δ (μ-pos-fst f σ δ ε p)) (μ-pos-snd f σ δ ε p))
+                                    (ε' p)
+                                    (λ q → δ'' (μ-pos-fst f σ δ ε p) (μ-pos-snd f σ δ ε p) q)
+                                    (λ q → ε'' (μ-pos-fst f σ δ ε p) (μ-pos-snd f σ δ ε p) q))
+          ↦
+        μ f σ (λ p → μ (Typ σ p) (δ p) (λ q → δ' (μ-pos f σ δ ε p q)) (λ q → ε' (μ-pos f σ δ ε p q)))
+              (λ p → γ (Typ σ p) (δ p) (Inh σ p) (ε p)
+                     (λ q → δ' (μ-pos f σ δ ε p q))
+                     (λ q → ε' (μ-pos f σ δ ε p q)) (δ'' p) (ε'' p))
+    -- {-# REWRITE μ-assoc #-}
+
+  -- I see: we need a third pair!  Hmm.  But then they won't be bound in the left hand
+  -- side.  Oh, unless δ' and ε' become the multiplications of the additional pair...
+
+  -- γ : {n : ℕ} (f : Frm n) (σ : Tree {n} f) (τ : Cell {n} f)
+  --   → (θ : Tree {S n} (f , σ , τ))
+  --   → (δ₀ : (p : Pos σ) → Tree {n} (Typ σ p))
+  --   → (ε₀ : (p : Pos σ) → Tree {S n} (Typ σ p , δ₀ p , Inh σ p))
+  --   → (δ₁ : (p : Pos σ) (q : Pos (ε₀ p)) → Tree (Typ (ε₀ p) q))
+  --   → (ε₁ : (p : Pos σ) (q : Pos (ε₀ p)) → Tree (Typ (ε₀ p) q , δ₁ p q , Inh (ε₀ p) q))
+  --   → Tree {S n} (f , μ f σ δ₀ ε₀ , τ)
+
+    -- μ-assoc : (f : Frm) (σ : Tree f) (τ : Cell f)
+    --   → (δ : (p : Pos σ) → Tree (Typ σ p))
+    --   → (ε : (p : Pos σ) → Tree (Typ σ p ∥ δ p ▸ Inh σ p))
+    --   → (δ' : (p : Pos (μ f σ δ ε)) → Tree (Typ (δ (μ-pos-fst f σ δ ε p)) (μ-pos-snd f σ δ ε p)))
+    --   → (ε' : (p : Pos (μ f σ δ ε)) → Tree (Typ (δ (μ-pos-fst f σ δ ε p)) (μ-pos-snd f σ δ ε p) ∥ δ' p ▸ Inh (δ (μ-pos-fst f σ δ ε p)) (μ-pos-snd f σ δ ε p)))
+    --   → μ f (μ f σ δ ε) δ' ε' ↦ μ f σ (λ p → μ (Typ σ p) (δ p) (λ q → δ' (μ-pos f σ δ ε p q)) (λ q → ε' (μ-pos f σ δ ε p q)))
+    --                                   (λ p → γ (δ p) (Inh σ p) (ε p) (λ q → δ' (μ-pos f σ δ ε p q)) (λ q → ε' (μ-pos f σ δ ε p q)))
+    -- {-# REWRITE μ-assoc #-}
+
+
     γ-ctx-unit-right : (Γ : Tree unit)
       → (ε : (s : Tree↓ unit Γ) (p : ⊥) → Tree (Typ nil p))
       → (ζ : (s : Tree↓ unit Γ) (p : ⊥) → Tree (Typ nil p , ε s p , Inh nil p))
@@ -166,8 +263,12 @@ module UniverseTest where
     let w = δ₁ (inl unit)
         δ₁' p q = δ₁ (inr (p , q))
         ε₁' p q = ε₁ (inr (p , q))
-    in γ f σ τ w δ₀ ε₀ δ₁' ε₁'
+    in {! γ f σ τ w δ₀ ε₀ δ₁' ε₁' !}
 
+  μ-pos = {!!}
+  μ-pos-fst = {!!}
+  μ-pos-snd = {!!}
+  
   γ-ctx nil δ ε ζ =
     μ {O} unit (δ nil↓) (λ p → ε nil↓ p) (λ p → ζ nil↓ p)
   γ-ctx (cns A B) δ ε ζ =
@@ -186,7 +287,18 @@ module UniverseTest where
     μ {S O} (unit , δ₀ (inl unit) , A) (ε₀ (inl unit))
       (λ p → δ₁ (inl unit) p) (λ p → ε₁ (inl unit) p)
       -- Okay, that was the idea: finish multiplication at the leaves ...
-  γ {O} unit ._ A (nd .unit Γ .A θ δ ε) δ₀ ε₀ δ₁ ε₁ = {!!}
+  γ {O} unit ._ A (nd .unit Γ .A θ δ ε) δ₀ ε₀ δ₁ ε₁ =
+
+    {!nd unit Γ A θ!}
+
+  -- So, here we will need the associativity of μ.
+  
+-- Goal: Tree (unit , μ unit (μ unit Γ δ ε) δ₀ ε₀ , A)
+-- Have: (δ₂ : (p : Pos Γ) → Tree (Typ Γ p))
+--       (ε₂ : (p : Pos Γ) → Tree (Typ Γ p , δ₂ p , Inh Γ p)) →
+--       Tree (unit , μ unit Γ δ₂ ε₂ , A)
+
+
   γ {S n} ._ ._ ._ (lf (f , σ₀ , τ₀) τ₁) δ₀ ε₀ δ₁ ε₁ = {!!}
     -- It looks like γ-unit law should take care of this one ...
   γ {S n} ._ ._ ._ (nd (f , σ₀ , τ₀) θ σ₁ τ₁ δ ε) δ₀ ε₀ δ₁ ε₁ =
