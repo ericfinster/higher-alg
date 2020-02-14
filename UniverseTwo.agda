@@ -95,7 +95,7 @@ module UniverseTwo where
       -- → (δ₁ : (p : CtxPos Γ) (q : CtxPos (δ₀ p)) → Ctx)
       -- → (ε₁ : (p : CtxPos Γ) (q : CtxPos (δ₀ p)) → Tree₂ (δ₁ p q) (CtxTyp (δ₀ p) q))
       → μ₂ (μ₂ Γ δ₀ ε₀) δ₁ ε₁ ↦
-        μ₂ Γ (λ p → μ₂ (δ₀ p) (λ q → δ₁ (μ₂-pos Γ δ₀ ε₀ p q)) (λ q → ε₁ (μ₂-pos Γ δ₀ ε₀ p q)))
+        μ₂ Γ (λ p → μ₂ (δ₀ p) (λ q → δ₁ (μ₂-pos Γ δ₀ ε₀ p q)) ((λ q → ε₁ (μ₂-pos Γ δ₀ ε₀ p q))))
              (λ p → γ₂ (δ₀ p) (CtxTyp Γ p) (ε₀ p)
                               (λ q → δ₁ (μ₂-pos Γ δ₀ ε₀ p q))
                               (λ q → ε₁ (μ₂-pos Γ δ₀ ε₀ p q)) )
@@ -131,8 +131,25 @@ module UniverseTwo where
 
   γ₂ .(η₁ A) A (lf₂ .A) δ ε = ε (inl unit)
   γ₂ .(μ₂ Γ δ₀ ε₀) A (nd₂ Γ .A E δ₀ ε₀) δ₁ ε₁ = 
-    let δ₁' p q = δ₁ (μ₂-pos Γ δ₀ ε₀ p q)
-        ε₁' p q = ε₁ (μ₂-pos Γ δ₀ ε₀ p q)
-        δ₀' p = μ₂ (δ₀ p) (δ₁' p) (ε₁' p)
-        ε₀' p = γ₂ (δ₀ p) (CtxTyp Γ p) (ε₀ p) (δ₁' p) (ε₁' p)
-    in nd₂ Γ A E δ₀' ε₀'
+    nd₂ Γ A E δ₀' ε₀'
+
+      where δ₁' : (p : CtxPos Γ) → CtxPos (δ₀ p) → Ctx
+            δ₁' p q = δ₁ (μ₂-pos Γ δ₀ ε₀ p q)
+
+            ε₁' : (p : CtxPos Γ) (q : CtxPos (δ₀ p))
+              → Tree₂ (δ₁ (μ₂-pos Γ δ₀ ε₀ p q)) (CtxTyp (δ₀ p) q)
+            ε₁' p q = ε₁ (μ₂-pos Γ δ₀ ε₀ p q)
+
+            δ₀' : CtxPos Γ → Ctx
+            δ₀' p = μ₂ (δ₀ p) (δ₁' p) (ε₁' p)
+
+            ε₀' : (p : CtxPos Γ) → Tree₂ (δ₀' p) (CtxTyp Γ p)
+            ε₀' p = γ₂ (δ₀ p) (CtxTyp Γ p) (ε₀ p) (δ₁' p) (ε₁' p)
+
+  -- Okay.  So this means that the types do indeed work out, I think.
+  -- Now, the point is that in the *next* dimension, we are going to
+  -- elide the extra dependence in the type of μ.  And the hope is
+  -- that by then directly exposing the dependence in the lowest
+  -- dimension, we can in fact specialize the correct type of the
+  -- lowest dimensional frame to be correct, where it will remain
+  -- so in all higher dimensions.  It's a long shot.
