@@ -234,26 +234,12 @@ module UniverseRec where
     -- YIKES!  This is the one rewrite which really gives me pause.
     -- It says we can definitionally ignore any higher substitutions
     -- into the witnesses of the equivalence.  Need to think about it...
-    μ-ctx-invar : (Γ : Ctx) 
-      → (δ : (p : CtxPos Γ) → Ctx)
-      → (ε : (p : CtxPos Γ) → Tree {S O} (δ p , CtxTyp Γ p))
-      → (κ : (p : CtxPos Γ) (q : Pos (ε p)) → Tree {S O} (Typ (ε p) q))
-      → μ-ctx Γ δ (λ p → μ (δ p , CtxTyp Γ p) (ε p) (κ p)) ↦ μ-ctx Γ δ ε
-    {-# REWRITE μ-ctx-invar #-}
-
-    -- Hmmm.  But if I want this to be justified, then I really should
-    -- have also the fillers one dimension higher, which are absent here
-    -- because I removed them from the higher dimensional signature.
-
-    -- It seems then that such a rule claims that the result of tree
-    -- substitution, while calculated from higher data, does not depend
-    -- on modifications to the higher coherences.
-
-    -- I'm not sure this is completely convincing, but here's one
-    -- observation about this: it is clear from the definition that
-    -- μ-ctx only uses the *function* part of the equivalence, and not
-    -- the coherences.  But I'm not sure this is exactly what the rewrite
-    -- is actually saying ...
+    -- μ-ctx-invar : (Γ : Ctx) 
+    --   → (δ : (p : CtxPos Γ) → Ctx)
+    --   → (ε : (p : CtxPos Γ) → Tree {S O} (δ p , CtxTyp Γ p))
+    --   → (κ : (p : CtxPos Γ) (q : Pos (ε p)) → Tree {S O} (Typ (ε p) q))
+    --   → μ-ctx Γ δ (λ p → μ (δ p , CtxTyp Γ p) (ε p) (κ p)) ↦ μ-ctx Γ δ ε
+    -- {-# REWRITE μ-ctx-invar #-}
     
     -- μ laws
     μ-unit-r : {n : ℕ} (f : Frm (S n)) (σ : Tree {S n} f) 
@@ -276,8 +262,8 @@ module UniverseRec where
   μ {O} (.(μ-ctx Γ δ ε) , A) (nd-ctx Γ .A E δ ε) κ =
     let w = κ (inl unit)
         κ' p q = κ (inr (p , q))
-        ε' p = μ {O} _ (ε p) (κ' p)
-    in  γ-eqv Γ A w δ ε' 
+        ε' p = μ {O} (δ p , CtxTyp Γ p) (ε p) (κ' p)
+    in  {!γ-eqv Γ A w δ ε' !} 
   μ {S n} (f , .(η f τ) , τ) (lf .f .τ) κ = lf f τ
   μ {S n} (f , .(μ f σ δ) , τ) (nd .f σ .τ C δ ε) κ =
     let w = κ (inl unit)

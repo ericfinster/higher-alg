@@ -40,3 +40,4 @@ module Base where
     inr : B → A ⊔ B
 
   data ⊥ : Set where
+
