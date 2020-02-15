@@ -48,6 +48,16 @@ module Ctx where
   γ₁-snd (cns A B) δ (cns↓ a s) =
     γ₁-snd (B a) (λ b↓ → δ (cns↓ a b↓)) s
 
+  γ₁-pos-inl : (Γ : Ctx) (δ : Σ↓ Γ  → Ctx)
+    → CtxPos Γ → CtxPos (γ₁ Γ δ)
+  γ₁-pos-inl = {!!}
+
+  γ₁-pos-inr : (Γ : Ctx) (δ : Σ↓ Γ  → Ctx)
+    → (s : Σ↓ Γ)
+    → CtxPos (δ s)
+    → CtxPos (γ₁ Γ δ)
+  γ₁-pos-inr = {!!}
+  
   --
   --  Equivalences
   --
@@ -73,6 +83,11 @@ module Ctx where
       → (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
       → Tree₂ A
 
+  -- Okay, one idea is to define the type of "spines"
+  -- which will just be the same thing as elements
+  -- of the bounding context.  Then prove some equivalences
+  -- and so on.
+  
   -- Annoying the termination here, but I don't immediately
   -- see a better way to do it ...
   
@@ -83,6 +98,10 @@ module Ctx where
   Σ↓↓ : {A : Set} (σ : Tree₂ A)
     → Σ↓ (∂₂ σ) → A
 
+  Σ↓↑ : {A : Set} (σ : Tree₂ A)
+    → A → Σ↓ (∂₂ σ)
+  Σ↓↑ = {!!}
+  
   Σ↓↓-μ : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
     → Σ↓ (μ₁ Γ δ) → Σ↓ Γ
 
@@ -137,6 +156,21 @@ module Ctx where
   μ₁-pos : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
     → (p : CtxPos Γ) → CtxPos (∂₂ (δ p)) → CtxPos (μ₁ Γ δ)
 
+  μ₁-pos nil δ () q
+  μ₁-pos (cns A B) δ (cns-here .A .B) q =
+    let w = δ (cns-here A B)
+        a s = Σ↓↓ w s
+        δ' s p = δ (cns-there A B (a s) p)
+        ϕ s = μ₁ (B (a s)) (δ' s)
+    in γ₁-pos-inl (∂₂ w) ϕ q
+  μ₁-pos (cns A B) δ (cns-there .A .B a₀ p) q = 
+    let w = δ (cns-here A B)
+        a s = Σ↓↓ w s
+        δ' s p = δ (cns-there A B (a s) p)
+        ϕ s = μ₁ (B (a s)) (δ' s)
+    in γ₁-pos-inr (∂₂ w) ϕ (Σ↓↑ w a₀) {!!}
+
+
   --
   --  Okay, next step, see if you can write grafting
   --  and substitution for 2-trees.
@@ -166,5 +200,4 @@ module Ctx where
   γ₂ (nd₂ Γ A E δ) δ₁ =
     nd₂ Γ A E (λ p → γ₂ (δ p) (λ q → δ₁ (μ₁-pos Γ δ p q)))
 
-  μ₁-pos = {!!}
 
