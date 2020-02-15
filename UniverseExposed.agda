@@ -5,9 +5,7 @@ open import Ctx
 
 module UniverseExposed where
 
-
   data Tree₂ : Ctx → Set → Set 
-
   data Tree₂ where
 
   postulate
@@ -92,8 +90,6 @@ module UniverseExposed where
 
   data Tree where
 
-    -- lf₀ : (A : Set) (β : Tree₂ A) (E : Eqv (Σ↓ (μ₂ A β)) A)
-    --   → Tree A β E O (● A β E)
     lf₀ : (Γ : Ctx) (A : Set)
       → (E : Eqv (Σ↓ Γ) A)
       → Tree Γ A (η₂ Γ A E) E O ●

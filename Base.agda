@@ -41,3 +41,5 @@ module Base where
 
   data ⊥ : Set where
 
+  data _==_ {i} {A : Set i} (a : A) : A → Set where
+    idp : a == a
