@@ -50,13 +50,18 @@ module Ctx where
 
   γ₁-pos-inl : (Γ : Ctx) (δ : Σ↓ Γ  → Ctx)
     → CtxPos Γ → CtxPos (γ₁ Γ δ)
-  γ₁-pos-inl = {!!}
+  γ₁-pos-inl nil δ ()
+  γ₁-pos-inl (cns A B) δ (cns-here .A .B) = cns-here _ _
+  γ₁-pos-inl (cns A B) δ (cns-there .A .B a p) =
+    cns-there _ _ a (γ₁-pos-inl (B a) _ p)
 
   γ₁-pos-inr : (Γ : Ctx) (δ : Σ↓ Γ  → Ctx)
     → (s : Σ↓ Γ)
     → CtxPos (δ s)
     → CtxPos (γ₁ Γ δ)
-  γ₁-pos-inr = {!!}
+  γ₁-pos-inr nil δ nil↓ p = p
+  γ₁-pos-inr (cns A B) δ (cns↓ a s) p =
+    cns-there _ _ a (γ₁-pos-inr (B a) _ s p)
   
   --
   --  Equivalences
@@ -98,9 +103,9 @@ module Ctx where
   Σ↓↓ : {A : Set} (σ : Tree₂ A)
     → Σ↓ (∂₂ σ) → A
 
-  Σ↓↑ : {A : Set} (σ : Tree₂ A)
-    → A → Σ↓ (∂₂ σ)
-  Σ↓↑ = {!!}
+  -- Σ↓↑ : {A : Set} (σ : Tree₂ A)
+  --   → A → Σ↓ (∂₂ σ)
+  -- Σ↓↑ = {!!}
   
   Σ↓↓-μ : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
     → Σ↓ (μ₁ Γ δ) → Σ↓ Γ
@@ -153,22 +158,24 @@ module Ctx where
   Inh₂ (nd₂ Γ A E δ) (inl unit) = E
   Inh₂ (nd₂ Γ A E δ) (inr (p , q)) = Inh₂ (δ p) q
 
-  μ₁-pos : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
-    → (p : CtxPos Γ) → CtxPos (∂₂ (δ p)) → CtxPos (μ₁ Γ δ)
+  postulate
+  
+    μ₁-pos : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
+      → (p : CtxPos Γ) → CtxPos (∂₂ (δ p)) → CtxPos (μ₁ Γ δ)
 
-  μ₁-pos nil δ () q
-  μ₁-pos (cns A B) δ (cns-here .A .B) q =
-    let w = δ (cns-here A B)
-        a s = Σ↓↓ w s
-        δ' s p = δ (cns-there A B (a s) p)
-        ϕ s = μ₁ (B (a s)) (δ' s)
-    in γ₁-pos-inl (∂₂ w) ϕ q
-  μ₁-pos (cns A B) δ (cns-there .A .B a₀ p) q = 
-    let w = δ (cns-here A B)
-        a s = Σ↓↓ w s
-        δ' s p = δ (cns-there A B (a s) p)
-        ϕ s = μ₁ (B (a s)) (δ' s)
-    in γ₁-pos-inr (∂₂ w) ϕ (Σ↓↑ w a₀) {!!}
+  -- μ₁-pos nil δ () q
+  -- μ₁-pos (cns A B) δ (cns-here .A .B) q =
+  --   let w = δ (cns-here A B)
+  --       a s = Σ↓↓ w s
+  --       δ' s p = δ (cns-there A B (a s) p)
+  --       ϕ s = μ₁ (B (a s)) (δ' s)
+  --   in γ₁-pos-inl (∂₂ w) ϕ q
+  -- μ₁-pos (cns A B) δ (cns-there .A .B a₀ p) q = 
+  --   let w = δ (cns-here A B)
+  --       a s = Σ↓↓ w s
+  --       δ' s p = δ (cns-there A B (a s) p)
+  --       ϕ s = μ₁ (B (a s)) (δ' s)
+  --   in γ₁-pos-inr (∂₂ w) ϕ (Σ↓↑ w a₀) {!!}
 
 
   --
@@ -200,4 +207,11 @@ module Ctx where
   γ₂ (nd₂ Γ A E δ) δ₁ =
     nd₂ Γ A E (λ p → γ₂ (δ p) (λ q → δ₁ (μ₁-pos Γ δ p q)))
 
+  -- Okay, but in any case, it seems pretty clear that you can succeed
+  -- with this, right?  A bit of work and I guess you'll actually need
+  -- to use the equivalences a bit more than you thought, but this
+  -- looks completely doable.
 
+  -- The only test, then, is to see if this can be connected to the rest
+  -- of the setup.  That is, in the lowest dimension, if you indeed have
+  -- uncovered a way to drop the extra dependence.
