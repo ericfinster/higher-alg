@@ -5,119 +5,113 @@ open import Ctx
 
 module UniverseExposed where
 
-  data Tree₂ : Ctx → Set → Set 
-  data Tree₂ where
+  data Frm : (A : Set) (β : Tree₂ A) (E : Eqv (Σ↓ (∂₂ β)) A) → ℕ → Set 
+  data Tree : (A : Set)
+    → (β : Tree₂ A) (E : Eqv (Σ↓ (∂₂ β)) A)
+    → (n : ℕ) (f : Frm A β E n) → Set
 
-  postulate
-
-    Pos₂ : {Γ : Ctx} {A : Set} → Tree₂ Γ A → Set
-    
-    SrcCtx : {Γ : Ctx} {A : Set} (σ : Tree₂ Γ A) → Pos₂ σ → Ctx
-    TgtSet : {Γ : Ctx} {A : Set} (σ : Tree₂ Γ A) → Pos₂ σ → Set
-
-    Inh₂ : {Γ : Ctx} {A : Set} (σ : Tree₂ Γ A) (p : Pos₂ σ)
-      → Eqv (Σ↓ (SrcCtx σ p)) (TgtSet σ p)
-
-    μ₁ : (Γ : Ctx)
-      → (δ : (p : CtxPos Γ) → Ctx)
-      → (ε : (p : CtxPos Γ) → Tree₂ (δ p) (CtxTyp Γ p))
-      → Ctx
-      
-    γ₂ : (Γ : Ctx) (A : Set) (σ : Tree₂ Γ A)
-      → (δ : (p : CtxPos Γ) → Ctx)
-      → (ε : (p : CtxPos Γ) → Tree₂ (δ p) (CtxTyp Γ p))
-      → Tree₂ (μ₁ Γ δ ε) A
-
-    η₂ : (Γ : Ctx) (A : Set)
-      → Eqv (Σ↓ Γ) A
-      → Tree₂ Γ A
-      
-    -- Right.  And this is where you hope to be able
-    -- to "discard" some information ....
-    μ₂ : {Γ : Ctx} {A : Set}
-      → (β : Tree₂ Γ A) 
-      → (δ : (p : Pos₂ β) → Tree₂ (SrcCtx β p) (TgtSet β p))
-      → Tree₂ Γ A
-
-  data Frm : (Γ : Ctx) (A : Set) (β : Tree₂ Γ A) (E : Eqv (Σ↓ Γ) A) → ℕ → Set 
-  data Tree : (Γ : Ctx) (A : Set)
-    → (β : Tree₂ Γ A) (E : Eqv (Σ↓ Γ) A)
-    → (n : ℕ) (f : Frm Γ A β E n) → Set
-
-  Cell : (Γ : Ctx) (A : Set)
-    → (β : Tree₂ Γ A) (E : Eqv (Σ↓ Γ) A)
-    → (n : ℕ) (f : Frm Γ A β E n)
+  Cell : (A : Set)
+    → (β : Tree₂ A) (E : Eqv (Σ↓ (∂₂ β)) A)
+    → (n : ℕ) (f : Frm A β E n)
     → Set
 
-  Pos : {Γ : Ctx} {A : Set}
-    → {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-    → {n : ℕ} {f : Frm Γ A β E n}
-    → Tree Γ A β E n f → Set
+  Pos : {A : Set}
+    → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+    → {n : ℕ} {f : Frm A β E n}
+    → Tree A β E n f → Set
 
-  Typ : {Γ : Ctx} {A : Set}
-    → {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-    → {n : ℕ} {f : Frm Γ A β E n}
-    → (σ : Tree Γ A β E n f) (p : Pos σ)
-    → Frm Γ A β E n 
+  Typ : {A : Set}
+    → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+    → {n : ℕ} {f : Frm A β E n}
+    → (σ : Tree A β E n f) (p : Pos σ)
+    → Frm A β E n 
 
-  Inh : {Γ : Ctx} {A : Set}
-    → {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-    → {n : ℕ} {f : Frm Γ A β E n}
-    → (σ : Tree Γ A β E n f) (p : Pos σ)
-    → Cell Γ A β E n (Typ σ p)
+  Inh : {A : Set}
+    → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+    → {n : ℕ} {f : Frm A β E n}
+    → (σ : Tree A β E n f) (p : Pos σ)
+    → Cell A β E n (Typ σ p)
 
     
   data Frm where
-    ● : {Γ : Ctx} {A : Set} {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-      → Frm Γ A β E O
-    _∣_▸_ : {Γ : Ctx} {A : Set}
-      → {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-      → {n : ℕ} (f : Frm Γ A β E n)
-      → (σ : Tree Γ A β E n f) (τ : Cell Γ A β E n f)
-      → Frm Γ A β E (S n)
+    ● : {A : Set} {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+      → Frm A β E O
+    _∣_▸_ : {A : Set}
+      → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+      → {n : ℕ} (f : Frm A β E n)
+      → (σ : Tree A β E n f) (τ : Cell A β E n f)
+      → Frm A β E (S n)
 
-  η : {Γ : Ctx} {A : Set}
-    → {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-    → {n : ℕ} (f : Frm Γ A β E n)
-    → Cell Γ A β E n f → Tree Γ A β E n f
+  η : {A : Set}
+    → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+    → {n : ℕ} (f : Frm A β E n)
+    → Cell A β E n f → Tree A β E n f
 
-  μ : {Γ : Ctx} {A : Set}
-    → {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-    → {n : ℕ} (f : Frm Γ A β E n)
-    → (σ : Tree Γ A β E n f)
-    → (δ : (p : Pos σ) → Tree Γ A β E n (Typ σ p))
-    → Tree Γ A β E n f
+  μ : {A : Set}
+    → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+    → {n : ℕ} (f : Frm A β E n)
+    → (σ : Tree A β E n f)
+    → (δ : (p : Pos σ) → Tree A β E n (Typ σ p))
+    → Tree A β E n f
+
+  γ : {A : Set}
+    → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+    → {n : ℕ} (f : Frm A β E n)
+    → (σ : Tree A β E n f)
+    → (δ : (p : Pos σ) → Tree A β E n (Typ σ p))
+    → (ε : (p : Pos σ) → Tree A β E (S n) (Typ σ p ∣ δ p ▸ Inh σ p))
+    → Tree A β E n f
 
   data Tree where
 
-    lf₀ : (Γ : Ctx) (A : Set)
-      → (E : Eqv (Σ↓ Γ) A)
-      → Tree Γ A (η₂ Γ A E) E O ●
+    lf₃ : (Γ : Ctx) (A : Set) (E : Eqv (Σ↓ Γ) A)
+      → Tree A (nd₂ Γ A E (λ p → lf₂ (CtxTyp Γ p))) E O ● 
 
-    nd₀ : (Γ : Ctx) (A : Set)
-      → (β : Tree₂ Γ A) (E : Eqv (Σ↓ Γ) A)
-      -- Oh! And the extra equivalence here ...
-      → (δ : (p : Pos₂ β) → Tree₂ (SrcCtx β p) (TgtSet β p))
-      → (ε : (p : Pos₂ β) → Tree (SrcCtx β p) (TgtSet β p) (δ p) (Inh₂ β p) O ●)
-      → Tree Γ A (μ₂ β δ) E O ●
+    nd₃ : (A : Set) (β : Tree₂ A) 
+      → (δ : (p : Pos₂ β) → Σ (Tree₂ (TgtSet β p)) (λ τ → ∂₂ τ == SrcCtx β p))
+      -- And here we need a transport ... (which technically is not a
+      -- problem but looks a bit ugly ...)
+      → (ε : (p : Pos₂ β) → Tree (TgtSet β p) (fst (δ p)) {!Inh₂ β p!} O ●)
+      → (E : Eqv (Σ↓ (∂₂ (μ₂ β δ))) A)
+      -- Right, so what will be the type of this guy?
+      → {!!}
+      → Tree A (μ₂ β δ) E O ●
 
-    lf : {Γ : Ctx} {A : Set}
-      → {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-      → {n : ℕ} (f : Frm Γ A β E n)
-      → (C : Cell Γ A β E n f)
-      → Tree Γ A β E (S n) (f ∣ η f C ▸ C)
-    nd : {Γ : Ctx} {A : Set}
-      → {β : Tree₂ Γ A} {E : Eqv (Σ↓ Γ) A}
-      → {n : ℕ} (f : Frm Γ A β E n)
-      → (σ : Tree Γ A β E n f) (τ : Cell Γ A β E n f)
-      → (δ : (p : Pos σ) → Tree Γ A β E n (Typ σ p))
-      → (ε : (p : Pos σ) → Tree Γ A β E (S n) (Typ σ p ∣ δ p ▸ Inh σ p))
-      → (θ : Cell Γ A β E (S n) (f ∣ σ ▸ τ))
-      → Tree Γ A β E (S n) (f ∣ μ f σ δ ▸ τ)
+    lf : {A : Set}
+      → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+      → {n : ℕ} (f : Frm A β E n)
+      → (C : Cell A β E n f)
+      → Tree A β E (S n) (f ∣ η f C ▸ C)
+    nd : {A : Set}
+      → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+      → {n : ℕ} (f : Frm A β E n)
+      → (σ : Tree A β E n f) (τ : Cell A β E n f)
+      → (δ : (p : Pos σ) → Tree A β E n (Typ σ p))
+      → (ε : (p : Pos σ) → Tree A β E (S n) (Typ σ p ∣ δ p ▸ Inh σ p))
+      → (θ : Cell A β E (S n) (f ∣ σ ▸ τ))
+      → Tree A β E (S n) (f ∣ μ f σ δ ▸ τ)
 
 
   η = {!!}
-  μ = {!!}
+  
+  -- μ : {A : Set}
+  --   → {β : Tree₂ A} {E : Eqv (Σ↓ (∂₂ β)) A}
+  --   → {n : ℕ} (f : Frm A β E n)
+  --   → (σ : Tree A β E n f)
+  --   → (δ : (p : Pos σ) → Tree A β E n (Typ σ p))
+  --   → Tree A β E n f
+  μ {n = O} ● (lf₃ Γ A E) δ₁ = lf₃ Γ A E
+  μ {n = O} ● (nd₃ A β δ ε E _) δ₁ = {!γ!}
+
+  -- Okay.  But now it looks like γ will indeed give you
+  -- the type that you want.  The trouble is going to be
+  -- constructing the decoration.  But I don't see that this
+  -- is a problem in principle, only that it will be a bit
+  -- messy.
+  
+  μ {n = S n} f σ δ = {!!}
+
+  γ = {!!}
 
   Cell = {!!}
   Pos = {!!}

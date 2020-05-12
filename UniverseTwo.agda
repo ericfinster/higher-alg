@@ -11,6 +11,7 @@ module UniverseTwo where
   -- here.  Not 100% sure if it's a real problem or the just
   -- a hidding computation because of having to extract out
   -- the local tree....
+
   {-# TERMINATING #-}
   μ₁ : (Γ : Ctx)
     → (δ : (p : CtxPos Γ) → Ctx)
@@ -146,44 +147,28 @@ module UniverseTwo where
             ε₀' : (p : CtxPos Γ) → Tree₂ (δ₀' p) (CtxTyp Γ p)
             ε₀' p = γ₂ (δ₀ p) (CtxTyp Γ p) (ε₀ p) (δ₁' p) (ε₁' p)
 
-  -- Okay.  So this means that the types do indeed work out, I think.
-  -- Now, the point is that in the *next* dimension, we are going to
-  -- elide the extra dependence in the type of μ.  And the hope is
-  -- that by then directly exposing the dependence in the lowest
-  -- dimension, we can in fact specialize the correct type of the
-  -- lowest dimensional frame to be correct, where it will remain
-  -- so in all higher dimensions.  It's a long shot.
-
-
+  -- Two-dimensional substitution ...
+  -- μ₂-ctx : (Γ : Ctx) (A : Set)
+  --   → (β : Tree₂ Γ A) 
+  --   → (δ : (p : Pos₂ β) → Tree₂ (SrcCtx β p) (TgtSet β p))
+  --   → Ctx
+    
   μ₂ : (Γ : Ctx) (A : Set)
     → (β : Tree₂ Γ A) 
     → (δ : (p : Pos₂ β) → Tree₂ (SrcCtx β p) (TgtSet β p))
     → Tree₂ Γ A
+
+  -- μ₂-ctx .(cns A (λ _ → nil)) A (lf₂ .A) δ = cns A (λ _ → nil)
+  -- μ₂-ctx .(μ₁ Γ δ ε) A (nd₂ Γ .A E δ ε) δ₁ = 
+  --   let w = δ₁ (inl unit)
+  --       δ₁' p q = δ₁ (inr (p , q))
+  --       ε' p = μ₂ (δ p) (CtxTyp Γ p) (ε p) (δ₁' p)
+  --   in {!μ₁ Γ δ !} -- 
+    
   μ₂ .(cns A (λ _ → nil)) A (lf₂ .A) δ₁ = lf₂ A
-  μ₂ .(μ₁ Γ δ ε) A (nd₂ Γ .A E δ ε) δ₁ =
+  μ₂ .(μ₁ Γ δ ε) A (nd₂ Γ .A E δ ε) δ₁ = 
     let w = δ₁ (inl unit)
         δ₁' p q = δ₁ (inr (p , q))
-        ε' p = μ₂ _ _ (ε p) (δ₁' p)
+        ε' p = μ₂ (δ p) (CtxTyp Γ p) (ε p) (δ₁' p)
     in {! γ₂ Γ A w δ ε'!}
 
-  -- Mmm.  It's happening again.  But there should be a way to write
-  -- this function, no?  This was the point of unrolling. To get
-  -- exactly here and see what the "pattern" was.  But so far, I don't
-  -- think you really changed anything.
-
-  -- So what gives? Are you just not seeing how this multiplication
-  -- operation really *does* need to use the higher witnesses to
-  -- finish.  I guess that is the most likely answer.  Nonetheless,
-  -- I'm still not completely satisfied.
-
-  -- Right.  So here the problem is that we do not end up in the
-  -- same context.  If we have a function which computes the correct
-  -- context, then is this compatible with what you were doing elsewhere?
-
-  -- I think I see!  The idea would be to return the different context
-  -- type.  Then, in your other file, you can explictly ask for
-  -- equivalences corresponding to the correct types.  The filling
-  -- equivalence will be tricky because it seems we will need to know
-  -- how to transport some elements over or something.  Dunno.  Most
-  -- likely this doesn't work.  But I'll push it until I can't go
-  -- any further ....

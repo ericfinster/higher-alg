@@ -56,16 +56,16 @@ module UniverseOne where
       → γ₁ Γ (λ _ → nil) ↦ Γ
     {-# REWRITE γ₁-unit-r #-}
 
-  --
-  --  Equivalences
-  --
+  -- --
+  -- --  Equivalences
+  -- --
 
-  record Eqv (A B : Set) : Set where
-    field
-      Wit : A → B → Set
-      To : A → B
-      ToWit : (a : A) → Wit a (To a)
-      From : B → A
-      FromWit : (b : B) → Wit (From b) b
+  -- record Eqv (A B : Set) : Set where
+  --   field
+  --     Wit : A → B → Set
+  --     To : A → B
+  --     ToWit : (a : A) → Wit a (To a)
+  --     From : B → A
+  --     FromWit : (b : B) → Wit (From b) b
 
-  open Eqv public
+  -- open Eqv public

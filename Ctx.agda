@@ -12,15 +12,14 @@ module Ctx where
     nil : Ctx
     cns : (A : Set) (B : A → Ctx) → Ctx
 
-  data CtxPos : Ctx → Set where
-    cns-here : (A : Set) (B : A → Ctx) → CtxPos (cns A B)
-    cns-there : (A : Set) (B : A → Ctx)
-      → (a : A) (p : CtxPos (B a))
-      → CtxPos (cns A B)
-
+  CtxPos : Ctx → Set
+  CtxPos nil = ⊥
+  CtxPos (cns A B) = ⊤ ⊔ Σ A (λ a → CtxPos (B a))
+  
   CtxTyp : (Γ : Ctx) (p : CtxPos Γ) → Set
-  CtxTyp .(cns A B) (cns-here A B) = A
-  CtxTyp .(cns A B) (cns-there A B a p) = CtxTyp (B a) p
+  CtxTyp nil ()
+  CtxTyp (cns A B) (inl unit) = A
+  CtxTyp (cns A B) (inr (a , p)) = CtxTyp (B a) p
   
   data Σ↓ : Ctx → Set where
     nil↓ : Σ↓ nil
@@ -30,7 +29,7 @@ module Ctx where
 
   γ₁ : (Γ : Ctx) (δ : Σ↓ Γ  → Ctx) → Ctx
   γ₁ nil δ = δ nil↓
-  γ₁ (cns A B) δ = cns A (λ a → γ₁ (B a) (λ b↓ → δ (cns↓ a b↓)))
+  γ₁ (cns A B) δ = cns A (λ a → γ₁ (B a) (λ b → δ (cns↓ a b)))
   
   γ₁-fst : (Γ : Ctx)
     → (δ : Σ↓ Γ  → Ctx) 
@@ -38,7 +37,8 @@ module Ctx where
     → Σ↓ Γ
   γ₁-fst nil δ s = nil↓
   γ₁-fst (cns A B) δ (cns↓ a s) =
-    cns↓ a (γ₁-fst (B a) (λ b↓ → δ (cns↓ a b↓)) s)
+    let δ' b = δ (cns↓ a b)
+    in cns↓ a (γ₁-fst (B a) δ' s)
   
   γ₁-snd : (Γ : Ctx)
     → (δ : Σ↓ Γ  → Ctx) 
@@ -46,37 +46,25 @@ module Ctx where
     → Σ↓ (δ (γ₁-fst Γ δ s))
   γ₁-snd nil δ s = s
   γ₁-snd (cns A B) δ (cns↓ a s) =
-    γ₁-snd (B a) (λ b↓ → δ (cns↓ a b↓)) s
+    let δ' b = δ (cns↓ a b)
+    in γ₁-snd (B a) δ' s
 
   γ₁-pos-inl : (Γ : Ctx) (δ : Σ↓ Γ  → Ctx)
     → CtxPos Γ → CtxPos (γ₁ Γ δ)
   γ₁-pos-inl nil δ ()
-  γ₁-pos-inl (cns A B) δ (cns-here .A .B) = cns-here _ _
-  γ₁-pos-inl (cns A B) δ (cns-there .A .B a p) =
-    cns-there _ _ a (γ₁-pos-inl (B a) _ p)
+  γ₁-pos-inl (cns A B) δ (inl unit) = inl unit
+  γ₁-pos-inl (cns A B) δ (inr (a , p)) =
+    let δ' b = δ (cns↓ a b)
+    in inr (a , γ₁-pos-inl (B a) δ' p)
 
   γ₁-pos-inr : (Γ : Ctx) (δ : Σ↓ Γ  → Ctx)
     → (s : Σ↓ Γ)
     → CtxPos (δ s)
     → CtxPos (γ₁ Γ δ)
   γ₁-pos-inr nil δ nil↓ p = p
-  γ₁-pos-inr (cns A B) δ (cns↓ a s) p =
-    cns-there _ _ a (γ₁-pos-inr (B a) _ s p)
-  
-  --
-  --  Equivalences
-  --
-
-  record Eqv (A B : Set) : Set where
-    field
-      Wit : A → B → Set
-      To : A → B
-      ToWit : (a : A) → Wit a (To a)
-      From : B → A
-      FromWith : (b : B) → Wit (From b) b
-      -- ... and the coherences ....
-      
-  open Eqv public
+  γ₁-pos-inr (cns A B) δ (cns↓ a s) p = 
+    let δ' b = δ (cns↓ a b)
+    in inr (a , γ₁-pos-inr (B a) δ' s p)
 
   --
   --  2-Trees
@@ -88,52 +76,21 @@ module Ctx where
       → (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
       → Tree₂ A
 
-  -- Okay, one idea is to define the type of "spines"
-  -- which will just be the same thing as elements
-  -- of the bounding context.  Then prove some equivalences
-  -- and so on.
-  
-  -- Annoying the termination here, but I don't immediately
-  -- see a better way to do it ...
-  
-  {-# TERMINATING #-}
-  ∂₂ : {A : Set} → Tree₂ A → Ctx
-  μ₁ : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p)) → Ctx
-  
-  Σ↓↓ : {A : Set} (σ : Tree₂ A)
-    → Σ↓ (∂₂ σ) → A
+  Lf : {A : Set} → Tree₂ A → Set
+  Lf (lf₂ A) = ⊤
+  Lf (nd₂ Γ A E δ) = Σ (CtxPos Γ) (λ p → Lf (δ p))
 
-  -- Σ↓↑ : {A : Set} (σ : Tree₂ A)
-  --   → A → Σ↓ (∂₂ σ)
-  -- Σ↓↑ = {!!}
-  
-  Σ↓↓-μ : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
-    → Σ↓ (μ₁ Γ δ) → Σ↓ Γ
+  LfTyp : {A : Set} (β : Tree₂ A)
+    → Lf β → Set
+  LfTyp (lf₂ A) unit = A
+  LfTyp (nd₂ Γ A E δ) (p , l) = LfTyp (δ p) l
 
-  ∂₂ (lf₂ A) = cns A (λ _ → nil)
-  ∂₂ (nd₂ Γ A E δ) = μ₁ Γ δ
-
-  μ₁ nil δ = nil
-  μ₁ (cns A B) δ =
-    let w = δ (cns-here A B)
-        a s = Σ↓↓ w s
-        δ' s p = δ (cns-there A B (a s) p)
-        ϕ s = μ₁ (B (a s)) (δ' s)
-    in γ₁ (∂₂ w) ϕ
-  
-  Σ↓↓ (lf₂ A) (cns↓ a _) = a
-  Σ↓↓ (nd₂ Γ A E δ) s =
-    To E (Σ↓↓-μ Γ δ s)
-
-  Σ↓↓-μ nil δ s = s
-  Σ↓↓-μ (cns A B) δ s = 
-    let w = δ (cns-here A B)
-        a s = Σ↓↓ w s
-        δ' s p = δ (cns-there A B (a s) p)
-        ϕ s = μ₁ (B (a s)) (δ' s)
-        s₀ = γ₁-fst (∂₂ w) ϕ s
-        s₁ = γ₁-snd (∂₂ w) ϕ s
-    in cns↓ (a s₀) (Σ↓↓-μ (B (a s₀)) (δ' s₀) s₁)
+  γ-lf : {A : Set} (β : Tree₂ A)
+    → (δ : (l : Lf β) → Tree₂ (LfTyp β l))
+    → Tree₂ A
+  γ-lf (lf₂ A) δ = δ unit
+  γ-lf (nd₂ Γ A E δ) δ₁ =
+    nd₂ Γ A E (λ p → γ-lf (δ p) (λ l → δ₁ (p , l)))
 
   Pos₂ : {A : Set} → Tree₂ A → Set
   Pos₂ (lf₂ A) = ⊥
@@ -158,60 +115,91 @@ module Ctx where
   Inh₂ (nd₂ Γ A E δ) (inl unit) = E
   Inh₂ (nd₂ Γ A E δ) (inr (p , q)) = Inh₂ (δ p) q
 
+  -- Okay.  I really, really want to write a terminating, well
+  -- formed function which calculates the resulting context.
+  
+  -- If I recall, the trick to doing this was to first have
+  -- one level substitution, and then to iterate.
+
+  subst-ctx : (Γ : Ctx)
+    → (δ : (p : CtxPos Γ) → Ctx)
+    → (ε : (p : CtxPos Γ) → Eqv (Σ↓ (δ p)) (CtxTyp Γ p))
+    → Ctx
+  subst-ctx nil δ ε = nil
+  subst-ctx (cns A B) δ ε =
+    let Γ₀ = δ (inl unit)
+        E₀ = ε (inl unit)
+        a s = To E₀ s
+        δ' s p = δ (inr (a s , p))
+        ε' s p = ε (inr (a s , p)) 
+    in γ₁ Γ₀ (λ s → subst-ctx (B (a s)) (δ' s) (ε' s))
+
   postulate
   
-    μ₁-pos : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
-      → (p : CtxPos Γ) → CtxPos (∂₂ (δ p)) → CtxPos (μ₁ Γ δ)
+    subst-Σ↓ : (Γ : Ctx)
+      → (δ : (p : CtxPos Γ) → Ctx)
+      → (ε : (p : CtxPos Γ) → Eqv (Σ↓ (δ p)) (CtxTyp Γ p))
+      → Eqv (Σ↓ (subst-ctx Γ δ ε)) (Σ↓ Γ)
+    -- subst-Σ↓ nil δ ε = IdEqv (Σ↓ nil)
+    -- subst-Σ↓ (cns A B) δ ε = {!!}
 
-  -- μ₁-pos nil δ () q
-  -- μ₁-pos (cns A B) δ (cns-here .A .B) q =
-  --   let w = δ (cns-here A B)
-  --       a s = Σ↓↓ w s
-  --       δ' s p = δ (cns-there A B (a s) p)
-  --       ϕ s = μ₁ (B (a s)) (δ' s)
-  --   in γ₁-pos-inl (∂₂ w) ϕ q
-  -- μ₁-pos (cns A B) δ (cns-there .A .B a₀ p) q = 
-  --   let w = δ (cns-here A B)
-  --       a s = Σ↓↓ w s
-  --       δ' s p = δ (cns-there A B (a s) p)
-  --       ϕ s = μ₁ (B (a s)) (δ' s)
-  --   in γ₁-pos-inr (∂₂ w) ϕ (Σ↓↑ w a₀) {!!}
+  -- Fantastic.  And now this is completely terminating....
+  
+  ∂₂ : {A : Set} → Tree₂ A → Ctx
 
+  ∂₂-Eqv : {A : Set} (β : Tree₂ A)
+    → Eqv (Σ↓ (∂₂ β)) A
+  
+  ∂₂ (lf₂ A) = cns A (λ _ → nil)
+  ∂₂ (nd₂ Γ A E δ) = subst-ctx Γ (λ p → ∂₂ (δ p)) (λ p → ∂₂-Eqv (δ p))
+
+  R (∂₂-Eqv (lf₂ A)) (cns↓ a₀ nil↓) a₁ = a₀ == a₁
+  left-contr (∂₂-Eqv (lf₂ A)) (cns↓ a nil↓) = (a , idp) , λ { (a , idp) → idp }
+  right-contr (∂₂-Eqv (lf₂ A)) a = (cns↓ a nil↓ , idp) , λ { (cns↓ a nil↓ , idp) → idp }
+  ∂₂-Eqv (nd₂ Γ A E δ) = E ∘ subst-Σ↓ Γ _ _
 
   --
-  --  Okay, next step, see if you can write grafting
-  --  and substitution for 2-trees.
+  --  Now on to two dim'l substitution ...
   --
   
-  postulate
-    
-    μ₁-pos-typ : (Γ : Ctx) (δ : (p : CtxPos Γ) → Tree₂ (CtxTyp Γ p))
-      → (p : CtxPos Γ) (q : CtxPos (∂₂ (δ p)))
-      → CtxTyp (μ₁ Γ δ) (μ₁-pos Γ δ p q) ↦ CtxTyp (∂₂ (δ p)) q
-    {-# REWRITE μ₁-pos-typ #-}
-    
-  μ₂ : {A : Set} (σ : Tree₂ A)
-    → (δ : (p : Pos₂ σ) → Σ (Tree₂ (TgtSet σ p)) (λ τ → ∂₂ τ == SrcCtx σ p))
-    → Tree₂ A
+  data FramedTree : Ctx → Set → Set where
+    frm : {A : Set} → (β : Tree₂ A) → FramedTree (∂₂ β) A
+
+  FramedPos : {Γ : Ctx} {A : Set} → FramedTree Γ A → Set
+  FramedPos (frm β) = Pos₂ β
+
+  FramedSrcCtx : {Γ : Ctx} {A : Set} (σ : FramedTree Γ A)
+    → FramedPos σ → Ctx
+  FramedSrcCtx (frm β) = SrcCtx β
+
+  FramedTgtSet : {Γ : Ctx} {A : Set} (σ : FramedTree Γ A)
+    → FramedPos σ → Set
+  FramedTgtSet (frm β) = TgtSet β
+
+  FramedInh : {Γ : Ctx} {A : Set} (σ : FramedTree Γ A)
+    → (p : FramedPos σ)
+    → Eqv (Σ↓ (FramedSrcCtx σ p)) (FramedTgtSet σ p)
+  FramedInh (frm β) = Inh₂ β
 
   γ₂ : {A : Set} (σ : Tree₂ A)
     → (δ : (p : CtxPos (∂₂ σ)) → Tree₂ (CtxTyp (∂₂ σ) p))
     → Tree₂ A
-
-  μ₂ (lf₂ A) δ = lf₂ A
-  μ₂ (nd₂ Γ A E δ) δ₁ with δ₁ (inl unit)
-  μ₂ (nd₂ .(∂₂ w) A E δ) δ₁ | (w , idp) =
-    γ₂ w (λ p → μ₂ (δ p) (λ q → δ₁ (inr (p , q))))
-
   γ₂ (lf₂ A) δ = lf₂ A
   γ₂ (nd₂ Γ A E δ) δ₁ =
-    nd₂ Γ A E (λ p → γ₂ (δ p) (λ q → δ₁ (μ₁-pos Γ δ p q)))
+    nd₂ Γ A E (λ p → γ₂ (δ p) (λ p → {!!}))
 
-  -- Okay, but in any case, it seems pretty clear that you can succeed
-  -- with this, right?  A bit of work and I guess you'll actually need
-  -- to use the equivalences a bit more than you thought, but this
-  -- looks completely doable.
+  γ-frm : {Γ : Ctx} {A : Set}
+    → (σ : FramedTree Γ A)
+    → (δ : (p : CtxPos Γ) → Ctx)
+    → (ε : (p : CtxPos Γ) → FramedTree (δ p) (CtxTyp Γ p))
+    → FramedTree {!!} A
+  γ-frm = {!!}
+    
+  μ₂ : {Γ : Ctx} {A : Set}
+    → (σ : FramedTree Γ A)
+    → (δ : (p : FramedPos σ) → FramedTree (FramedSrcCtx σ p) (FramedTgtSet σ p))
+    → FramedTree Γ A
 
-  -- The only test, then, is to see if this can be connected to the rest
-  -- of the setup.  That is, in the lowest dimension, if you indeed have
-  -- uncovered a way to drop the extra dependence.
+  μ₂ (frm (lf₂ A)) _ = frm (lf₂ A)
+  μ₂ (frm (nd₂ Γ A E δ)) δ₁ with δ₁ (inl unit)
+  μ₂ (frm (nd₂ .(∂₂ β) A E δ)) δ₁ | frm β = {!frm (γ₂ β (λ p → ?))!}
